@@ -23,21 +23,16 @@
 
 ## Models and effort for in-session subagents
 
-Pick the model and effort **when you call the subagent**, from this sheet (the pstack approach: no `model:` in agent frontmatter, no Codex role files). Spawned workers are different: `runtug` picks their model from grade and quota.
+The role → model table is **not** kept here. It lives in the fleet's routing policy, which `runtug` reads and enforces for spawned workers. In-session subagents use the same table through one call, so a lead, its subagents and its spawned workers never disagree:
 
-| Role | Claude Code lead | Codex lead | Effort |
-|---|---|---|---|
-| Lead session (desk, integrator) | session model | `gpt-6.1-sol` | high; xhigh only for T3 design or a safety boundary |
-| Explorer / reader (`how`, `why`, `blast-radius`) | `sonnet` | `gpt-6-luna` | the lead's effort, one step lower for plain lookups |
-| Implementer of a decided unit | `sonnet` | `gpt-6.1-terra` | the lead's effort |
-| Bug, perf, judgment | `opus` | `gpt-6.1-sol` | the lead's effort, one step higher when the cause is unknown |
-| Hardest problem | `fable` | `gpt-6-astra` | one step above the lead |
-| Verifier (runs the acceptance list) | `opus`, fixed | `gpt-6.1-terra`, fixed | fixed at high; never adjusted per task, so verdicts compare |
-| Panel (arena, interrogate) | one each of `opus`, `fable`, `sonnet` | `astra`, `sol`, `terra`, `luna` | the lead's effort |
+```sh
+runtug resolve --role <lead|implementer|explorer|verifier|reviewer|judge> --grade <G> --t <Tn>
+# the last line prints:  profile=<name> effort=<rung>
+```
 
-Rules:
-- **Effort**: start at the lead's level; raise one step for an unknown cause or a design with no precedent, lower one step for lookups. Never `max` (runtug reserves it for escalation).
-- **Judge from another family.** A panel's judge or a review is never the lead's family. Across vendors (Claude ↔ Codex), use `runtug delegate --role reviewer` or `--panel N`; inside one vendor, vary the model, and say so when only one model was reachable.
-- **Re-run findings before trusting them**; keep the verifier's model fixed.
-- Claude Code: pass `model` (and `effort`, which this sheet asks for explicitly) on the `Agent` call. Codex: pass `model` and `reasoning_effort` on `spawn_agent`.
-- A model slug that is not available on the account falls back to the session model; say so in the verdict.
+- Pass the printed profile's model and effort on the subagent call (Claude Code `Agent` `model`/`effort`; Codex `spawn_agent` `model`/`reasoning_effort`).
+- If `resolve` refuses (`role_exhausted_wait`, `role_exhausted_escalate`, or no policy and no cache for `lead`/`verifier`), do **not** substitute a weaker model: wait, escalate to the parent lane, or run the step yourself.
+- **Verifier stays fixed** for a task so verdicts compare; resolve it once and reuse it.
+- **Judge from another family**: pass `--builder-family <the author's family>` for a reviewer or judge.
+- Effort rule: the role's effort is the start; raise one step for an unknown cause or a design with no precedent, lower one step for lookups. Never `max` (reserved for escalation).
+- No `runtug` on the host: use your own session model for exploration only, and say so in the result.
