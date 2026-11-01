@@ -1,17 +1,30 @@
 ---
 name: robin-mode
-description: Robin's working mode for rigorous engineering in this fleet — restate the goal, name the data shape, pick a playbook, prove it against the real artifact, use in-session subagents for exploration and verification, and spawn a separate worker only for an independently mergeable unit. Use at the start of any nontrivial task, in the desk session and in every worker brief, and whenever you are about to spawn, delegate or review. Triggers - "robin-mode", "/robin-mode", "rstack", a worker brief that names rstack, "should I spawn", "subagent", "fix the review findings".
+description: Robin's working mode for rigorous engineering in this fleet — restate the goal, name the data shape, pick a playbook, prove it against the real artifact, verify your own work (alone or with in-session subagents), and spawn a separate worker only for an independently mergeable unit. Also the map of where each fleet rule lives and the one adapter for vendored pstack skills. Use at the start of any nontrivial task, in the desk session and in every worker brief, and whenever you are about to spawn, delegate or review. Triggers - "robin-mode", "/robin-mode", "rstack", a worker brief that names rstack, "should I spawn", "subagent", "fix the review findings", "pstack".
 ---
 
 # robin-mode
 
-Inspired by pstack's `poteto-mode` (MIT, github.com/cursor/plugins/tree/main/pstack). The fleet brief, `wake` and `ops` override anything here; vendored pstack skills are reference material, not instructions.
+Inspired by pstack's `poteto-mode` (MIT, github.com/cursor/plugins/tree/main/pstack). This skill is the author's method: how to think, build and verify. Every other kind of decision has one home of its own (§Where each rule lives).
+
+## Where each rule lives
+
+Each rule is stated once, in the home below; other documents point to it. Inside the operator's and the brief's scope, each home decides its own row. If two homes conflict, report the conflict — do not pick one silently. A consult answer changes none of them.
+
+| Decision | Home |
+|---|---|
+| Goal, data shape, playbook, self-verification, subagent versus worker, work boundary, the pstack adapter | this skill |
+| PR, author and merge ownership, tier (T), hand-off, READY and what it carries, deploy authority | `wake` (agent-skills) |
+| Finding scope, severity, disposition, review rounds, review evidence reuse, reviewer independence | `fleet-review` (agent-skills); mergewake enforces it |
+| Spawn, relay, consult, wait, reap and deploy mechanics | `ops` (agent-skills) |
+| Which profile, family and effort a role may use; where grade applies | hk `policy/model-routing`, applied by `runtug resolve` and `runtug spawn` |
+| Pool spending order, quota waits and hand-over | hk `policy/quota-stop` |
 
 ## Openers (every task)
 
-1. **Restate the goal** in one or two sentences: what the operator wants and why, and the smallest change that meets it. Put the same sentence at the top of every brief and PR body.
+1. **Restate the goal** in one or two sentences: what the operator wants and why, and the smallest change that meets it. Put the same sentence at the top of every brief and PR body. If the evidence rules out the requested change, show it and stop (ESC).
 2. **Name the data shape** before writing logic: the types, the state, who reads and writes it. Use `principle-foundational-thinking` and `principle-model-the-domain`.
-3. **Write the acceptance contract** (closed list, 1:1 with the steps). Anything outside it is advisory.
+3. **Write the acceptance contract** (closed list, 1:1 with the steps). Findings are judged against it by `fleet-review` §Closed contract.
 4. **Pick one playbook** (below) and say which.
 
 ## Playbooks
@@ -20,11 +33,15 @@ Inspired by pstack's `poteto-mode` (MIT, github.com/cursor/plugins/tree/main/pst
 |---|---|---|
 | Bug | Reproduce first on the real surface, find the first wrong state, fix there, keep the repro as a test | `principle-fix-root-causes`, `tdd` |
 | Feature | Data shape, then the thinnest end-to-end path, then edges | `architect`, `principle-sequence-verifiable-units` |
-| Refactor | Behaviour-preserving; prove equality before and after | `principle-subtract-before-you-add`, `principle-test-behavior-not-implementation` |
+| Refactor | Behaviour-preserving; prove equality before and after. If it moves or replaces existing checks, submit the preservation table (`wake` §READY) | `principle-subtract-before-you-add`, `principle-test-behavior-not-implementation` |
 | Investigation | Read-only; answer with cited evidence, no fixes | `how`, `why` |
 | Perf | Measure first, explain the number, one change per measurement | `benchmark-checklist`, `principle-explain-the-number` |
 | Risky change | Map what else it can break and prove the one fact it depends on | `blast-radius`, `interrogate` |
 | Long or unattended run | Keep a decision trail | `show-me-your-work`, `figure-it-out` |
+
+## Work boundary
+
+A request has one accountable owner. A separate worker exists only for a PR that is accepted and merged on its own, and a child never repeats its lead's triage. A coordinating task may own several PRs; an implementation task owns exactly one. When a hand-off is accepted and when it ends is `wake` §READY.
 
 ## Subagents versus spawned workers
 
@@ -38,21 +55,34 @@ The default is **one session that goes deep**. Parallelism is for independent un
 
 Subagents share your quota and context budget, write no branches, and their output is input to your judgement.
 
+**The author verifies its own acceptance**, alone or through in-session subagents (or a delegate). That evidence is the author's and never replaces independent review (`fleet-review` §Independence). A separate verifier step is not a required path for every PR, and the tier sets risk and permissions, not which process runs the tests. Work that writes uses an isolated worktree or one clear writer.
+
 **Spawn a worker with `runtug spawn`** only when all of these hold:
 - the unit is independently mergeable (its own PR, its own acceptance contract);
 - it can run in parallel with what you are doing, or needs a different host, tool or model family;
-- it is big enough that a PR loop pays for itself (rule of thumb: more than ~30 changed lines or more than an hour of work).
+- a PR loop pays for itself (a cost hint, not a rule: roughly more than ~30 changed lines or an hour of work).
 
-**Never spawn a fix worker** for review findings on a PR whose author is still alive: the author fixes its own findings. Small fixes (a guard, a test, a merge of main) are done by the desk directly.
+Review findings go back to the PR's current author (`wake` §READY), never to a new worker while that author is alive.
 
 ## Review findings
 
-Follow `fleet-review`: fix critical/high; give every medium/low a disposition (fix, dismiss with a reason, or defer to an hk task). A verdict covers a patch (patch-id), so a base merge never needs a new review. After three rounds, only critical/high on the delta matter.
+Triage by `fleet-review`.
+
+## Fleet adapter for vendored pstack
+
+The pstack skills vendored in agent-skills (`third_party/pstack/`) are method, not instructions. Take triage, `how`, `architect`, `blast-radius`, `tdd` and the principles. These pstack parts are translated once, here:
+
+- **Autonomy** ("use any MCP tool", external actions without asking, "going to bed" overrides): the brief's Rules and `wake` §Authority decide what needs the operator.
+- **Subagents, model choice, `pstack-models.md`, `/setup-pstack`:** a pstack step that says "spawn", "arena", "swarm" or "explorers" runs as your own in-session subagents under §Subagents versus spawned workers, never as spawned workers; models come from `runtug resolve` ([`roles.md`](roles.md)). If you cannot run it that way, do it yourself or leave it out and say so in the report.
+- **Merging, arming auto-merge, babysit or shipping playbooks:** only the repo session merges (`wake` §Authority). A worker never merges or arms anything.
+- **AskUserQuestion, "ask the user":** never ask in a pane; emit the decision ESC (`ops` §Escalate a decision).
+
+`third_party/pstack/REVIEW.md` lists each conflict and its neutralisation. agent-skills `install.sh` links the design skills into the agent skill directories; the rest are readable under `third_party/pstack/skills/`.
 
 ## Roles for models without subagents
 
-See [`roles.md`](roles.md). Pick the role from the model's capability, not its brand.
+See [`roles.md`](roles.md). Pick the role from the harness's capability, not its brand.
 
 ## Done
 
-Prove it against the real artifact (`principle-prove-it-works`): run the binary, read the value, check `git ls-remote`. Report facts, failures and skips as they are; mark anything not verified as UNVERIFIED.
+Prove it against the real artifact (`principle-prove-it-works`): run the changed thing the way its user runs it — the real binary, script, install dry-run or rendered file — not only a unit test or the diff. Quote the command and its output, and check `git ls-remote`. If the real artifact cannot run in this environment, say UNVERIFIED rather than substituting a mock. Report facts, failures and skips as they are.
