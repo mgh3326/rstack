@@ -1,0 +1,13 @@
+version: 1
+enabled: true
+required_checks:
+  - 'GitGuardian Security Checks'
+blocking:
+  - paths: ['install.sh']
+    reason: The installer links skills into every host's agent directories before a revert.
+  - paths: ['.mergewake/**']
+    reason: Policy changes can authorize irreversible automation before a revert.
+review_gate:
+  land: graded
+fast_lane:
+  max_changed_lines: 50
