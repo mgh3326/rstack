@@ -33,9 +33,9 @@ runtug resolve --role <reviewer|judge> --builder-family <author family>
 ```
 
 - Pass the printed profile's model and effort on the subagent call (Claude Code `Agent` `model`/`effort`; Codex `spawn_agent` `model`/`reasoning_effort`).
-- If `resolve` refuses (`role_exhausted_wait`, `role_exhausted_escalate`, or no policy and no cache for `lead`/`verifier`), do **not** substitute another model or family. What to do depends on the role:
+- If `resolve` refuses (`role_exhausted_wait`, `role_exhausted_escalate`, or no policy and no cache for `lead`/`verifier`), do **not** pick a substitute model or family for the subagent. What to do depends on the role:
   - `lead`, `consult`, `verifier`: do not start that work on any other model. Wait on `role_exhausted_wait`; escalate to the parent lane on `role_exhausted_escalate` or a missing policy.
   - `reviewer`, `judge`: escalate. Never do it yourself — your own check is not independent.
-  - `explorer`, `implementer`: do the step in your own session and say so in the result.
+  - `explorer`, `implementer`: the one allowed fallback is your own session (no new model choice); do the step there and say so in the result.
 - Effort steps, the `max` rung, grade and verifier rules are hk `policy/model-routing`; do not restate them in a brief.
 - No `runtug` on the host: use your own session model for exploration only, and say so in the result.
