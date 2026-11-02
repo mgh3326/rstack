@@ -41,7 +41,8 @@ are DEPRECATED. Remove them when mergewake rollout,
 agent and status are enabled on all hosts. rob-lookup is retired: archived issues
 now live in handoffkeep docs and the archive job reports the active issue count.
 Arbiter is retired, replaced by `panewire jobs list` (hk 2718). Rollout waits for
-that panewire release, sequenced by the desk. Installing links does not execute the tools.
+that panewire release, sequenced by the desk. Installing links does not execute the tools. See [fleet-rev](docs/fleet-rev.md)
+and [fleet-install](docs/fleet-install.md) for the retained interfaces.
 
 First-party skills are in `skills/`: robin-mode, wake, ops and fleet-review.
 `skills/robin-mode/SKILL.md` owns the work boundary and fleet adapter. Upstream

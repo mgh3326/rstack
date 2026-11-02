@@ -783,10 +783,10 @@ rm "$LOCAL_HOME/.config/fleet/hosts.toml"
 pass "canonical fleet config default selects the configured probe host"
 
 # ================================================================ AC15 (993 N7)
-# The README scopefuel reinstall step labels the `git+...@<sha> --force`
+# The fleet-rev documentation scopefuel reinstall step labels the `git+...@<sha> --force`
 # form as fleet-rev's own recommended form (it is not cited from the
 # scopefuel README, which shows only a rev-less `uv tool install git+...`).
-line="$(grep -A2 'uv tool install --force' "$ROOT/README.md")"
+line="$(grep -A2 'uv tool install --force' "$ROOT/docs/fleet-rev.md" || true)"
 [[ "$line" == *scopefuel* && "$line" == *권장* ]] ||
   fail "AC15 README scopefuel form not labelled recommended: $line"
 pass "AC15 README labels the scopefuel @<sha> form as recommended (N7)"
