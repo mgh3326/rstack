@@ -23,7 +23,7 @@
 - CLI는 hub에 요청을 접수한다. hub가 배치·쿼타 승인을 수행하고, 선택된 node가 checkout·launch·brief 착지를 검증한다. launcher subprocess나 SSH launcher 폴백은 없다.
 - `ACCEPTED job=… request=…`는 durable hub 예약이다. `SPAWNED` 이벤트와 착지 확인 전에는 pane 생성이나 brief 전달을 주장하지 않는다.
 - 응답 유실 시 같은 명령을 다시 실행해 저장된 submission key를 재사용한다. timeout·단절은 `reconciling`/`deadline_exceeded`일 수 있으며, 새 job id로 재스폰하지 않는다. 실행 소유권을 확인하기 전에는 다른 node로 옮기거나 pane을 닫지 않는다.
-- workspace를 생략하면 실행 host의 설정을 쓴다. label을 주면 실행 host에서 id로 해석한다. `m1`, `m1b`, `mbp`, `desktop`, `pi`는 hosts 설정의 alias이며 CLI가 해석된 machine id를 출력한다. 실제 host 값은 공개 문서에 쓰지 않는다.
+- workspace를 생략하면 실행 host의 설정을 쓴다. label을 주면 실행 host에서 id로 해석한다. 호스트 별칭은 hosts 설정에 있으며 CLI가 해석된 machine id를 출력한다. 실제 host 값은 공개 문서에 쓰지 않는다.
 - node 상태는 hub `/v1/nodes` 또는 `/ui`가 정본이다. 같은 machine id의 node를 중복 실행하지 않는다.
 - herdr mirror pane은 원격의 실제 pane이다. 제출 확인은 `relay.md` §3과 동일하게 적용한다.
 

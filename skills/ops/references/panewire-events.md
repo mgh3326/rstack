@@ -11,7 +11,7 @@
 
 | 대상 | 판 | 근거 |
 |---|---|---|
-| 허브 (ncp) | `pw-e401923` (#64, 09-17 머지) | hk:doc `deploy/panewire-hub/20260923T033051Z` — director-1 의 09-23 NCP 실측(서비스 ExecStart 바이너리 `panewire version`, 기동 후 교체 없음). 허브 배포는 BLOCK-3 에 묶여 옛 판 |
+| 허브 | `pw-e401923` (#64, 09-17 머지) | hk:doc `deploy/panewire-hub/20260923T033051Z` — 09-23 허브 실측(서비스 ExecStart 바이너리 `panewire version`, 기동 후 교체 없음). 허브 배포는 BLOCK-3 에 묶여 옛 판 |
 | 노드 (desktop) | `pw-05667f4` (#57, 09-14 머지) | 설치본 `panewire version` = `pw-05667f4` · 실행 중 데몬 argv 실측(`--inbox-root` 가 있고 `--hub-jobs-root`·`--checks-config`·`--stall-detect*` 없음 — jobsInboxRoot 는 inbox-root 기본값, cli.go:508-511 @05667f4). #574 카나리 대기로 옛 판 |
 | 노드 (mac 등 나머지) | **미측정** | desktop 에서 확인 수단 없음. 레인 pane 주입의 마지막 구간(허브→수신 노드→pane)은 수신 측 노드 판에 달린다 |
 | 소스 정본 | `origin/main` `c1b9c0e` | #80(#507)까지 머지 — 허브·노드 모두 미배포 |

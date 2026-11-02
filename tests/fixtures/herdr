@@ -198,7 +198,7 @@ fixture_pinfo_sequence_step() {
   if [[ "$total" -eq 0 || "$index" -gt "$total" ]]; then return 1; fi
   token="$(awk -v n="$index" 'NR==n{print; exit}' "$WRK_FIXTURE_PINFO_SEQUENCE")"
   case "$token" in
-    # hk 1541: the transient m1b shape — one stdout line that is not an
+    # hk 1541: the transient fixture-b shape — one stdout line that is not an
     # envelope at all, on an otherwise healthy pane.
     garbage) printf 'fixture herdr: not json at all\n'; exit 0 ;;
     exit3)
@@ -392,7 +392,7 @@ case "${1:-}" in
           landing-marker|landing-retry|landing-no|landing-pasted|landing-observation-fails|opencode-retry|opencode-no|generic-idle-no-marker)
             printf '%s\n' '{"result":{"agents":[{"agent":"codex","agent_status":"idle","name":"fixture","pane_id":"w:p1","tab_id":"w:t1","workspace_id":"w"}]}}'
             ;;
-          devin-idle|devin-wrong-rule|devin-wait-timeout|devin-late-detect|devin-shell-busy|devin-shell-busy-m1b|devin-shell-never-ready-m1b|devin-explain-no-rule|devin-explain-empty|devin-trust-screen|devin-read-fail|devin-explain-starting|devin-explain-starting-stuck|devin-explain-unknown)
+          devin-idle|devin-wrong-rule|devin-wait-timeout|devin-late-detect|devin-shell-busy|devin-shell-busy-fixture-b|devin-shell-never-ready-fixture-b|devin-explain-no-rule|devin-explain-empty|devin-trust-screen|devin-read-fail|devin-explain-starting|devin-explain-starting-stuck|devin-explain-unknown)
             printf '%s\n' '{"result":{"agents":[{"agent":"devin","agent_status":"idle","name":"fixture","pane_id":"w:p1","tab_id":"w:t1","workspace_id":"w"}]}}'
             ;;
           # #1016: the pending-read scenarios are kind-agnostic — `agent
@@ -557,7 +557,7 @@ case "${1:-}" in
           devin-explain-no-rule|devin-read-fail)
             printf '%s\n' '{"agent":"devin","matched_rule":null,"state":"idle"}'
             ;;
-          # #649 (m1b): devin's TUI is still painting — every identity rule is
+          # #649 (fixture-b): devin's TUI is still painting — every identity rule is
           # unmatched and the evaluated region holds only the typed command
           # line (the exact argv wrk runs for devin-swe2). The first
           # WRK_FIXTURE_DEVIN_STARTING_COUNT (default 3) explains answer that
@@ -764,7 +764,7 @@ case "${1:-}" in
     # pane foreground is the agent (real 0.9.1 shape measured 2026-09-24:
     # argv0 is the canonical executable, the group leader is the agent pid).
     # agent-never-foreground keeps answering shell-alone after an accepted
-    # start (the m1b "zsh: command not found: codex" shape); agent-late-
+    # start (the fixture-b "zsh: command not found: codex" shape); agent-late-
     # foreground answers shell-alone for WRK_FIXTURE_FOREGROUND_DELAY (2)
     # calls first; agent-foreground-other keeps an unrelated process in the
     # foreground.
@@ -824,8 +824,8 @@ case "${1:-}" in
       fi
       busy=0
       case "$scenario" in
-        devin-shell-never-ready|devin-shell-never-ready-m1b) busy=1 ;;
-        devin-shell-busy|devin-shell-busy-m1b)
+        devin-shell-never-ready|devin-shell-never-ready-fixture-b) busy=1 ;;
+        devin-shell-busy|devin-shell-busy-fixture-b)
           [[ "$infos" -le "${WRK_FIXTURE_SHELL_BUSY_COUNT:-3}" ]] && busy=1 ;;
       esac
       agent_kind="$(fixture_foreground)"
@@ -849,8 +849,8 @@ case "${1:-}" in
           "$fg_argv0" "$fg_argv0" "$fg_argv0"
         exit 0
       fi
-      if [[ "$scenario" == *-m1b ]]; then
-        # #604/m1b (hk:doc evidence/2026-09-24/task604-m1b-repro): the m1b
+      if [[ "$scenario" == *-fixture-b ]]; then
+        # #604/fixture-b (hk:doc evidence/2026-09-24/task604-fixture-b-repro): the fixture-b
         # herdr 0.9.0 reply has no "result" wrapper and no
         # foreground_process_group_id — but still names shell_pid and the
         # foreground list. While the foreground is an rc-file subprocess

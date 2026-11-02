@@ -946,7 +946,7 @@ pass "AC16 non-exec wrapper (child, sleep-&-wait, depth-3 and late-child forms) 
 # Leftover tracking: each stub appends its own pid ($$, unchanged across
 # exec) to $AC17_PIDFILE, and the check trusts only that file — a listed
 # pid still alive with argv exactly 'sleep 7N' is a leftover. No host-wide
-# argv pattern: an unrelated 'sleep 7200' (seen on mbp as a watcher loop's
+# argv pattern: an unrelated 'sleep 7200' (seen on fixture-host as a watcher loop's
 # child) or a reused pid must not fail this test.
 reset_env
 S_MAIN="$(sha40 s-main)"; HK_MAIN="$(sha40 hk-main)"
@@ -979,7 +979,7 @@ ac17_assert_no_leftovers() {
 }
 # The unrelated process that used to trip the unanchored pgrep: a 'sleep
 # 7200' that merely contains 'sleep 72' (the real one was audit-watch.sh's
-# child on mbp). Started by this test in its own session; stopped by exact
+# child on fixture-host). Started by this test in its own session; stopped by exact
 # pid after an argv recheck, below and on exit.
 AC17_EXT_PID="$(python3 -c 'import subprocess; p = subprocess.Popen(["sleep", "7200"], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True); print(p.pid)')"
 ac17_stop_ext() {

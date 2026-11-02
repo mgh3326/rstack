@@ -41,3 +41,5 @@ Kiro and OpenCode are UNVERIFIED here; host rollout verification must capture th
 Codex's current session catalog exposes the old recursive vendor leak. The two
 read-only worker probes confirm current discovery; no actual host links were changed.
 Plugins and project/configured roots outside the manifest remain host audit scope.
+
+Source host aliases in first-party references and fixture labels are anonymised.
