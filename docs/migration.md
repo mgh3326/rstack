@@ -8,7 +8,7 @@ Retired director and legacy installer changes from those PRs are excluded.
 
 | Old executable | Decision | Caller/evidence |
 |---|---|---|
-| bin/arbiter | move with tests | ops/references/reap.md job-listing command; replacement hub listing pending |
+| bin/arbiter | retire | replaced by panewire jobs list (hk 2718); host rollout waits for that panewire release |
 | bin/fleet-install | move with tests | docs/fleet-install.md executable examples; retained desk release-install interface |
 | bin/fleet-rev | move with tests; probe rstack checkout | source README revision-audit examples; retained desk audit interface |
 | bin/rob-lookup | retire | archive source superseded by handoffkeep docs linear/<ID>; active count supplied by the archive job; no source tests |

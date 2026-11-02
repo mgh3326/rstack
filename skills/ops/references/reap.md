@@ -28,12 +28,12 @@ worktree 와 branch 를 지운다. **repo 세션은 머지 후 pane 을 손으�
 새 릴레이를 받았을 때, terminal 을 선언할 때, 운영자가 깨웠을 때.
 
 ```bash
-arbiter status --lane <내 레인> --json     # 내 job 목록 (세션 기억 아님)
+panewire jobs list --lane <내 레인> --json     # 내 job 목록 (세션 기억 아님)
 # 각 job → jobs/<job_id>/events/*job.claim.json 의 agent_label
 panewire find <agent_label>                  # → pane_id · status
 herdr pane close <pane_id>                 # 회수
 ```
-🔴 **세션 기억으로 목록을 만들지 마라.** compact 되면 사라진다. 정본은 arbiter + job 이벤트다.
+🔴 **세션 기억으로 목록을 만들지 마라.** compact 되면 사라진다. 정본은 panewire hub + job 이벤트다.
 
 ### 6-2. 회수 조건 — 셋 다 만족할 때만
 

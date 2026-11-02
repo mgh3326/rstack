@@ -22,7 +22,6 @@ jobs:
           python3 tests/test-install.py
           python3 tests/test-adapter.py
           for test in tests/test-*.sh; do bash "$test"; done
-          python3 -m unittest discover -s tests -p 'test_*.py'
   ci-ok:
     if: always()
     needs: contracts

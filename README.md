@@ -35,13 +35,13 @@ manifest, including excluded names, distinct source directories for duplicate
 names, missing skills and extra names. It does not prove a running session's
 loaded catalog; restart and inspect each harness after a rollout.
 
-The retained `bin/` tools are linked into `~/.local/bin`: arbiter (job listing),
-fleet-install (release installation) and fleet-rev (revision audit). All three
-are DEPRECATED. Remove arbiter when the hub offers lane-scoped job listing usable
-with a node token; remove fleet-install and fleet-rev when mergewake rollout,
+The retained `bin/` tools are linked into `~/.local/bin`: fleet-install
+(release installation) and fleet-rev (revision audit). Both
+are DEPRECATED. Remove them when mergewake rollout,
 agent and status are enabled on all hosts. rob-lookup is retired: archived issues
 now live in handoffkeep docs and the archive job reports the active issue count.
-Installing links does not execute the tools.
+Arbiter is retired, replaced by `panewire jobs list` (hk 2718). Rollout waits for
+that panewire release, sequenced by the desk. Installing links does not execute the tools.
 
 First-party skills are in `skills/`: robin-mode, wake, ops and fleet-review.
 `skills/robin-mode/SKILL.md` owns the work boundary and fleet adapter. Upstream
