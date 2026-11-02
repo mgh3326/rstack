@@ -1,0 +1,2168 @@
+#!/usr/bin/env python3
+# DEPRECATED: Remove when the hub provides lane-scoped job listing with a node token.
+"""arbiter — 작업 조정(admission control) 도구.
+
+도메인 경계(운영자 결정, ROB-1199): `호출자 → arbiter → scopefuel --json` (호출자였던 wrk 는 퇴역, runtug 로 대체).
+- scopefuel : 쿼타·급·정책 ("얼마 남았나")  — arbiter 가 읽는 입력원. 역방향 의존 금지.
+- 호출자    : 세션 수명주기 ("어떻게 띄우나") — arbiter 를 호출하는 쪽.
+- arbiter   : 작업 조정 ("누가 점유했나")   — 이 파일.
+
+저장소는 `$XDG_DATA_HOME/arbiter/state.db` 로 scopefuel 의 bench.db 와 완전히 분리한다.
+
+claim 은 신뢰 경로 명령이다(hk 1894): ARBITER_INBOX_ROOT·XDG_DATA_HOME·HOME 이 passwd 홈 기준 정본 경로와
+다르면 거부(exit 2)하고, WRK_TEST_MODE=1(테스트 전용)에서는 임시 루트 아래 재정의만 허용한다.
+
+fail-closed 가 핵심 요구사항이다. 배타 lease 획득 실패·quota_pool 기록 실패·DB 접근 실패·
+스키마 불일치는 전부 비-0 exit 이며, "일단 통과"하는 경로는 존재하지 않는다(우회 플래그도
+만들지 않는다). quota_pool 기록 실패를 경고 후 진행할지는 호출자의 설치/수명주기
+정책이다.
+도구 자체가 설치되지 않은 과도기만 호출자가 경고 후 진행한다.
+
+exit code
+  0  성공
+  2  사용법 오류
+  3  admission 거부(배타 lease 점유 중 / job 미등록 / scopefuel gate 거부)
+  4  중복(claim 중복 job_id, event 중복 (job_id, seq))
+  5  fencing 위반(stale owner·token 불일치 release)
+  6  저장소·증거 결함(DB 없음·스키마 불일치·권한 오류·pool 해석 불가) — fail-closed
+  7  job-get 대상 job_id 없음(명시적 not-found)
+"""
+
+from __future__ import annotations
+
+import argparse
+import datetime as dt
+import fcntl
+import json
+import os
+import pwd
+import re
+import secrets
+import shutil
+import sqlite3
+import stat
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+PROG = "arbiter"
+
+# 스키마 버전. 저장된 값과 다르면 모든 명령이 fail-closed 로 거부한다(추측 마이그레이션 금지).
+SCHEMA_VERSION = 2
+
+# quota_pool은 실행 기록이므로 TTL/fencing 대상이 아니다. TTL은 실제 배타 자원에만 둔다.
+DEFAULT_TTL_MIN = {"path": 90, "linear_permit": 30}
+KINDS = ("quota_pool", "path", "linear_permit")
+T_LEVELS = ("T0", "T1", "T2", "T3")
+HERDR_AGENT_STATUSES = frozenset(("idle", "working", "blocked", "done", "unknown"))
+HERDR_LIVE_STATUS = "working"
+
+BUSY_TIMEOUT_MS = 10000
+# A claimed job can precede its Herdr pane; absence is not retirement evidence yet.
+ORPHAN_STARTUP_GRACE = dt.timedelta(minutes=10)
+
+# hk 1894: commands whose paths must be canonical (or, in test mode, under a temp
+# root). hk 1453 half 2 adds job-get here. _TRUSTED is set by enforce_trust() and read by db_path() and
+# inbox_root().
+TRUST_COMMANDS = frozenset(("claim",))
+_TRUSTED: dict | None = None
+
+EXIT_OK = 0
+EXIT_USAGE = 2
+EXIT_DENIED = 3
+EXIT_DUPLICATE = 4
+EXIT_FENCING = 5
+EXIT_STORAGE = 6
+EXIT_NOT_FOUND = 7
+
+
+class ArbiterError(Exception):
+    """비-0 exit 로 끝나는 모든 실패. 조용한 통과는 없다."""
+
+    def __init__(self, code: int, message: str, **detail: object) -> None:
+        super().__init__(message)
+        self.code = code
+        self.message = message
+        self.detail = detail
+
+
+# ---------------------------------------------------------------- paths / time
+
+
+def data_home() -> Path:
+    raw = os.environ.get("XDG_DATA_HOME") or ""
+    return Path(raw) if raw else Path.home() / ".local" / "share"
+
+
+def db_path() -> Path:
+    if _TRUSTED is not None:
+        return Path(_TRUSTED["db"])
+    return data_home() / PROG / "state.db"
+
+
+def inbox_root() -> Path:
+    """신규 job 의 event artifact 루트. 기존 flat inbox 파일은 건드리지 않는다."""
+    if _TRUSTED is not None:
+        return Path(_TRUSTED["inbox"])
+    raw = os.environ.get("ARBITER_INBOX_ROOT") or ""
+    return Path(raw) if raw else Path.home() / "work" / "herdr-inbox" / "jobs"
+
+
+# ---------------------------------------------------------------- trust paths
+
+# --- trust paths: begin ---
+# hk 1894: where one trust-bearing operation may read its events inbox and its
+# grant evidence. Needs os, shutil and stat from the host module. The canonical
+# home is an argument (the passwd home of the uid, never HOME), so the unit tests
+# decide without touching the real one.
+TRUST_SYSTEM_TEMP_ROOTS = ("/tmp", "/private/tmp", "/var/folders")
+
+
+class TrustRefusal(Exception):
+    def __init__(self, var, canonical, detail):
+        Exception.__init__(self, "%s; canonical path: %s" % (detail, canonical))
+        self.var = var
+        self.canonical = canonical
+        self.detail = detail
+
+
+def trust_value(env, name):
+    value = env.get(name)
+    return value if isinstance(value, str) and value else ""
+
+
+def trust_under(path, root):
+    return path == root or path.startswith(root.rstrip("/") + "/")
+
+
+def trust_canonical(home):
+    return {
+        "inbox": os.path.join(home, "work", "herdr-inbox", "jobs"),
+        "db": os.path.join(home, ".local", "share", "arbiter", "state.db"),
+        "hk": os.path.join(home, ".local", "bin", "handoffkeep"),
+    }
+
+
+def trust_homes(home):
+    # The passwd home as spelled and through realpath: a symlinked home reaches
+    # the same places under both names.
+    forms = [home] if home else []
+    if home and os.path.realpath(home) != home:
+        forms.append(os.path.realpath(home))
+    return forms
+
+
+def trust_temp_roots(env, home):
+    roots = []
+    tmpdir = trust_value(env, "TMPDIR")
+    if tmpdir:
+        resolved = os.path.realpath(tmpdir)
+        # TMPDIR naming the filesystem root, the home or a parent of it would
+        # make every path a temp path.
+        if resolved != "/" and not any(trust_under(form, resolved) for form in trust_homes(home)):
+            roots.append(resolved)
+    for fixed in TRUST_SYSTEM_TEMP_ROOTS:
+        for form in (fixed, os.path.realpath(fixed)):
+            if form not in roots:
+                roots.append(form)
+    return roots
+
+
+def trust_secure_binary(canonical, uid):
+    resolved = os.path.realpath(canonical)
+    try:
+        info = os.stat(resolved)
+    except OSError as exc:
+        raise TrustRefusal("handoffkeep", canonical, "the canonical handoffkeep is unusable (%s): %s" % (resolved, exc.strerror or exc))
+    if not stat.S_ISREG(info.st_mode):
+        raise TrustRefusal("handoffkeep", canonical, "the canonical handoffkeep %s is not a regular file" % resolved)
+    if info.st_uid != uid:
+        raise TrustRefusal("handoffkeep", canonical, "the canonical handoffkeep %s is owned by uid %d, not uid %d" % (resolved, info.st_uid, uid))
+    if info.st_mode & 0o022:
+        raise TrustRefusal("handoffkeep", canonical, "the canonical handoffkeep %s is group- or world-writable (mode %04o)" % (resolved, info.st_mode & 0o7777))
+    return resolved
+
+
+def trust_resolve(env, home, uid, test_mode, need_hk, fixtures=""):
+    """Return {"inbox", "db", "hk", "overrides"} or raise TrustRefusal.
+
+    Outside test mode each lever (HOME, ARBITER_INBOX_ROOT, XDG_DATA_HOME,
+    HANDOFFKEEP_BIN) must resolve to its canonical path under home, and the PATH
+    lookup of handoffkeep is never used: the canonical binary must be a regular
+    file owned by uid and not group- or world-writable. In test mode (a test
+    suite only) no canonical path is consulted or resolved: every path in use
+    must resolve under a temp root, the handoffkeep binary also under fixtures.
+    """
+    home_env = trust_value(env, "HOME")
+    inbox_env = trust_value(env, "ARBITER_INBOX_ROOT")
+    data_env = trust_value(env, "XDG_DATA_HOME")
+    hk_env = trust_value(env, "HANDOFFKEEP_BIN")
+    known = bool(home) and os.path.isabs(home)
+    if not known and not test_mode:
+        raise TrustRefusal("HOME", "(unknown)", "the passwd home of uid %d cannot be determined, so there is no canonical path to compare with" % uid)
+    canon = trust_canonical(home) if known else {"inbox": None, "db": None, "hk": None}
+    roots = trust_temp_roots(env, home if known else "") if test_mode else []
+    hk_roots = list(roots)
+    if test_mode and fixtures:
+        hk_roots.append(os.path.realpath(fixtures))
+    overrides = []
+
+    def judge(var, effective, canonical, label, allowed):
+        if any(ord(ch) < 32 or ord(ch) == 127 for ch in effective):
+            raise TrustRefusal(var, canonical, "%s selects a %s path holding a control character" % (var, label))
+        resolved = os.path.realpath(effective)
+        if not test_mode:
+            if resolved == os.path.realpath(canonical):
+                return canonical
+            raise TrustRefusal(var, canonical, "%s selects %s, which is not the canonical %s" % (var, effective, label))
+        if not any(trust_under(resolved, root) for root in allowed):
+            raise TrustRefusal(var, canonical, "%s selects %s, which resolves outside the temp roots (%s)" % (var, effective, " ".join(allowed)))
+        if var not in overrides:
+            overrides.append(var)
+        return effective if os.path.isabs(effective) else resolved
+
+    def under_home(*parts):
+        if home_env:
+            return os.path.join(home_env, *parts)
+        if test_mode:
+            raise TrustRefusal("HOME", canon["inbox"], "HOME is unset, so the default location would be the canonical path, which test mode never uses")
+        return os.path.join(home, *parts)
+
+    if home_env and not test_mode:
+        judge("HOME", home_env, home, "home", ())
+    inbox = judge("ARBITER_INBOX_ROOT" if inbox_env else "HOME",
+                  inbox_env or under_home("work", "herdr-inbox", "jobs"), canon["inbox"], "inbox", roots)
+    db = judge("XDG_DATA_HOME" if data_env else "HOME",
+               os.path.join(data_env or under_home(".local", "share"), "arbiter", "state.db"), canon["db"], "arbiter DB", roots)
+    hk = ""
+    if need_hk:
+        search = env.get("PATH") or os.defpath
+        if test_mode:
+            wanted = hk_env or "handoffkeep"
+            found = wanted if "/" in wanted else (shutil.which(wanted, path=search) or "")
+            if found:
+                hk = judge("HANDOFFKEEP_BIN" if hk_env else "PATH", found, canon["hk"], "handoffkeep", hk_roots)
+        else:
+            if hk_env:
+                found = hk_env if "/" in hk_env else (shutil.which(hk_env, path=search) or hk_env)
+                judge("HANDOFFKEEP_BIN", found, canon["hk"], "handoffkeep", ())
+            hk = trust_secure_binary(canon["hk"], uid)
+    return {"inbox": inbox, "db": db, "hk": hk, "overrides": overrides}
+# --- trust paths: end ---
+
+
+def enforce_trust() -> None:
+    """hk 1894: decide the canonical paths for a trust-bearing command, or refuse (exit 2)."""
+    global _TRUSTED
+    try:
+        home = pwd.getpwuid(os.getuid()).pw_dir
+    except (KeyError, OSError):
+        home = ""
+    test_mode = os.environ.get("WRK_TEST_MODE") == "1"
+    try:
+        decision = trust_resolve(os.environ, home, os.getuid(), test_mode, False)
+    except TrustRefusal as exc:
+        raise ArbiterError(EXIT_USAGE, f"refusing a trust-bearing command: {exc}") from exc
+    if decision["overrides"]:
+        print(f"{PROG}: warning: test mode honours overridden {' '.join(decision['overrides'])}; "
+              "the canonical paths are not used", file=sys.stderr)
+    _TRUSTED = decision
+
+
+def now_dt() -> dt.datetime:
+    # Fixtures can make the real artifact writer deterministic without a mock.
+    # This is deliberately opt-in and only affects callers that set the test
+    # clock explicitly.
+    fixed = os.environ.get("ARBITER_TEST_NOW") or ""
+    if fixed:
+        parsed = dt.datetime.fromisoformat(fixed)
+        if parsed.tzinfo is None:
+            raise ValueError("ARBITER_TEST_NOW must include a timezone")
+        return parsed.replace(microsecond=0)
+    return dt.datetime.now(dt.timezone.utc).replace(microsecond=0)
+
+
+def iso(moment: dt.datetime) -> str:
+    return moment.isoformat()
+
+
+def parse_iso(value: str) -> dt.datetime:
+    try:
+        parsed = dt.datetime.fromisoformat(value)
+    except ValueError as exc:
+        raise ArbiterError(EXIT_STORAGE, f"저장된 시각을 해석할 수 없다: {value!r}") from exc
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=dt.timezone.utc)
+
+
+def mask_token(token: str) -> str:
+    """fencing 시퀀스만 남기고 비밀부는 가린다(status·감사 출력용)."""
+    head = token.split("-", 1)[0]
+    return f"{head}-…"
+
+
+# --------------------------------------------------------------------- sqlite
+
+DDL = (
+    """
+    CREATE TABLE meta (
+        id             INTEGER PRIMARY KEY CHECK (id = 1),
+        schema_version INTEGER NOT NULL,
+        token_seq      INTEGER NOT NULL,
+        created_at     TEXT    NOT NULL
+    )
+    """,
+    """
+    CREATE TABLE jobs (
+        job_id     TEXT PRIMARY KEY,
+        owner_lane TEXT NOT NULL,
+        state      TEXT NOT NULL,
+        t_level    TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+    )
+    """,
+    """
+    CREATE TABLE quota_pool_records (
+        job_id    TEXT NOT NULL,
+        pool      TEXT NOT NULL,
+        profile   TEXT NOT NULL,
+        started_at TEXT NOT NULL,
+        PRIMARY KEY (job_id, pool)
+    )
+    """,
+    """
+    CREATE TABLE leases (
+        resource    TEXT NOT NULL,
+        kind        TEXT NOT NULL,
+        job_id      TEXT NOT NULL,
+        token       TEXT NOT NULL,
+        acquired_at TEXT NOT NULL,
+        expires_at  TEXT NOT NULL,
+        PRIMARY KEY (resource, kind)
+    )
+    """,
+    """
+    CREATE TABLE lease_history (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        resource    TEXT NOT NULL,
+        kind        TEXT NOT NULL,
+        job_id      TEXT NOT NULL,
+        token       TEXT NOT NULL,
+        acquired_at TEXT NOT NULL,
+        expires_at  TEXT NOT NULL,
+        state       TEXT NOT NULL,
+        recorded_at TEXT NOT NULL,
+        UNIQUE (resource, kind, token, state)
+    )
+    """,
+    """
+    CREATE TABLE events (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        job_id     TEXT    NOT NULL,
+        seq        INTEGER NOT NULL,
+        kind       TEXT    NOT NULL,
+        payload    TEXT    NOT NULL,
+        created_at TEXT    NOT NULL,
+        UNIQUE (job_id, seq)
+    )
+    """,
+)
+
+
+def _uri(path: Path, mode: str) -> str:
+    # 경로에 ? 나 # 이 있어도 안전하도록 최소 인용만 한다.
+    text = str(path).replace("?", "%3f").replace("#", "%23")
+    return f"file:{text}?mode={mode}"
+
+
+def _tune(con: sqlite3.Connection, *, writable: bool) -> None:
+    con.execute(f"PRAGMA busy_timeout={BUSY_TIMEOUT_MS}")
+    if writable:
+        con.execute("PRAGMA journal_mode=WAL")
+    else:
+        # 읽기 경로가 파일을 건드리면 추적이 불가능해진다(scopefuel 에서 배운 것).
+        con.execute("PRAGMA query_only=1")
+
+
+def connect_rw(*, bootstrap: bool = False) -> sqlite3.Connection:
+    path = db_path()
+    fresh = not path.exists()
+    if fresh:
+        if not bootstrap:
+            raise ArbiterError(
+                EXIT_STORAGE,
+                f"state db 가 없다: {path} — 'arbiter claim' 이 유일한 초기화 경로다",
+            )
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+        except OSError as exc:
+            raise ArbiterError(EXIT_STORAGE, f"state db 디렉터리를 만들 수 없다: {exc}") from exc
+    try:
+        con = sqlite3.connect(
+            _uri(path, "rwc" if bootstrap else "rw"),
+            uri=True,
+            timeout=BUSY_TIMEOUT_MS / 1000,
+            isolation_level=None,
+        )
+        _tune(con, writable=True)
+    except sqlite3.Error as exc:
+        raise ArbiterError(EXIT_STORAGE, f"state db 를 열 수 없다: {path}: {exc}") from exc
+    if fresh:
+        _create_schema(con)
+        print(f"{PROG}: initialized new state db at {path}", file=sys.stderr)
+    _check_schema(con)
+    return con
+
+
+def _wal_clean(path: Path) -> bool:
+    """WAL 에 미반영 프레임이 없고 WAL 인덱스도 없는가."""
+    shm = Path(f"{path}-shm")
+    wal = Path(f"{path}-wal")
+    if shm.exists():
+        return False
+    try:
+        return not wal.exists() or wal.stat().st_size == 0
+    except OSError:
+        return False
+
+
+def _open_ro(uri: str) -> sqlite3.Connection:
+    con = sqlite3.connect(uri, uri=True, timeout=BUSY_TIMEOUT_MS / 1000, isolation_level=None)
+    _tune(con, writable=False)
+    con.execute("SELECT 1 FROM sqlite_master LIMIT 1").fetchone()
+    return con
+
+
+def connect_ro() -> sqlite3.Connection:
+    path = db_path()
+    if not path.exists():
+        raise ArbiterError(EXIT_STORAGE, f"state db 가 없다: {path}")
+    uri = _uri(path, "ro")
+    try:
+        con = _open_ro(uri)
+    except sqlite3.Error as first:
+        # WAL 인덱스(-shm)가 없으면 read-only 연결은 그것을 만들 수 없다. WAL 에 미반영
+        # 프레임이 없을 때만 immutable 읽기로 대체한다 — 프레임이 있으면 일관된 읽기가
+        # 불가능하므로 추측하지 말고 거부한다.
+        if not _wal_clean(path):
+            raise ArbiterError(
+                EXIT_STORAGE, f"state db 를 읽을 수 없다: {path}: {first}"
+            ) from first
+        try:
+            con = _open_ro(f"{uri}&immutable=1")
+        except sqlite3.Error as exc:
+            raise ArbiterError(EXIT_STORAGE, f"state db 를 읽을 수 없다: {path}: {exc}") from exc
+    _check_schema(con)
+    return con
+
+
+def _create_schema(con: sqlite3.Connection) -> None:
+    con.execute("BEGIN IMMEDIATE")
+    for statement in DDL:
+        con.execute(statement)
+    con.execute(
+        "INSERT INTO meta (id, schema_version, token_seq, created_at) VALUES (1, ?, 0, ?)",
+        (SCHEMA_VERSION, iso(now_dt())),
+    )
+    con.execute("COMMIT")
+
+
+def _schema_mismatch_message(observed: object, detail: str | None = None) -> str:
+    suffix = f"; {detail}" if detail else ""
+    return (
+        f"schema mismatch: db_path={db_path()} observed_version={observed}"
+        f" expected_version={SCHEMA_VERSION} (db={observed} expected={SCHEMA_VERSION})"
+        "; action: back up the existing DB, then recreate it"
+        "; no automatic migration, deletion, or rollback is performed"
+        f"{suffix}"
+    )
+
+
+def _check_schema(con: sqlite3.Connection) -> None:
+    try:
+        row = con.execute("SELECT schema_version FROM meta WHERE id = 1").fetchone()
+    except sqlite3.Error as exc:
+        raise ArbiterError(
+            EXIT_STORAGE,
+            _schema_mismatch_message("unreadable", f"schema check failed: {exc}"),
+        ) from exc
+    if row is None:
+        raise ArbiterError(EXIT_STORAGE, _schema_mismatch_message("missing-meta-row"))
+    observed = row[0]
+    try:
+        observed_version = int(observed)
+    except (TypeError, ValueError) as exc:
+        raise ArbiterError(
+            EXIT_STORAGE,
+            _schema_mismatch_message(observed, "schema_version is not an integer"),
+        ) from exc
+    if observed_version != SCHEMA_VERSION:
+        raise ArbiterError(
+            EXIT_STORAGE,
+            _schema_mismatch_message(observed_version),
+        )
+
+
+def next_token(con: sqlite3.Connection) -> str:
+    """매 acquire 마다 새 값. 앞자리는 단조 증가 fencing 시퀀스."""
+    con.execute("UPDATE meta SET token_seq = token_seq + 1 WHERE id = 1")
+    seq = con.execute("SELECT token_seq FROM meta WHERE id = 1").fetchone()[0]
+    return f"{seq}-{secrets.token_hex(8)}"
+
+
+# --------------------------------------------------------------------- events
+
+
+def _events_directory(job_id: str) -> Path:
+    return inbox_root() / job_id / "events"
+
+
+def _directory_highest_seq(directory: Path) -> int:
+    """events 디렉터리의 최고 파일 prefix (없거나 읽을 수 없으면 0).
+
+    wrk 는 이 디렉터리에 자기 번호(최고 prefix + 1)로 파일을 쓴다. DB seq 만
+    보면 두 writer 가 같은 번호를 골라 한쪽 기록이 사라진다(#1750).
+    """
+    highest = 0
+    try:
+        names = os.listdir(directory)
+    except OSError:
+        return 0
+    for name in names:
+        try:
+            highest = max(highest, int(name.split("-", 1)[0]))
+        except (ValueError, IndexError):
+            pass
+    return highest
+
+
+def record_event(
+    con: sqlite3.Connection, job_id: str, kind: str, payload: dict, *, seq: int | None = None
+) -> int:
+    """events 행 + 인박스 artifact 를 한 트랜잭션 안에서 남긴다.
+
+    artifact 는 임시 파일에 쓴 뒤 hard-link 로 제출한다(부분 쓰기 소비 금지,
+    기존 파일 덮어쓰기 금지). 자동 번호는 DB 의 MAX(seq) 와 디렉터리 최고
+    prefix 중 큰 값 + 1 이다 — wrk 도 같은 디렉터리에 번호를 매기므로 DB 만
+    보면 두 writer 가 같은 번호를 쓴다. 중복 소비는 DB 의 UNIQUE(job_id, seq)
+    가 막는다: INSERT 가 실패하면 artifact 는 만들어지지 않고, 같은 이름이
+    이미 있으면 덮어쓰지 않고 실패한다. 번호 계산과 제출은 wrk 와 같은
+    events lock(jobdir/.wrk-events.lock) 아래에서 일어난다.
+    """
+    directory = _events_directory(job_id)
+    try:
+        directory.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        raise ArbiterError(EXIT_STORAGE, f"event 디렉터리를 만들 수 없다: {exc}") from exc
+    lock_path = directory.parent / ".wrk-events.lock"
+    try:
+        lock = lock_path.open("w", encoding="utf-8")
+    except OSError as exc:
+        raise ArbiterError(EXIT_STORAGE, f"event lock 을 열 수 없다: {exc}") from exc
+    with lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        if seq is None:
+            row = con.execute(
+                "SELECT COALESCE(MAX(seq), 0) FROM events WHERE job_id = ?", (job_id,)
+            ).fetchone()
+            seq = max(int(row[0]), _directory_highest_seq(directory)) + 1
+        created_at = iso(now_dt())
+        body = json.dumps(
+            {"job_id": job_id, "seq": seq, "kind": kind, "payload": payload, "created_at": created_at},
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+        try:
+            con.execute(
+                "INSERT INTO events (job_id, seq, kind, payload, created_at) VALUES (?, ?, ?, ?, ?)",
+                (job_id, seq, kind, body, created_at),
+            )
+        except sqlite3.IntegrityError as exc:
+            raise ArbiterError(
+                EXIT_DUPLICATE,
+                f"event 중복: job_id={job_id} seq={seq} 는 이미 존재한다",
+                job_id=job_id,
+                seq=seq,
+            ) from exc
+        _write_artifact(directory, seq, kind, body)
+    return seq
+
+
+def _safe_kind(kind: str) -> str:
+    """The events file-name form of a kind. cmd_event applies the same rule to refuse claim kinds."""
+    return re.sub(r"[^A-Za-z0-9._-]", "_", kind)
+
+
+def _write_artifact(directory: Path, seq: int, kind: str, body: str) -> Path:
+    safe_kind = _safe_kind(kind)
+    final = directory / f"{seq:05d}-{safe_kind}.json"
+    handle = tempfile.NamedTemporaryFile(
+        "w", encoding="utf-8", dir=directory, prefix=".tmp-", suffix=".json", delete=False
+    )
+    try:
+        with handle:
+            handle.write(body + "\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        try:
+            os.link(handle.name, final)
+        except FileExistsError as exc:
+            raise ArbiterError(
+                EXIT_DUPLICATE, f"event artifact 이름이 이미 있다: {final}"
+            ) from exc
+        except OSError:
+            # Hard links unavailable: create the final name exclusively. Never
+            # os.replace — another writer's record must not be overwritten.
+            try:
+                fd = os.open(final, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            except FileExistsError as exc:
+                raise ArbiterError(
+                    EXIT_DUPLICATE, f"event artifact 이름이 이미 있다: {final}"
+                ) from exc
+            with os.fdopen(fd, "w", encoding="utf-8") as out:
+                out.write(body + "\n")
+                out.flush()
+                os.fsync(out.fileno())
+        fd = os.open(directory, os.O_RDONLY)
+        try:
+            os.fsync(fd)
+        finally:
+            os.close(fd)
+    except ArbiterError:
+        raise
+    except OSError as exc:
+        raise ArbiterError(EXIT_STORAGE, f"event artifact 를 제출할 수 없다: {exc}") from exc
+    finally:
+        try:
+            os.unlink(handle.name)
+        except OSError:
+            pass
+    return final
+
+
+# ------------------------------------------------------------------ scopefuel
+
+
+def scopefuel_bin() -> str:
+    explicit = os.environ.get("SCOPEFUEL_BIN") or ""
+    if explicit:
+        return explicit
+    # scopefuel 은 퇴역(2026-10-30). pacelever 가 같은 scopefuel.v1 --json 과
+    # gate 를 낸다. PATH 의 scopefuel 이 먼저다: 테스트는 가짜 scopefuel 을 PATH
+    # 에 두고, 운영 호스트에는 scopefuel 이 없으므로 pacelever 로 떨어진다.
+    found = shutil.which("scopefuel") or shutil.which("pacelever")
+    if not found:
+        raise ArbiterError(
+            EXIT_STORAGE,
+            "pacelever(또는 scopefuel) 를 찾을 수 없다 — quota pool 정본이 없으면 lease 를 발급하지 않는다",
+        )
+    return found
+
+
+def _run(argv: list[str]) -> subprocess.CompletedProcess:
+    try:
+        return subprocess.run(argv, capture_output=True, text=True)
+    except OSError as exc:
+        raise ArbiterError(EXIT_STORAGE, f"실행할 수 없다: {argv[0]}: {exc}") from exc
+
+
+def known_pools() -> set[str]:
+    """`scopefuel --json`(schema=scopefuel.v1) 이 pool 목록의 정본이다."""
+    proc = _run([scopefuel_bin(), "--json"])
+    try:
+        payload = json.loads(proc.stdout)
+        if not isinstance(payload, dict) or payload.get("schema") != "scopefuel.v1":
+            raise ValueError("schema 가 scopefuel.v1 이 아니다")
+        providers = payload.get("providers")
+        if not isinstance(providers, list):
+            raise ValueError("providers 가 목록이 아니다")
+        pools: set[str] = set()
+        for provider in providers:
+            if not isinstance(provider, dict) or not isinstance(provider.get("id"), str):
+                raise ValueError("provider id 가 문자열이 아니다")
+            if provider["id"]:
+                pools.add(provider["id"])
+    except (ValueError, KeyError, TypeError) as exc:
+        stderr = proc.stderr.strip()
+        detail = f"exit {proc.returncode}"
+        if stderr:
+            detail += f": {stderr}"
+        raise ArbiterError(EXIT_STORAGE, f"scopefuel --json 을 해석할 수 없다 ({detail}): {exc}") from exc
+    if not pools:
+        raise ArbiterError(EXIT_STORAGE, "scopefuel --json 에 provider 가 없다")
+    return pools
+
+
+def read_gate_output(profile: str, gate_output: str | None) -> str:
+    """`scopefuel gate` stdout 정본을 한 번 읽어 돌려준다.
+
+    호출자(`wrk`)는 방금 통과한 `scopefuel gate` 의 stdout 을 `--gate-output` 으로 넘긴다
+    (게이트 재실행 없음). 직접 호출 시에는 arbiter 가 gate 를 한 번 실행해 같은 정본을 읽는다.
+    """
+    if gate_output is not None:
+        try:
+            return sys.stdin.read() if gate_output == "-" else Path(gate_output).read_text("utf-8")
+        except OSError as exc:
+            raise ArbiterError(EXIT_STORAGE, f"gate output 을 읽을 수 없다: {exc}") from exc
+    proc = _run([scopefuel_bin(), "gate", "-m", profile])
+    if proc.returncode != 0:
+        raise ArbiterError(
+            EXIT_DENIED,
+            f"scopefuel gate 거부(exit {proc.returncode}): {proc.stderr.strip()}",
+        )
+    return proc.stdout
+
+
+def resolve_pool(profile: str, gate_text: str) -> str:
+    """profile → quota pool. 매핑 정본은 scopefuel 이며 arbiter 는 그것을 해석만 한다.
+
+    어느 경우든 wrk 에는 pool 매핑이 존재하지 않는다.
+    """
+    seen_profile = re.search(r"\bprofile=(\S+)", gate_text)
+    if seen_profile and seen_profile.group(1) != profile:
+        raise ArbiterError(
+            EXIT_STORAGE,
+            f"gate output 의 profile 이 다르다: {seen_profile.group(1)!r} != {profile!r}",
+        )
+    match = re.search(r"\bpool=(\S+)", gate_text)
+    if not match:
+        raise ArbiterError(
+            EXIT_STORAGE, f"gate output 에서 pool 을 찾을 수 없다 (profile={profile})"
+        )
+    pool = match.group(1)
+    pools = known_pools()
+    if pool not in pools:
+        raise ArbiterError(
+            EXIT_STORAGE,
+            f"pool {pool!r} 이 scopefuel --json 의 provider 목록에 없다 — 매핑 드리프트",
+        )
+    return pool
+
+
+# gate stdout 에만 나타나는 선택 감사 필드. 값은 게이트가 출력한 토큰을 그대로 옮긴다 —
+# 특히 ref_resolution 은 "기록된 주장이며 신원·동의 증명이 아니다"라는 게이트 자체
+# 라벨이므로 요약·정규화·생략하면 unverified 주장이 검증된 동의로 승격된다.
+GATE_AUDIT_KEYS = (
+    "escalation_override",
+    "operator_request_ref",
+    "requested_by",
+    "ref_resolution",
+)
+
+
+def gate_audit_fields(gate_text: str) -> dict:
+    """감사 키를 게이트 출력에서 그대로 옮긴다 — 단, 서로 다른 값이 공존하면 거부.
+
+    정상 게이트 출력은 같은 키=값 쌍을 주석 줄에서 한 번 더 반복할 수 있으므로
+    값이 동일한 반복은 허용한다. 그러나 REF 값에 `ref_resolution=verified` 같은
+    토큰이 밀려 들어와 게이트 자체 라벨과 다른 값이 공존하면 어느 쪽을 골라도
+    기록이 위조된다 — 첫 매치를 받는 대신 기록 자체를 거부한다(fail-closed).
+    """
+    fields = {}
+    for key in GATE_AUDIT_KEYS:
+        values = set(re.findall(rf"\b{key}=(\S+)", gate_text))
+        if len(values) > 1:
+            raise ArbiterError(
+                EXIT_STORAGE,
+                f"gate output 의 {key} 값이 서로 다르다 {sorted(values)} — 주입된 감사 토큰을 기록하지 않는다",
+            )
+        if values:
+            fields[key] = values.pop()
+    return fields
+
+
+# ---------------------------------------------------------------------- lease
+
+
+def _lease_row(con: sqlite3.Connection, resource: str, kind: str):
+    return con.execute(
+        "SELECT resource, kind, job_id, token, acquired_at, expires_at"
+        " FROM leases WHERE resource = ? AND kind = ?",
+        (resource, kind),
+    ).fetchone()
+
+
+def _quota_pool_row(con: sqlite3.Connection, job_id: str, pool: str):
+    return con.execute(
+        "SELECT job_id, pool, profile, started_at"
+        " FROM quota_pool_records WHERE job_id = ? AND pool = ?",
+        (job_id, pool),
+    ).fetchone()
+
+
+def _orphan_state(con: sqlite3.Connection, job_id: str):
+    job = con.execute(
+        "SELECT state FROM jobs WHERE job_id = ?", (job_id,)
+    ).fetchone()
+    leases = con.execute(
+        "SELECT resource, kind FROM leases WHERE job_id = ? ORDER BY resource, kind",
+        (job_id,),
+    ).fetchall()
+    quotas = con.execute(
+        "SELECT pool FROM quota_pool_records WHERE job_id = ? ORDER BY pool",
+        (job_id,),
+    ).fetchall()
+    eligible = bool(job and job[0] == "leased" and not leases and not quotas)  # hk1991-orphan-release
+    return job, leases, quotas, eligible
+
+
+def _job_state_claim_snapshot(con: sqlite3.Connection, job_id: str):
+    job = con.execute("SELECT state FROM jobs WHERE job_id = ?", (job_id,)).fetchone()
+    if job is None:
+        return None
+    claim = con.execute(
+        "SELECT MAX(seq) FROM events WHERE job_id = ? AND kind IN ('job.claim', 'job.reclaim')",
+        (job_id,),
+    ).fetchone()
+    return job[0], claim[0]
+
+
+def _capture_job_state_claim_snapshots() -> dict[str, tuple[str, int | None]]:
+    con = connect_ro()
+    try:
+        con.execute("BEGIN")
+        rows = con.execute(
+            "SELECT j.job_id, j.state, MAX(e.seq)"
+            " FROM jobs AS j LEFT JOIN events AS e ON e.job_id = j.job_id"
+            " AND e.kind IN ('job.claim', 'job.reclaim') GROUP BY j.job_id, j.state"
+        ).fetchall()
+        con.execute("COMMIT")
+        return {job_id: (state, claim_seq) for job_id, state, claim_seq in rows}
+    except BaseException:
+        con.execute("ROLLBACK")
+        raise
+    finally:
+        con.close()
+
+
+def _capture_one_job_state_claim_snapshot(job_id: str):
+    con = connect_ro()
+    try:
+        con.execute("BEGIN")
+        snapshot = _job_state_claim_snapshot(con, job_id)
+        con.execute("COMMIT")
+        return snapshot
+    except BaseException:
+        con.execute("ROLLBACK")
+        raise
+    finally:
+        con.close()
+
+
+def _job_claim_snapshot_matches(before, current) -> bool:
+    return before is not None and before == current
+
+
+def _orphan_startup_blocker(
+    con: sqlite3.Connection, job_id: str, moment: dt.datetime
+) -> str | None:
+    rows = con.execute(
+        "SELECT kind, created_at FROM events WHERE job_id = ?"
+        " AND kind IN ('job.claim', 'job.reclaim', 'job.spawned')",
+        (job_id,),
+    ).fetchall()
+    claim_times = []
+    spawn_times = []
+    for kind, created_at in rows:
+        timestamp = parse_iso(created_at)
+        if kind in {"job.claim", "job.reclaim"}:
+            claim_times.append(timestamp)
+        elif kind == "job.spawned":
+            spawn_times.append(timestamp)
+    if not claim_times:
+        return "claim timestamp unavailable; retaining during startup grace"
+    if moment - max(claim_times) < ORPHAN_STARTUP_GRACE:
+        return "latest claim/reclaim is inside the 10-minute startup grace"
+    if spawn_times and moment - max(spawn_times) < ORPHAN_STARTUP_GRACE:
+        return "latest spawn is inside the 10-minute startup grace"
+    return None
+
+
+def _gc_skip(skipped: list[dict[str, object]], job_id: str, reason: str) -> None:
+    skipped.append({"job_id": job_id, "reason": reason})
+
+
+def _archive(con: sqlite3.Connection, row, state: str, moment: dt.datetime) -> bool:
+    cur = con.execute(
+        "INSERT OR IGNORE INTO lease_history"
+        " (resource, kind, job_id, token, acquired_at, expires_at, state, recorded_at)"
+        " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        (row[0], row[1], row[2], row[3], row[4], row[5], state, iso(moment)),
+    )
+    return cur.rowcount > 0
+
+
+def _require_job(con: sqlite3.Connection, job_id: str) -> None:
+    row = con.execute("SELECT job_id FROM jobs WHERE job_id = ?", (job_id,)).fetchone()
+    if row is None:
+        raise ArbiterError(EXIT_DENIED, f"job 이 등록되지 않았다: {job_id} — 먼저 claim 하라")
+
+
+# ------------------------------------------------------------------- commands
+
+
+def _claim_task_fields(args: argparse.Namespace, payload: dict) -> None:
+    # #768 task-job linkage: optional, additive fields. The hk task id is an
+    # integer on the hk side; keep the same type in the job meta so consumers
+    # can match `task.id == claim.task_id` without coercion. A non-numeric
+    # value is stored verbatim rather than rejected — the flag is audit
+    # metadata, not a gate.
+    if args.task_id is not None:
+        payload["task_id"] = int(args.task_id) if args.task_id.isdigit() else args.task_id
+    if args.task_link_override is not None:
+        payload["task_link_override"] = args.task_link_override
+    if args.task_inherited_from is not None:
+        payload["task_inherited_from"] = args.task_inherited_from
+
+
+def cmd_claim(args: argparse.Namespace) -> dict:
+    con = connect_rw(bootstrap=True)
+    moment = now_dt()
+    claimed_at = iso(moment)
+    reclaimed = False
+    previous_created_at: str | None = None
+    con.execute("BEGIN IMMEDIATE")
+    try:
+        row = con.execute(
+            "SELECT owner_lane, state, t_level, created_at FROM jobs WHERE job_id = ?",
+            (args.job,),
+        ).fetchone()
+        if row is not None:
+            if not args.reclaim_released or row[1] != "released":
+                raise ArbiterError(
+                    EXIT_DUPLICATE,
+                    f"job 중복: {args.job} 은 이미 등록됐다"
+                    f" (lane={row[0]} state={row[1]} t={row[2]} created_at={row[3]})",
+                    job=args.job,
+                    owner_lane=row[0],
+                    state=row[1],
+                    t_level=row[2],
+                    created_at=row[3],
+                )
+            # The row is evidence, not a disposable reservation. BEGIN
+            # IMMEDIATE makes the released -> claimed test/update atomic.
+            reclaimed = True
+            previous_created_at = row[3]
+            claimed_at = row[3]
+            con.execute(
+                "UPDATE jobs SET owner_lane = ?, state = 'claimed', t_level = ?, updated_at = ?"
+                " WHERE job_id = ?",
+                (args.lane, args.t, iso(moment), args.job),
+            )
+            claim_payload = {
+                "owner_lane": args.lane,
+                "t_level": args.t,
+                "role": args.role,
+                "parent_lane": args.parent_lane,
+                "previous_created_at": row[3],
+                "previous_owner_lane": row[0],
+                "agent_label": args.agent_label or args.job,
+            }
+            _claim_task_fields(args, claim_payload)
+            seq = record_event(
+                con,
+                args.job,
+                "job.reclaim",
+                claim_payload,
+            )
+        else:
+            con.execute(
+                "INSERT INTO jobs (job_id, owner_lane, state, t_level, created_at, updated_at)"
+                " VALUES (?, ?, 'claimed', ?, ?, ?)",
+                (args.job, args.lane, args.t, iso(moment), iso(moment)),
+            )
+            claim_payload = {
+                "owner_lane": args.lane,
+                "t_level": args.t,
+                "role": args.role,
+                "parent_lane": args.parent_lane,
+                # Herdr does not expose ARBITER_JOB. Persist the exact
+                # agent identity in the existing claim event instead of
+                # adding a schema column or guessing from a prefix.
+                "agent_label": args.agent_label or args.job,
+            }
+            _claim_task_fields(args, claim_payload)
+            seq = record_event(
+                con,
+                args.job,
+                "job.claim",
+                claim_payload,
+            )
+        con.execute("COMMIT")
+    except BaseException:
+        con.execute("ROLLBACK")
+        raise
+    result = {
+        "ok": True,
+        "job": args.job,
+        "owner_lane": args.lane,
+        "t_level": args.t,
+        "state": "claimed",
+        "agent_label": args.agent_label or args.job,
+        "role": args.role,
+        "parent_lane": args.parent_lane,
+        "created_at": claimed_at,
+        "updated_at": iso(moment),
+        "event_seq": seq,
+    }
+    if reclaimed:
+        result["reclaimed"] = True
+        result["previous_created_at"] = previous_created_at
+    return result
+
+
+def cmd_lease(args: argparse.Namespace) -> dict:
+    if (args.resource is None) == (args.profile is None):
+        raise ArbiterError(EXIT_USAGE, "--resource 와 --profile 중 정확히 하나가 필요하다")
+    if args.profile is not None and args.kind != "quota_pool":
+        raise ArbiterError(EXIT_USAGE, "--profile 은 --kind quota_pool 에서만 쓴다")
+    if args.gate_output is not None and args.profile is None:
+        raise ArbiterError(EXIT_USAGE, "--gate-output 은 --profile 과 함께 쓴다")
+    if args.kind == "quota_pool":
+        if args.profile is None:
+            raise ArbiterError(
+                EXIT_USAGE,
+                "quota_pool 기록은 --profile 이 필요하다 — pool 매핑을 추측하지 않는다",
+            )
+        if args.ttl_min is not None:
+            raise ArbiterError(EXIT_USAGE, "quota_pool 기록에는 TTL을 지정하지 않는다")
+
+    resource = args.resource
+    resolved_from = "resource"
+    gate_fields: dict = {}
+    if args.profile is not None:
+        gate_text = read_gate_output(args.profile, args.gate_output)
+        resource = resolve_pool(args.profile, gate_text)
+        resolved_from = f"scopefuel:{args.profile}"
+        gate_fields = gate_audit_fields(gate_text)
+
+    con = connect_rw()
+    moment = now_dt()
+
+    if args.kind == "quota_pool":
+        con.execute("BEGIN IMMEDIATE")
+        try:
+            _require_job(con, args.job)
+            try:
+                con.execute(
+                    "INSERT INTO quota_pool_records (job_id, pool, profile, started_at)"
+                    " VALUES (?, ?, ?, ?)",
+                    (args.job, resource, args.profile, iso(moment)),
+                )
+            except sqlite3.IntegrityError as exc:
+                raise ArbiterError(
+                    EXIT_DUPLICATE,
+                    f"quota_pool 기록 중복: job={args.job} pool={resource}",
+                    job=args.job,
+                    pool=resource,
+                    profile=args.profile,
+                ) from exc
+            con.execute(
+                "UPDATE jobs SET state = 'leased', updated_at = ? WHERE job_id = ?",
+                (iso(moment), args.job),
+            )
+            seq = record_event(
+                con,
+                args.job,
+                "quota_pool.record",
+                {
+                    "job_id": args.job,
+                    "pool": resource,
+                    "profile": args.profile,
+                    **(
+                        {"launch_profile": args.launch_profile}
+                        if getattr(args, "launch_profile", None)
+                        else {}
+                    ),
+                    # 게이트가 출력한 선택 감사 필드를 그대로 잔존시킨다 —
+                    # wrk/arbiter 어느 쪽도 값을 재판정하지 않는다.
+                    **gate_fields,
+                    "started_at": iso(moment),
+                },
+            )
+            con.execute("COMMIT")
+        except BaseException:
+            con.execute("ROLLBACK")
+            raise
+        return {
+            "ok": True,
+            "job_id": args.job,
+            "pool": resource,
+            "profile": args.profile,
+            "started_at": iso(moment),
+            "resolved_from": resolved_from,
+            "event_seq": seq,
+        }
+
+    ttl_min = DEFAULT_TTL_MIN[args.kind] if args.ttl_min is None else args.ttl_min
+    expires = moment + dt.timedelta(minutes=ttl_min)
+    con.execute("BEGIN IMMEDIATE")
+    try:
+        _require_job(con, args.job)
+        held = _lease_row(con, resource, args.kind)
+        if held is not None and parse_iso(held[5]) > moment:
+            raise ArbiterError(
+                EXIT_DENIED,
+                f"lease 점유 중: {resource}/{args.kind} 는 job={held[2]} 가"
+                f" {held[5]} 까지 보유한다",
+                resource=resource,
+                kind=args.kind,
+                held_by=held[2],
+                expires_at=held[5],
+            )
+        if held is not None:
+            # 만료 세대는 감사 증거로 lease_history 에 보존한 뒤에만 덮어쓴다.
+            _archive(con, held, "superseded", moment)
+            con.execute("DELETE FROM leases WHERE resource = ? AND kind = ?", (resource, args.kind))
+        token = next_token(con)
+        con.execute(
+            "INSERT INTO leases (resource, kind, job_id, token, acquired_at, expires_at)"
+            " VALUES (?, ?, ?, ?, ?, ?)",
+            (resource, args.kind, args.job, token, iso(moment), iso(expires)),
+        )
+        con.execute(
+            "UPDATE jobs SET state = 'leased', updated_at = ? WHERE job_id = ?",
+            (iso(moment), args.job),
+        )
+        seq = record_event(
+            con,
+            args.job,
+            "lease.acquire",
+            {
+                "resource": resource,
+                "kind": args.kind,
+                "resolved_from": resolved_from,
+                "token": mask_token(token),
+                "expires_at": iso(expires),
+                "superseded": None if held is None else held[2],
+            },
+        )
+        con.execute("COMMIT")
+    except BaseException:
+        con.execute("ROLLBACK")
+        raise
+    return {
+        "ok": True,
+        "job": args.job,
+        "resource": resource,
+        "kind": args.kind,
+        "resolved_from": resolved_from,
+        "token": token,
+        "acquired_at": iso(moment),
+        "expires_at": iso(expires),
+        "ttl_min": ttl_min,
+        "event_seq": seq,
+    }
+
+
+def cmd_release(args: argparse.Namespace) -> dict:
+    if args.resource is None:
+        if not args.force or args.kind is not None or args.token is not None:
+            raise ArbiterError(
+                EXIT_USAGE,
+                "--resource may be omitted only for --force --job orphan release",
+            )
+        return _release_orphan_job(args)
+
+    con = connect_rw()
+    moment = now_dt()
+    con.execute("BEGIN IMMEDIATE")
+    try:
+        if args.kind == "quota_pool":
+            row = _quota_pool_row(con, args.job, args.resource)
+            if row is None:
+                raise ArbiterError(
+                    EXIT_FENCING,
+                    f"반납할 quota_pool 기록이 없다: job={args.job} pool={args.resource}",
+                )
+            forced = bool(args.force)
+            con.execute(
+                "DELETE FROM quota_pool_records WHERE job_id = ? AND pool = ?",
+                (row[0], row[1]),
+            )
+            con.execute(
+                "UPDATE jobs SET state = 'released', updated_at = ? WHERE job_id = ?",
+                (iso(moment), row[0]),
+            )
+            seq = record_event(
+                con,
+                row[0],
+                "quota_pool.release.force" if forced else "quota_pool.release",
+                {
+                    "job_id": row[0],
+                    "pool": row[1],
+                    "profile": row[2],
+                    "started_at": row[3],
+                    "forced": forced,
+                },
+            )
+            con.execute("COMMIT")
+            return {
+                "ok": True,
+                "job_id": row[0],
+                "pool": row[1],
+                "profile": row[2],
+                "started_at": row[3],
+                "released_at": iso(moment),
+                "forced": forced,
+                "event_seq": seq,
+            }
+
+        if args.kind is not None:
+            rows = [r for r in [_lease_row(con, args.resource, args.kind)] if r is not None]
+        else:
+            rows = con.execute(
+                "SELECT resource, kind, job_id, token, acquired_at, expires_at"
+                " FROM leases WHERE resource = ?",
+                (args.resource,),
+            ).fetchall()
+        if not rows:
+            raise ArbiterError(
+                EXIT_FENCING,
+                f"반납할 lease 가 없다: {args.resource}"
+                + ("" if args.kind is None else f"/{args.kind}"),
+            )
+        if len(rows) > 1:
+            raise ArbiterError(
+                EXIT_USAGE,
+                f"{args.resource} 에 kind 가 {len(rows)}개다 — --kind 로 지정하라",
+            )
+        row = rows[0]
+        if not args.force and not args.token:
+            raise ArbiterError(EXIT_USAGE, "일반 lease 반납에는 --token 이 필요하다(--force 는 예외)")
+        if not args.force and (row[2] != args.job or row[3] != args.token):
+            raise ArbiterError(
+                EXIT_FENCING,
+                f"stale owner 거부: {args.resource}/{row[1]} 의 현 소유자는"
+                f" job={row[2]} token={mask_token(row[3])} 이다",
+                resource=args.resource,
+                kind=row[1],
+                held_by=row[2],
+                held_token=mask_token(row[3]),
+            )
+        forced = bool(args.force)
+        _archive(con, row, "force-released" if forced else "released", moment)
+        con.execute("DELETE FROM leases WHERE resource = ? AND kind = ?", (row[0], row[1]))
+        con.execute(
+            "UPDATE jobs SET state = 'released', updated_at = ? WHERE job_id = ?",
+            (iso(moment), row[2]),
+        )
+        seq = record_event(
+            con,
+            row[2],
+            "lease.release.force" if forced else "lease.release",
+            {
+                "resource": row[0],
+                "kind": row[1],
+                "token": mask_token(row[3]),
+                "forced": forced,
+            },
+        )
+        con.execute("COMMIT")
+    except BaseException:
+        con.execute("ROLLBACK")
+        raise
+    return {
+        "ok": True,
+        "job": args.job,
+        "resource": row[0],
+        "kind": row[1],
+        "released_at": iso(moment),
+        "forced": forced,
+        "event_seq": seq,
+    }
+
+
+def _herdr_agents(source: str | None) -> list[dict[str, object]]:
+    """Read and normalize Herdr's authoritative agent list.
+
+    The list has no ARBITER_JOB field today, so callers must match a persisted
+    exact label/name identity.  This function deliberately keeps identities
+    fielded rather than flattening them into a fuzzy set.
+    """
+    if source:
+        try:
+            text = Path(source).read_text(encoding="utf-8")
+        except (OSError, UnicodeError) as exc:
+            raise ArbiterError(EXIT_STORAGE, f"herdr agent list 를 읽을 수 없다: {exc}") from exc
+    else:
+        herdr = os.environ.get("HERDR_BIN") or shutil.which("herdr")
+        if not herdr:
+            raise ArbiterError(EXIT_STORAGE, "herdr agent list 를 실행할 수 없다: herdr 없음")
+        try:
+            proc = _run([herdr, "agent", "list"])
+        except ArbiterError as exc:
+            raise ArbiterError(
+                EXIT_STORAGE, f"herdr agent list 를 실행할 수 없다: {exc.message}"
+            ) from exc
+        if proc.returncode != 0:
+            raise ArbiterError(
+                EXIT_STORAGE,
+                f"herdr agent list 실패(exit {proc.returncode}): {proc.stderr.strip()}",
+            )
+        text = proc.stdout
+    try:
+        payload = json.loads(text)
+        result = payload.get("result", payload)
+        agents = result["agents"]
+    except (AttributeError, ValueError, KeyError, TypeError) as exc:
+        raise ArbiterError(EXIT_STORAGE, f"herdr agent list JSON 을 해석할 수 없다: {exc}") from exc
+    if not isinstance(agents, list):
+        raise ArbiterError(EXIT_STORAGE, "herdr agent list 의 agents 가 목록이 아니다")
+
+    normalized: list[dict[str, object]] = []
+    for agent in agents:
+        if not isinstance(agent, dict):
+            raise ArbiterError(EXIT_STORAGE, "herdr agent list 의 agent 항목이 객체가 아니다")
+        status = agent.get("agent_status")
+        if not isinstance(status, str) or status not in HERDR_AGENT_STATUSES:
+            raise ArbiterError(
+                EXIT_STORAGE,
+                f"herdr agent list 의 agent_status 를 해석할 수 없다: {status!r}"
+                f" (expected one of {sorted(HERDR_AGENT_STATUSES)})",
+            )
+        identities: dict[str, str] = {}
+        for key in ("job_id", "name", "label"):
+            value = agent.get(key)
+            if value is None:
+                continue
+            if not isinstance(value, str):
+                raise ArbiterError(
+                    EXIT_STORAGE,
+                    f"herdr agent list 의 {key} 가 문자열이 아니다: {value!r}",
+                )
+            if value:
+                identities[key] = value
+        normalized.append({"status": status, "identities": identities})
+    return normalized
+
+
+def _claim_agent_label(con: sqlite3.Connection, job_id: str) -> str | None:
+    """Read the current exact Herdr identity from claim/reclaim evidence.
+
+    Older v2 claim events predate the optional mapping and therefore return
+    ``None``.  GC must refuse those records rather than infer a label from a
+    job-id prefix or from the number/order of agents.
+    """
+    rows = con.execute(
+        "SELECT kind, payload FROM events WHERE job_id = ?"
+        " AND kind IN ('job.claim', 'job.reclaim') ORDER BY seq",
+        (job_id,),
+    ).fetchall()
+    label_at_latest_claim: str | None = None
+    original_claim_labels: set[str] = set()
+    for kind, body in rows:
+        try:
+            event = json.loads(body)
+        except (TypeError, ValueError) as exc:
+            raise ArbiterError(
+                EXIT_STORAGE,
+                f"job claim/reclaim event 를 해석할 수 없다: job={job_id} kind={kind}: {exc}",
+            ) from exc
+        payload = event.get("payload") if isinstance(event, dict) else None
+        if not isinstance(payload, dict):
+            continue
+        label = payload.get("agent_label")
+        if label is None:
+            continue
+        if not isinstance(label, str) or not label:
+            raise ArbiterError(
+                EXIT_STORAGE,
+                f"job claim/reclaim event 의 agent_label 이 유효하지 않다: job={job_id}",
+            )
+        # A reclaim intentionally changes the current worker identity while
+        # retaining the old claim event for audit.
+        if kind == "job.claim":
+            original_claim_labels.add(label)
+        label_at_latest_claim = label
+    # Preserve the old corruption guard for the original claim evidence.
+    # Reclaim labels may intentionally differ, so they do not enter this set.
+    if len(original_claim_labels) > 1:
+        raise ArbiterError(
+            EXIT_STORAGE,
+            f"job.claim event 의 agent_label 이 모호하다: job={job_id} labels={sorted(original_claim_labels)}",
+        )
+    return label_at_latest_claim
+
+
+def _matched_agent_statuses(
+    agents: list[dict[str, object]], *, job_id: str, agent_label: str
+) -> tuple[set[str], bool]:
+    """Return statuses for agents matching the exact persisted identity.
+
+    ``agent_label`` is matched only against Herdr's name/label fields.  A
+    future Herdr ``job_id`` field is accepted only when the persisted identity
+    itself is that exact job id (the default claim mapping), never by prefix.
+    """
+    statuses: set[str] = set()
+    matched = False
+    for agent in agents:
+        identities = agent["identities"]
+        status = agent["status"]
+        if not isinstance(identities, dict) or not isinstance(status, str):
+            raise ArbiterError(EXIT_STORAGE, "internal Herdr agent normalization error")
+        name_match = agent_label in {identities.get("name"), identities.get("label")}
+        job_id_match = agent_label == job_id and identities.get("job_id") == job_id
+        if name_match or job_id_match:
+            matched = True
+            statuses.add(status)
+    return statuses, matched
+
+
+def _release_orphan_job(args: argparse.Namespace) -> dict:
+    # The agent list is a hermetic fixture seam, matching gc. Read it before
+    # BEGIN IMMEDIATE; compare the job snapshot afterward so a reclaim during
+    # the external read cannot be released using stale Herdr evidence.
+    snapshot = _capture_one_job_state_claim_snapshot(args.job)
+    herdr_agents = _herdr_agents(args.herdr_agent_list)
+    con = connect_rw()
+    con.execute("BEGIN IMMEDIATE")
+    try:
+        current_snapshot = _job_state_claim_snapshot(con, args.job)
+        if (snapshot is not None or current_snapshot is not None) and not _job_claim_snapshot_matches(
+            snapshot, current_snapshot
+        ):
+            raise ArbiterError(
+                EXIT_FENCING,
+                "orphan release refused: job state or claim sequence changed after Herdr snapshot "
+                f"(job={args.job} before={snapshot} current={current_snapshot})",
+                job_id=args.job,
+            )
+        job, lease_rows, quota_rows, eligible = _orphan_state(con, args.job)
+        if job is None:
+            raise ArbiterError(EXIT_NOT_FOUND, f"job not found: {args.job}", job_id=args.job)
+        moment = now_dt()
+        prior_state = job[0]
+        agent_label = _claim_agent_label(con, args.job)
+        if agent_label is None:
+            raise ArbiterError(
+                EXIT_STORAGE,
+                "orphan release identity reconciliation refused; job.claim has no exact "
+                f"agent_label mapping (unmapped={args.job})",
+            )
+        statuses, matched = _matched_agent_statuses(
+            herdr_agents, job_id=args.job, agent_label=agent_label
+        )
+        blockers = []
+        if prior_state != "leased":
+            blockers.append(f"job state={prior_state} (expected leased)")
+        if "unknown" in statuses:
+            blockers.append(f"agent={agent_label} herdr_status=unknown")
+        elif matched:
+            blockers.append(
+                f"agent={agent_label} herdr_status={','.join(sorted(statuses))} "
+                "(pane exists)"
+            )
+        blockers.extend(f"lease={resource}/{kind}" for resource, kind in lease_rows)
+        blockers.extend(f"quota_pool={pool}" for (pool,) in quota_rows)
+        if not blockers and prior_state == "leased":
+            startup_blocker = _orphan_startup_blocker(con, args.job, moment)
+            if startup_blocker is not None:
+                blockers.append(startup_blocker)
+        if blockers:
+            code = EXIT_STORAGE if "unknown" in statuses else EXIT_FENCING
+            raise ArbiterError(
+                code,
+                f"orphan release refused: job={args.job} leaves " + ", ".join(blockers),
+                job_id=args.job,
+                agent_label=agent_label,
+                herdr_status=sorted(statuses),
+            )
+        if not eligible:
+            raise ArbiterError(
+                EXIT_FENCING,
+                f"orphan release refused: job={args.job} is not an eligible leased orphan",
+                job_id=args.job,
+            )
+        reason = (
+            "job absent from herdr agent list"
+            if not matched
+            else f"herdr agent status={','.join(sorted(statuses))}"
+        )
+        con.execute(
+            "UPDATE jobs SET state = 'released', updated_at = ?"
+            " WHERE job_id = ? AND state = 'leased'",
+            (iso(moment), args.job),
+        )
+        seq = record_event(
+            con,
+            args.job,
+            "job.orphan_release",
+            {
+                "job_id": args.job,
+                "prior_state": prior_state,
+                "agent_label": agent_label,
+                "herdr_status": sorted(statuses),
+                "reason": reason,
+                "forced": True,
+            },
+        )
+        con.execute("COMMIT")
+    except BaseException:
+        con.execute("ROLLBACK")
+        raise
+    return {
+        "ok": True,
+        "job_id": args.job,
+        "prior_state": prior_state,
+        "agent_label": agent_label,
+        "herdr_status": sorted(statuses),
+        "reason": reason,
+        "released_at": iso(moment),
+        "forced": True,
+        "event_seq": seq,
+    }
+
+
+def cmd_gc(args: argparse.Namespace) -> dict:
+    # GC always reconciles quota_pool_records against a current Herdr list.
+    # ``--herdr-agent-list PATH`` is the hermetic fixture seam; omitting PATH
+    # uses the installed HERDR_BIN/`herdr` command.
+    snapshots = _capture_job_state_claim_snapshots()
+    herdr_agents = _herdr_agents(args.herdr_agent_list)
+    con = connect_rw()
+    con.execute("BEGIN IMMEDIATE")
+    try:
+        moment = now_dt()
+        rows = con.execute(
+            "SELECT resource, kind, job_id, token, acquired_at, expires_at"
+            " FROM leases WHERE kind IN ('path', 'linear_permit')"
+        ).fetchall()
+        expired = [r for r in rows if parse_iso(r[5]) <= moment]
+        transitions = []
+        for row in expired:
+            # 행을 지우지 않는다. 만료는 상태 전이(감사)로만 기록한다.
+            if _archive(con, row, "expired", moment):
+                record_event(
+                    con,
+                    row[2],
+                    "lease.expire",
+                    {"resource": row[0], "kind": row[1], "expires_at": row[5]},
+                )
+                transitions.append(
+                    {"resource": row[0], "kind": row[1], "job": row[2], "expires_at": row[5]}
+                )
+        quota_rows = con.execute(
+            "SELECT job_id, pool, profile, started_at"
+            " FROM quota_pool_records ORDER BY job_id, pool"
+        ).fetchall()
+        rowless_rows = con.execute(
+            "SELECT j.job_id FROM jobs AS j"
+            " WHERE j.state = 'leased'"
+            " AND NOT EXISTS (SELECT 1 FROM leases AS l WHERE l.job_id = j.job_id)"
+            " AND NOT EXISTS (SELECT 1 FROM quota_pool_records AS q WHERE q.job_id = j.job_id)"
+            " ORDER BY j.job_id"
+        ).fetchall()
+        stale_decisions = []
+        rowless_decisions = []
+        unresolved_quota_pool = []
+        unsafe_quota_pool = []
+        skipped = []
+        # Process quota-backed and row-less jobs through the same identity,
+        # status, snapshot, and startup-grace guards. A row-less job enters the
+        # release set only when its exact owner is absent from Herdr.
+        orphan_checks = [(row[0], row) for row in quota_rows]
+        orphan_checks.extend((row[0], None) for row in rowless_rows)
+        for job_id, quota_row in orphan_checks:
+            agent_label = _claim_agent_label(con, job_id)
+            if agent_label is None:
+                unresolved_quota_pool.append(
+                    {
+                        "job_id": job_id,
+                        "pool": quota_row[1] if quota_row is not None else None,
+                        "reason": "job.claim has no exact agent_label mapping",
+                    }
+                )
+                continue
+            statuses, matched = _matched_agent_statuses(
+                herdr_agents, job_id=job_id, agent_label=agent_label
+            )
+            if "unknown" in statuses:
+                unsafe_quota_pool.append(
+                    {
+                        "job_id": job_id,
+                        "pool": quota_row[1] if quota_row is not None else None,
+                        "agent_label": agent_label,
+                        "herdr_status": sorted(statuses),
+                        "reason": "herdr agent status=unknown is not stale evidence",
+                    }
+                )
+                continue
+            if any(status != "unknown" for status in statuses):
+                # Any exact listed agent with a known status owns its pane,
+                # whether it is working, idle, blocked, or done.
+                continue
+            current_snapshot = _job_state_claim_snapshot(con, job_id)
+            if not _job_claim_snapshot_matches(snapshots.get(job_id), current_snapshot):
+                _gc_skip(
+                    skipped,
+                    job_id,
+                    "job state or claim sequence changed after Herdr snapshot",
+                )
+                continue
+            startup_blocker = _orphan_startup_blocker(con, job_id, moment)
+            if startup_blocker is not None:
+                _gc_skip(skipped, job_id, startup_blocker)
+                continue
+            if quota_row is None:
+                rowless_decisions.append((job_id, agent_label, sorted(statuses), matched))
+            else:
+                stale_decisions.append((quota_row, agent_label, sorted(statuses), matched))
+
+        if unresolved_quota_pool or unsafe_quota_pool:
+            details = []
+            if unresolved_quota_pool:
+                details.append(
+                    "unmapped=" + ",".join(item["job_id"] for item in unresolved_quota_pool)
+                )
+            if unsafe_quota_pool:
+                details.append(
+                    "unknown=" + ",".join(item["job_id"] for item in unsafe_quota_pool)
+                )
+            raise ArbiterError(
+                EXIT_STORAGE,
+                "gc identity reconciliation refused; no quota_pool records or orphan jobs were changed"
+                f" ({'; '.join(details)})",
+            )
+
+        stale_quota_pool = []
+        orphan_candidates = {}
+        for row, agent_label, statuses, matched in stale_decisions:
+            reason = (
+                "job absent from herdr agent list"
+                if not matched
+                else f"herdr agent status={','.join(statuses)}"
+            )
+            con.execute(
+                "DELETE FROM quota_pool_records WHERE job_id = ? AND pool = ?",
+                (row[0], row[1]),
+            )
+            record_event(
+                con,
+                row[0],
+                "quota_pool.stale_cleanup",
+                {
+                    "job_id": row[0],
+                    "pool": row[1],
+                    "profile": row[2],
+                    "started_at": row[3],
+                    "agent_label": agent_label,
+                    "reason": reason,
+                    "herdr_status": statuses,
+                },
+            )
+            stale_quota_pool.append(
+                {
+                    "job_id": row[0],
+                    "pool": row[1],
+                    "profile": row[2],
+                    "started_at": row[3],
+                    "agent_label": agent_label,
+                    "herdr_status": statuses,
+                }
+            )
+            orphan_candidates[row[0]] = (agent_label, statuses, reason)
+
+        for job_id, agent_label, statuses, matched in rowless_decisions:
+            reason = (
+                "job absent from herdr agent list"
+                if not matched
+                else f"herdr agent status={','.join(statuses)}"
+            )
+            orphan_candidates[job_id] = (agent_label, statuses, reason)
+
+        orphan_released = []
+        for job_id, (agent_label, statuses, reason) in sorted(orphan_candidates.items()):
+            job, lease_rows, quota_rows, eligible = _orphan_state(con, job_id)
+            if not eligible:
+                continue
+            prior_state = job[0]
+            con.execute(
+                "UPDATE jobs SET state = 'released', updated_at = ?"
+                " WHERE job_id = ? AND state = 'leased'",
+                (iso(moment), job_id),
+            )
+            seq = record_event(
+                con,
+                job_id,
+                "job.orphan_release",
+                {
+                    "job_id": job_id,
+                    "prior_state": prior_state,
+                    "agent_label": agent_label,
+                    "herdr_status": statuses,
+                    "reason": reason,
+                    "forced": False,
+                },
+            )
+            orphan_released.append(
+                {
+                    "job_id": job_id,
+                    "prior_state": prior_state,
+                    "agent_label": agent_label,
+                    "herdr_status": statuses,
+                    "reason": reason,
+                    "event_seq": seq,
+                }
+            )
+        con.execute("COMMIT")
+    except BaseException:
+        con.execute("ROLLBACK")
+        raise
+    for item in skipped:
+        print(
+            f"{PROG}: gc skipped orphan cleanup: job={item['job_id']} reason={item['reason']}",
+            file=sys.stderr,
+        )
+    return {
+        "ok": True,
+        "checked": len(rows),
+        "expired": len(expired),
+        "transitioned": transitions,
+        "retained": len(rows),
+        "stale_quota_pool": stale_quota_pool,
+        "orphan_released": orphan_released,
+        "skipped": skipped,
+        "unresolved_quota_pool": unresolved_quota_pool,
+        "unsafe_quota_pool": unsafe_quota_pool,
+        "live_agents": sum(
+            1 for agent in herdr_agents if agent["status"] == HERDR_LIVE_STATUS
+        ),
+        "herdr_agents": len(herdr_agents),
+    }
+
+
+def cmd_status(args: argparse.Namespace) -> dict:
+    if args.job is not None and args.lane is not None:
+        raise ArbiterError(EXIT_USAGE, "--job 과 --lane 은 함께 쓸 수 없다")
+    con = connect_ro()
+    moment = now_dt()
+    if args.job is not None:
+        jobs = con.execute(
+            "SELECT job_id, owner_lane, state, t_level, created_at, updated_at"
+            " FROM jobs WHERE job_id = ? ORDER BY job_id",
+            (args.job,),
+        ).fetchall()
+    elif args.lane is not None:
+        jobs = con.execute(
+            "SELECT job_id, owner_lane, state, t_level, created_at, updated_at"
+            " FROM jobs WHERE owner_lane = ? ORDER BY job_id",
+            (args.lane,),
+        ).fetchall()
+    else:
+        jobs = con.execute(
+            "SELECT job_id, owner_lane, state, t_level, created_at, updated_at"
+            " FROM jobs ORDER BY job_id"
+        ).fetchall()
+    job_ids = {r[0] for r in jobs}
+    leases = con.execute(
+        "SELECT resource, kind, job_id, token, acquired_at, expires_at"
+        " FROM leases ORDER BY resource, kind"
+    ).fetchall()
+    quota_pool_records = con.execute(
+        "SELECT job_id, pool, profile, started_at"
+        " FROM quota_pool_records ORDER BY job_id, pool"
+    ).fetchall()
+    history = con.execute(
+        "SELECT resource, kind, job_id, token, acquired_at, expires_at, state, recorded_at"
+        " FROM lease_history ORDER BY id"
+    ).fetchall()
+    scoped = args.job is not None or args.lane is not None
+    if scoped:
+        leases = [r for r in leases if r[2] in job_ids]
+        quota_pool_records = [r for r in quota_pool_records if r[0] in job_ids]
+        history = [r for r in history if r[2] in job_ids]
+    return {
+        "ok": True,
+        "now": iso(moment),
+        "db": str(db_path()),
+        "jobs": [
+            {
+                "job": r[0],
+                "owner_lane": r[1],
+                "state": r[2],
+                "t_level": r[3],
+                "created_at": r[4],
+                "updated_at": r[5],
+            }
+            for r in jobs
+        ],
+        "leases": [
+            {
+                "resource": r[0],
+                "kind": r[1],
+                "job": r[2],
+                "token": mask_token(r[3]),
+                "acquired_at": r[4],
+                "expires_at": r[5],
+                "expired": parse_iso(r[5]) <= moment,
+            }
+            for r in leases
+        ],
+        "quota_pool_records": [
+            {
+                "job_id": r[0],
+                "pool": r[1],
+                "profile": r[2],
+                "started_at": r[3],
+            }
+            for r in quota_pool_records
+        ],
+        "history": [
+            {
+                "resource": r[0],
+                "kind": r[1],
+                "job": r[2],
+                "token": mask_token(r[3]),
+                "acquired_at": r[4],
+                "expires_at": r[5],
+                "state": r[6],
+                "recorded_at": r[7],
+            }
+            for r in history
+        ],
+    }
+
+
+def _spawn_receipt(con: sqlite3.Connection, job_id: str) -> dict | str:
+    """Return the newest durable spawn receipt, or an explicit absence marker."""
+    row = con.execute(
+        "SELECT payload, created_at FROM events WHERE job_id = ? AND kind = 'job.spawned'"
+        " ORDER BY seq DESC LIMIT 1",
+        (job_id,),
+    ).fetchone()
+    if row is None:
+        return "absent"
+    try:
+        event = json.loads(row[0])
+    except (TypeError, ValueError) as exc:
+        raise ArbiterError(
+            EXIT_STORAGE, f"job.spawned event 를 해석할 수 없다: job={job_id}: {exc}"
+        ) from exc
+    payload = event.get("payload") if isinstance(event, dict) else None
+    if not isinstance(payload, dict):
+        raise ArbiterError(EXIT_STORAGE, f"job.spawned event payload 가 객체가 아니다: job={job_id}")
+    pane_id = payload.get("pane_id")
+    if not isinstance(pane_id, str) or not pane_id:
+        raise ArbiterError(EXIT_STORAGE, f"job.spawned event pane_id 가 유효하지 않다: job={job_id}")
+    receipt: dict[str, str] = {"pane_id": pane_id, "spawned_at": row[1]}
+    for key in ("label", "profile", "workspace"):
+        value = payload.get(key)
+        if value is None:
+            continue
+        if not isinstance(value, str):
+            raise ArbiterError(
+                EXIT_STORAGE, f"job.spawned event {key} 가 문자열이 아니다: job={job_id}"
+            )
+        receipt[key] = value
+    return receipt
+
+
+def cmd_job_get(args: argparse.Namespace) -> dict:
+    """One read-only durable recovery view for an exact job id."""
+    con = connect_ro()
+    row = con.execute(
+        "SELECT job_id, owner_lane, state, t_level, created_at, updated_at"
+        " FROM jobs WHERE job_id = ?",
+        (args.job,),
+    ).fetchone()
+    if row is None:
+        raise ArbiterError(EXIT_NOT_FOUND, f"job not found: {args.job}", job_id=args.job)
+    recent = con.execute(
+        "SELECT kind FROM events WHERE job_id = ? ORDER BY seq DESC LIMIT 10",
+        (args.job,),
+    ).fetchall()
+    return {
+        "ok": True,
+        "job_id": row[0],
+        "owner_lane": row[1],
+        "state": row[2],
+        "t_level": row[3],
+        "created_at": row[4],
+        "updated_at": row[5],
+        "agent_label": _claim_agent_label(con, args.job),
+        "receipt": _spawn_receipt(con, args.job),
+        # Return the retained window in chronological order for consumers that
+        # need to tell a reclaim from a first claim without replaying artifacts.
+        "recent_event_kinds": [item[0] for item in reversed(recent)],
+    }
+
+
+# Only arbiter claim mints claim events. wrk's body-kind readers match these
+# exact names (job.claimed is in its CLAIM and REVIVE sets); its file readers
+# match the sanitised suffix claim.json / reclaim.json.
+CLAIM_EVENT_KINDS = frozenset(("job.claim", "job.claimed", "job.reclaim"))
+
+
+def cmd_event(args: argparse.Namespace) -> dict:
+    # Refused before connect_rw: a refused claim kind writes no DB row, no lock
+    # file and no events artifact, and leaves the seq high-water mark alone.
+    if args.kind in CLAIM_EVENT_KINDS or _safe_kind(args.kind).endswith("claim"):
+        raise ArbiterError(
+            EXIT_USAGE,
+            f"event kind {args.kind!r} 는 거부된다: claim event 는 'arbiter claim' 만 기록한다",
+        )
+    con = connect_rw()
+    con.execute("BEGIN IMMEDIATE")
+    try:
+        _require_job(con, args.job)
+        if args.payload_json is not None:
+            try:
+                payload = json.loads(args.payload_json)
+            except (TypeError, ValueError) as exc:
+                raise ArbiterError(EXIT_USAGE, f"--payload-json 은 JSON 객체여야 한다: {exc}") from exc
+            if not isinstance(payload, dict):
+                raise ArbiterError(EXIT_USAGE, "--payload-json 은 JSON 객체여야 한다")
+        else:
+            payload = {"note": args.payload} if args.payload is not None else {}
+        seq = record_event(con, args.job, args.kind, payload, seq=args.seq)
+        con.execute("COMMIT")
+    except BaseException:
+        con.execute("ROLLBACK")
+        raise
+    return {
+        "ok": True,
+        "job": args.job,
+        "seq": seq,
+        "kind": args.kind,
+        "artifact": str(inbox_root() / args.job / "events"),
+    }
+
+
+# ------------------------------------------------------------------- rendering
+
+
+def render_text(command: str, result: dict) -> str:
+    if command == "status":
+        lines = [f"now={result['now']} db={result['db']}"]
+        lines.append(f"jobs={len(result['jobs'])}")
+        for job in result["jobs"]:
+            lines.append(
+                f"  job={job['job']} lane={job['owner_lane']} state={job['state']}"
+                f" t={job['t_level']} updated_at={job['updated_at']}"
+            )
+        lines.append(f"leases={len(result['leases'])}")
+        for lease in result["leases"]:
+            flag = "expired" if lease["expired"] else "active"
+            lines.append(
+                f"  {lease['resource']}/{lease['kind']} job={lease['job']}"
+                f" token={lease['token']} expires_at={lease['expires_at']} [{flag}]"
+            )
+        lines.append(f"quota_pool_records={len(result['quota_pool_records'])}")
+        for record in result["quota_pool_records"]:
+            lines.append(
+                f"  job_id={record['job_id']} pool={record['pool']}"
+                f" profile={record['profile']} started_at={record['started_at']}"
+            )
+        lines.append(f"history={len(result['history'])}")
+        for item in result["history"]:
+            lines.append(
+                f"  {item['resource']}/{item['kind']} job={item['job']}"
+                f" token={item['token']} state={item['state']} recorded_at={item['recorded_at']}"
+            )
+        return "\n".join(lines)
+    if command == "gc":
+        lines = [
+            f"checked={result['checked']} expired={result['expired']}"
+            f" transitioned={len(result['transitioned'])} retained={result['retained']}"
+            f" orphan_released={len(result.get('orphan_released', []))}"
+        ]
+        for item in result["transitioned"]:
+            lines.append(
+                f"  {item['resource']}/{item['kind']} job={item['job']}"
+                f" expires_at={item['expires_at']} -> expired"
+            )
+        for item in result.get("stale_quota_pool", []):
+            lines.append(
+                f"  job_id={item['job_id']} pool={item['pool']} profile={item['profile']}"
+                f" label={item['agent_label']} status={','.join(item['herdr_status']) or 'absent'}"
+                f" started_at={item['started_at']} -> stale-cleaned"
+            )
+        for item in result.get("orphan_released", []):
+            lines.append(
+                f"  job_id={item['job_id']} label={item['agent_label']}"
+                f" status={','.join(item['herdr_status']) or 'absent'} -> orphan-released"
+            )
+        for item in result.get("unresolved_quota_pool", []):
+            lines.append(
+                f"  job_id={item['job_id']} pool={item['pool']} -> retained ({item['reason']})"
+            )
+        for item in result.get("unsafe_quota_pool", []):
+            lines.append(
+                f"  job_id={item['job_id']} pool={item['pool']} label={item['agent_label']}"
+                f" status={','.join(item['herdr_status'])} -> retained ({item['reason']})"
+            )
+        return "\n".join(lines)
+    return " ".join(f"{k}={v}" for k, v in result.items() if k != "ok")
+
+
+# ------------------------------------------------------------------------ cli
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog=PROG,
+        description="job admission control — 누가 무엇을 점유했나 (wrk → arbiter → scopefuel)",
+    )
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument("--json", action="store_true", help="기계 판독 JSON 출력")
+
+    claim = sub.add_parser("claim", parents=[common], help="job 등록(중복이면 거부). 유일한 DB 초기화 경로")
+    claim.add_argument("--job", required=True, help="job id")
+    claim.add_argument("--lane", required=True, help="owner lane")
+    claim.add_argument("--t", required=True, choices=T_LEVELS, help="규모 등급")
+    claim.add_argument(
+        "--role", choices=("worker", "builder", "captain"), default="worker",
+        help="job 역할(기본 worker); builder 는 parent lane 을 반드시 기록한다 (captain 은 legacy alias)",
+    )
+    claim.add_argument("--parent-lane", help="builder 의 상위 레인 (captain 은 legacy alias)")
+    claim.add_argument(
+        "--reclaim-released",
+        action="store_true",
+        help="기존 released job만 원자적으로 claimed 로 재전이한다(활성 job은 여전히 중복 거부)",
+    )
+    claim.add_argument(
+        "--agent-label",
+        help="exact Herdr agent name/label for this job (defaults to --job; persisted in job.claim)",
+    )
+    claim.add_argument(
+        "--task-id",
+        help="handoffkeep task id this job is bound to (recorded in job.claim/job.reclaim payload)",
+    )
+    claim.add_argument(
+        "--task-link-override",
+        help="operator override marker recorded when a spawn proceeds without a confirmed hk task link",
+    )
+    claim.add_argument(
+        "--task-inherited-from",
+        help="parent job id whose task a tester/advisory child job inherited (recorded in job.claim/job.reclaim payload)",
+    )
+
+    lease = sub.add_parser("lease", parents=[common], help="원자적 lease 획득. 성공 시 token 출력")
+    lease.add_argument("--job", required=True, help="job id")
+    lease.add_argument("--resource", help="자원 이름 (--profile 과 택일)")
+    lease.add_argument(
+        "--profile", help="scopefuel 프로필 — quota pool 을 scopefuel 정본으로 해석한다"
+    )
+    lease.add_argument(
+        "--launch-profile",
+        help="실제 기동 프로필(모델@effort). --profile 은 gate 교차검증용 정규화 이름이라 "
+        "effort 변형을 뭉갠다(ROB-1213: T3 job 이 luna medium 으로 돌았는데 기록은 "
+        "codex-luna-max). 감사용 정보 필드 — 검증에 쓰지 않는다",
+    )
+    lease.add_argument(
+        "--gate-output",
+        help="이미 통과한 `scopefuel gate` stdout 파일('-' 는 stdin). 게이트를 재실행하지 않는다",
+    )
+    lease.add_argument("--kind", required=True, choices=KINDS, help="lease 종류")
+    lease.add_argument(
+        "--ttl-min",
+        type=int,
+        help=f"TTL(분). 기본: {', '.join(f'{k}={v}' for k, v in DEFAULT_TTL_MIN.items())}",
+    )
+
+    release = sub.add_parser(
+        "release", parents=[common], help="lease/실행 기록 반납. --force 는 운영자 강제 반납"
+    )
+    release.add_argument("--job", required=True, help="job id")
+    release.add_argument("--resource", help="자원 이름; 생략은 --force orphan release 전용")
+    release.add_argument("--token", help="획득 시 발급된 fencing token (배타 lease 일반 반납용)")
+    release.add_argument("--kind", choices=KINDS, help="같은 resource 에 kind 가 여럿일 때만 필요")
+    release.add_argument(
+        "--herdr-agent-list",
+        help="orphan release identity fixture (omit to read the installed Herdr list)",
+    )
+    release.add_argument(
+        "--force",
+        action="store_true",
+        help="fencing token 없이 운영자 강제 반납하고 force event 를 남긴다",
+    )
+
+    status = sub.add_parser("status", parents=[common], help="현황(읽기 전용, mode=ro)")
+    status.add_argument("--job", help="job 으로 좁히기")
+    status.add_argument("--lane", help="lane 으로 좁히기")
+
+    job_get = sub.add_parser("job-get", parents=[common], help="단건 durable job 수신증 조회(읽기 전용, mode=ro)")
+    job_get.add_argument("--job", required=True, help="exact job id")
+
+    gc = sub.add_parser(
+        "gc",
+        parents=[common],
+        help="만료 lease 전이 + stale quota 정리 + Herdr 부재 row-less job release",
+    )
+    gc.add_argument(
+        "--herdr-agent-list",
+        nargs="?",
+        const="",
+        metavar="PATH",
+        help="herdr agent list JSON 경로(생략 시 설치된 HERDR_BIN/`herdr agent list` 실행)",
+    )
+
+    event = sub.add_parser("event", parents=[common], help="job event 제출(exclusive link)")
+    event.add_argument("--job", required=True, help="job id")
+    event.add_argument("--kind", required=True, help="event 종류")
+    event_payload = event.add_mutually_exclusive_group()
+    event_payload.add_argument("--payload", help="자유 텍스트 payload")
+    event_payload.add_argument("--payload-json", help="구조화 JSON 객체 payload")
+    event.add_argument("--seq", type=int, help="명시 seq — 중복이면 거부된다")
+
+    return parser
+
+
+HANDLERS = {
+    "claim": cmd_claim,
+    "lease": cmd_lease,
+    "release": cmd_release,
+    "status": cmd_status,
+    "job-get": cmd_job_get,
+    "gc": cmd_gc,
+    "event": cmd_event,
+}
+
+
+def main(argv: list[str]) -> int:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    as_json = bool(getattr(args, "json", False))
+    try:
+        if args.command == "claim":
+            if args.role == "captain":
+                args.role = "builder"
+            if args.role == "builder" and not args.parent_lane:
+                raise ArbiterError(EXIT_USAGE, "builder claim 은 --parent-lane 이 필요하다 (captain 은 legacy alias)")
+            if args.role != "builder" and args.parent_lane is not None:
+                raise ArbiterError(EXIT_USAGE, "--parent-lane 은 --role builder 에서만 쓴다 (captain 은 legacy alias)")
+        if getattr(args, "ttl_min", None) is not None and args.ttl_min < 0:
+            raise ArbiterError(EXIT_USAGE, "--ttl-min 은 0 이상이어야 한다")
+        if args.command in TRUST_COMMANDS:
+            enforce_trust()
+        result = HANDLERS[args.command](args)
+    except ArbiterError as exc:
+        if as_json:
+            print(
+                json.dumps(
+                    {"ok": False, "code": exc.code, "error": exc.message, **exc.detail},
+                    ensure_ascii=False,
+                    sort_keys=True,
+                )
+            )
+        print(f"{PROG}: {exc.message}", file=sys.stderr)
+        return exc.code
+    except sqlite3.Error as exc:
+        print(f"{PROG}: sqlite 오류(fail-closed): {exc}", file=sys.stderr)
+        return EXIT_STORAGE
+    except OSError as exc:
+        print(f"{PROG}: 저장소 접근 오류(fail-closed): {exc}", file=sys.stderr)
+        return EXIT_STORAGE
+    if as_json:
+        print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+    else:
+        print(render_text(args.command, result))
+    return EXIT_OK
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

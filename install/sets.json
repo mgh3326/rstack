@@ -1,0 +1,178 @@
+{
+  "sets": {
+    "full": [
+      "robin-mode",
+      "wake",
+      "ops",
+      "fleet-review",
+      "how",
+      "why",
+      "architect",
+      "blast-radius",
+      "tdd",
+      "interrogate",
+      "benchmark-checklist",
+      "show-me-your-work",
+      "figure-it-out",
+      "correct",
+      "reflect",
+      "sharpen",
+      "statechart",
+      "no-comments",
+      "unslop",
+      "technical-writing",
+      "typescript-best-practices",
+      "create-verification-skill",
+      "maintain-verification-skill",
+      "create-formal-verification-skill",
+      "maintain-formal-verification-skill",
+      "teach",
+      "in-your-own-words",
+      "recall",
+      "principle-attack-the-premise",
+      "principle-boundary-discipline",
+      "principle-build-the-lever",
+      "principle-encode-lessons-in-structure",
+      "principle-exhaust-the-design-space",
+      "principle-experience-first",
+      "principle-explain-the-number",
+      "principle-fix-root-causes",
+      "principle-foundational-thinking",
+      "principle-guard-the-context-window",
+      "principle-laziness-protocol",
+      "principle-make-operations-idempotent",
+      "principle-migrate-callers-then-delete-legacy-apis",
+      "principle-minimize-reader-load",
+      "principle-model-the-domain",
+      "principle-never-block-on-the-human",
+      "principle-outcome-oriented-execution",
+      "principle-prove-it-works",
+      "principle-redesign-from-first-principles",
+      "principle-separate-before-serializing-shared-state",
+      "principle-sequence-verifiable-units",
+      "principle-subtract-before-you-add",
+      "principle-test-behavior-not-implementation",
+      "principle-type-system-discipline"
+    ],
+    "worker": [
+      "robin-mode",
+      "wake",
+      "ops",
+      "fleet-review",
+      "how",
+      "why",
+      "blast-radius",
+      "tdd",
+      "unslop",
+      "technical-writing",
+      "principle-attack-the-premise",
+      "principle-boundary-discipline",
+      "principle-build-the-lever",
+      "principle-encode-lessons-in-structure",
+      "principle-exhaust-the-design-space",
+      "principle-experience-first",
+      "principle-explain-the-number",
+      "principle-fix-root-causes",
+      "principle-foundational-thinking",
+      "principle-guard-the-context-window",
+      "principle-laziness-protocol",
+      "principle-make-operations-idempotent",
+      "principle-migrate-callers-then-delete-legacy-apis",
+      "principle-minimize-reader-load",
+      "principle-model-the-domain",
+      "principle-never-block-on-the-human",
+      "principle-outcome-oriented-execution",
+      "principle-prove-it-works",
+      "principle-redesign-from-first-principles",
+      "principle-separate-before-serializing-shared-state",
+      "principle-sequence-verifiable-units",
+      "principle-subtract-before-you-add",
+      "principle-test-behavior-not-implementation",
+      "principle-type-system-discipline"
+    ]
+  },
+  "harnesses": {
+    "claude": {
+      "set": "full",
+      "install_dir": ".claude/skills",
+      "scan_dirs": [
+        ".claude/skills"
+      ],
+      "evidence": "yes; https://code.claude.com/docs/en/skills; real-session before/after UNVERIFIED"
+    },
+    "codex": {
+      "set": "full",
+      "install_dir": ".codex/skills",
+      "scan_dirs": [
+        ".codex/skills",
+        ".agents/skills"
+      ],
+      "evidence": "yes; Codex 0.165 session catalog confirms recursive shared-root scan; native root observed"
+    },
+    "omp": {
+      "set": "full",
+      "install_dir": ".omp/agent/skills",
+      "scan_dirs": [
+        ".omp/agent/skills",
+        ".agents/skills",
+        ".agent/skills"
+      ],
+      "evidence": "yes; installed discovery/builtin.ts:324, agents.ts:177; compat Claude/Codex opt-in disabled by default"
+    },
+    "cmd": {
+      "set": "worker",
+      "install_dir": ".commandcode/skills",
+      "scan_dirs": [
+        ".commandcode/skills",
+        ".agents/skills"
+      ],
+      "evidence": "yes; installed cli.mjs createSkillRegistry; bundled reference/skills.md"
+    },
+    "agy": {
+      "set": "worker",
+      "install_dir": ".gemini/skills",
+      "scan_dirs": [
+        ".gemini/skills"
+      ],
+      "evidence": "yes; real read-only print session reports ~/.gemini/skills; builtin/plugin roots additional"
+    },
+    "devin": {
+      "set": "full",
+      "install_dir": ".claude/skills",
+      "scan_dirs": [
+        ".claude/skills",
+        ".config/devin/skills",
+        ".config/cognition/skills",
+        ".agents/skills"
+      ],
+      "evidence": "yes; real read-only session sees Claude-root skills; skills paths lists native/cognition/shared roots; known limit: worker gets full set by operator decision"
+    },
+    "gemini": {
+      "set": "worker",
+      "install_dir": ".gemini/skills",
+      "scan_dirs": [
+        ".gemini/skills",
+        ".agents/skills"
+      ],
+      "evidence": "yes; https://geminicli.com/docs/cli/tutorials/skills-getting-started/; agy shares this root; Gemini session UNVERIFIED"
+    },
+    "kiro": {
+      "set": "full",
+      "install_dir": ".kiro/skills",
+      "scan_dirs": [
+        ".kiro/skills"
+      ],
+      "evidence": "UNVERIFIED installed harness/session; https://kiro.dev/docs/skills/"
+    },
+    "opencode": {
+      "set": "full",
+      "install_dir": ".claude/skills",
+      "scan_dirs": [
+        ".config/opencode/skills",
+        ".claude/skills",
+        ".agents/skills"
+      ],
+      "evidence": "yes; https://opencode.ai/docs/skills/; reuses Claude root; session UNVERIFIED"
+    }
+  }
+}

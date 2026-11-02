@@ -1,0 +1,907 @@
+#!/usr/bin/env bash
+# ROB-1199 stage 2 — arbiter admission-control acceptance tests.
+# Every run is hermetic: XDG_DATA_HOME and ARBITER_INBOX_ROOT point into a temp
+# dir, so the real ~/.local/share and ~/work/herdr-inbox are never touched.
+set -euo pipefail
+# hk 1894: trust-bearing wrk and arbiter commands honour this suite's temp-dir overrides
+# (HOME, ARBITER_INBOX_ROOT, XDG_DATA_HOME, HANDOFFKEEP_BIN) only in test mode.
+export WRK_TEST_MODE=1
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+ARBITER="$ROOT/bin/arbiter"
+SCOPEFUEL="$ROOT/tests/fixtures/scopefuel"
+TMP="$(mktemp -d)"
+trap 'chmod -R u+rwX "$TMP" 2>/dev/null || true; rm -rf "$TMP"' EXIT
+
+export XDG_DATA_HOME="$TMP/xdg"
+export ARBITER_INBOX_ROOT="$TMP/inbox"
+export SCOPEFUEL_BIN="$SCOPEFUEL"
+export HERDR_BIN="$ROOT/tests/fixtures/herdr"
+DB="$XDG_DATA_HOME/arbiter/state.db"
+"$SCOPEFUEL" gate -m codex-max >"$TMP/gate.out"
+
+pass() { echo "PASS $*"; }
+fail() { echo "FAIL $*" >&2; exit 1; }
+
+# Run arbiter, capture stdout/stderr and the exit code without aborting the suite.
+run() {
+  set +e
+  OUT="$("$ARBITER" "$@" 2>"$TMP/stderr")"
+  RC=$?
+  set -e
+  ERR="$(cat "$TMP/stderr")"
+}
+
+expect_rc() {
+  local want="$1"; shift
+  run "$@"
+  [[ "$RC" -eq "$want" ]] || fail "expected exit $want, got $RC for: arbiter $* :: $OUT $ERR"
+}
+
+# pycheck <json-text> [argv...] <<'PY' ... PY  — the heredoc is the checker script,
+# the json arrives on the checker's stdin.
+pycheck() {
+  local json="$1"; shift
+  cat >"$TMP/check.py"
+  printf '%s' "$json" | python3 "$TMP/check.py" "$@"
+}
+
+jget() { python3 -c 'import json,sys; print(json.load(sys.stdin)[sys.argv[1]])' "$1"; }
+mtime() { python3 -c 'import os,sys; print(os.stat(sys.argv[1]).st_mtime_ns)' "$1"; }
+restore_db() { cp "$TMP/good.db" "$DB"; rm -f "$DB-wal" "$DB-shm"; }
+drop_quota_rows() {
+  python3 - "$DB" "$1" <<'PY'
+import sqlite3, sys
+con = sqlite3.connect(sys.argv[1])
+con.execute("DELETE FROM quota_pool_records WHERE job_id = ?", (sys.argv[2],))
+con.commit()
+con.close()
+PY
+}
+age_job() {
+  python3 - "$DB" "$1" "$2" <<'PY'
+import datetime, json, sqlite3, sys
+db, job_id, minutes = sys.argv[1], sys.argv[2], int(sys.argv[3])
+created_at = (datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
+              - datetime.timedelta(minutes=minutes)).isoformat()
+con = sqlite3.connect(db)
+rows = con.execute(
+    "SELECT seq, payload FROM events WHERE job_id = ?"
+    " AND kind IN ('job.claim', 'job.reclaim', 'job.spawned')", (job_id,)
+).fetchall()
+for seq, body in rows:
+    event = json.loads(body)
+    event["created_at"] = created_at
+    con.execute("UPDATE events SET created_at = ?, payload = ? WHERE job_id = ? AND seq = ?",
+                (created_at, json.dumps(event, ensure_ascii=False, sort_keys=True), job_id, seq))
+con.execute("UPDATE jobs SET created_at = ?, updated_at = ? WHERE job_id = ?",
+            (created_at, created_at, job_id))
+con.commit()
+con.close()
+PY
+}
+
+# ---------------------------------------------------------------- ⑤ fail-closed
+# DB 없음: bootstrap 이 허용된 claim 을 뺀 모든 경로는 비-0 로 거부한다.
+expect_rc 6 status
+expect_rc 6 lease --job j --kind quota_pool --profile codex-max --gate-output "$TMP/gate.out"
+expect_rc 6 gc
+expect_rc 6 release --job j --resource pool --token t
+expect_rc 6 event --job j --kind note
+pass "fail-closed: missing db rejects status/lease/gc/release/event (exit 6)"
+
+# ------------------------------------------------------------------- ① claim
+expect_rc 0 claim --job j1 --lane live --t T2
+[[ -f "$DB" ]] || fail "claim did not bootstrap the state db"
+grep -q 'initialized new state db' <<<"$ERR" || fail "bootstrap was silent"
+pass "claim bootstraps the db exactly once, and says so"
+
+expect_rc 4 claim --job j1 --lane live --t T2
+grep -q '이미 등록' <<<"$ERR" || fail "duplicate claim message missing"
+expect_rc 4 claim --job j1 --lane other --t T3
+pass "① duplicate claim rejected (exit 4); a different lane/t does not launder it"
+
+expect_rc 2 claim --job j2 --lane live --t T9
+pass "claim rejects a t level outside T0..T3"
+
+# Builder claims carry hierarchy only in the durable event envelope; no schema
+# column is invented and a missing parent is fail-closed. `captain` remains an
+# input alias, but every new durable payload is canonical `builder`.
+expect_rc 2 claim --job builder-no-parent --lane builder-lane --t T1 --role builder
+expect_rc 2 claim --job captain-no-parent --lane builder-lane --t T1 --role captain
+expect_rc 2 claim --job worker-parent --lane worker-lane --t T1 --parent-lane parent-lane
+for rejected_role in admiral tester ''; do
+  expect_rc 2 claim --job "role-reject-${rejected_role:-empty}" --lane worker-lane --t T1 --role "$rejected_role"
+  grep -q -- '--role' <<<"$ERR" || fail "unknown role must show argparse usage: $ERR"
+done
+expect_rc 0 claim --job builder-claim --lane builder-lane --t T1 --role builder --parent-lane parent-lane --agent-label builder
+python3 - "$ARBITER_INBOX_ROOT/builder-claim/events/00001-job.claim.json" <<'PY'
+import json, sys
+event = json.load(open(sys.argv[1]))
+assert set(event) == {"created_at", "job_id", "kind", "payload", "seq"}, event
+assert event["payload"] == {
+    "agent_label": "builder", "owner_lane": "builder-lane", "parent_lane": "parent-lane",
+    "role": "builder", "t_level": "T1",
+}, event
+PY
+expect_rc 0 claim --job captain-alias-claim --lane builder-lane --t T1 --role captain --parent-lane parent-lane --agent-label captain-alias
+python3 - "$ARBITER_INBOX_ROOT/captain-alias-claim/events/00001-job.claim.json" <<'PY'
+import json, sys
+event = json.load(open(sys.argv[1]))
+assert event["payload"]["role"] == "builder", event
+assert event["payload"]["parent_lane"] == "parent-lane", event
+PY
+pass "builder claim requires parent_lane and captain alias normalizes to builder in the envelope"
+
+# ------------------------------------------------------- ② concurrent contention
+"$ARBITER" claim --job race-a --lane live --t T2 >/dev/null
+"$ARBITER" claim --job race-b --lane live --t T2 >/dev/null
+for job in race-a race-b; do
+  (
+    set +e
+    "$ARBITER" lease --job "$job" --resource contended --kind path --json >"$TMP/$job.out" 2>&1
+    echo $? >"$TMP/$job.rc"
+  ) &
+done
+wait
+rc_a="$(cat "$TMP/race-a.rc")"; rc_b="$(cat "$TMP/race-b.rc")"
+winners=0
+[[ "$rc_a" -eq 0 ]] && winners=$((winners + 1))
+[[ "$rc_b" -eq 0 ]] && winners=$((winners + 1))
+[[ "$winners" -eq 1 ]] || fail "expected exactly one winner, got rc_a=$rc_a rc_b=$rc_b"
+if [[ "$rc_a" -eq 0 ]]; then loser="$rc_b"; else loser="$rc_a"; fi
+[[ "$loser" -eq 3 ]] || fail "loser exited $loser, expected 3 (rc_a=$rc_a rc_b=$rc_b)"
+pass "② concurrent lease: exactly one acquire wins, the other is denied (exit 3)"
+
+# The winner holds it; a third job cannot take it while unexpired.
+"$ARBITER" claim --job race-c --lane live --t T2 >/dev/null
+expect_rc 3 lease --job race-c --resource contended --kind path
+pass "② a held lease keeps refusing further acquires"
+
+# The quota-pool fail-open path must not weaken exclusive permit admission.
+"$ARBITER" claim --job linear-a --lane live --t T1 >/dev/null
+"$ARBITER" claim --job linear-b --lane live --t T1 >/dev/null
+expect_rc 0 lease --job linear-a --resource linear-exclusive --kind linear_permit
+expect_rc 3 lease --job linear-b --resource linear-exclusive --kind linear_permit
+pass "② linear_permit contention remains fail-closed at the arbiter boundary (exit 3)"
+
+# ------------------------------------------------------------- ③ fencing token
+"$ARBITER" claim --job fence --lane live --t T1 >/dev/null
+tok_a="$("$ARBITER" lease --job fence --resource fenced --kind path --json | jget token)"
+tok_b="$("$ARBITER" lease --job fence --resource fenced2 --kind path --json | jget token)"
+[[ "$tok_a" != "$tok_b" ]] || fail "acquire reused a fencing token"
+[[ "${tok_a%%-*}" -lt "${tok_b%%-*}" ]] || fail "fencing token is not monotonic"
+pass "③ every acquire mints a new, monotonically increasing fencing token"
+
+expect_rc 5 release --job fence --resource fenced --token "stale-token"
+expect_rc 5 release --job race-c --resource fenced --token "$tok_a"
+expect_rc 0 release --job fence --resource fenced --token "$tok_a"
+expect_rc 5 release --job fence --resource fenced --token "$tok_a"
+pass "③ stale token, wrong owner and replayed release are all rejected (exit 5)"
+
+# --------------------------------------------------------- ④ expiry + audit
+"$ARBITER" claim --job exp-a --lane live --t T1 >/dev/null
+"$ARBITER" claim --job exp-b --lane live --t T1 >/dev/null
+old_token="$("$ARBITER" lease --job exp-a --resource expiring --kind path --ttl-min 0 --json | jget token)"
+
+run gc --json
+[[ "$RC" -eq 0 ]] || fail "gc failed: $ERR"
+pycheck "$OUT" <<'PY' || fail "gc did not transition the expired lease"
+import json, sys
+d = json.load(sys.stdin)
+assert d["expired"] >= 1, d
+assert d["retained"] == d["checked"], d          # transitioned, never deleted
+assert any(t["resource"] == "expiring" for t in d["transitioned"]), d
+PY
+pycheck "$("$ARBITER" status --json)" <<'PY' || fail "gc deleted the expired lease row"
+import json, sys
+d = json.load(sys.stdin)
+rows = [x for x in d["leases"] if x["resource"] == "expiring"]
+assert rows and rows[0]["expired"] is True, d
+assert [h for h in d["history"] if h["resource"] == "expiring" and h["state"] == "expired"], d
+PY
+pass "④ gc transitions expired leases to an audit state without deleting the row"
+
+expect_rc 0 lease --job exp-b --resource expiring --kind path
+pycheck "$("$ARBITER" status --json)" <<'PY' || fail "prior owner/token/expiry not preserved"
+import json, sys
+d = json.load(sys.stdin)
+live = [x for x in d["leases"] if x["resource"] == "expiring"]
+assert live and live[0]["job"] == "exp-b", live
+hist = [h for h in d["history"] if h["resource"] == "expiring"]
+assert {"expired", "superseded"} <= {h["state"] for h in hist}, hist
+assert "exp-a" in {h["job"] for h in hist}, hist
+assert all(h["token"].endswith("…") for h in d["history"]), "raw tokens leaked into status"
+PY
+pass "④ another job acquires after expiry; prior owner, token and expiry survive as audit"
+
+expect_rc 5 release --job exp-a --resource expiring --token "$old_token"
+pass "④ the superseded owner can no longer release the resource"
+
+# ------------------------------------------------------------------ default TTL
+"$ARBITER" claim --job ttl --lane live --t T1 >/dev/null
+check_ttl() {
+  local kind="$1" want="$2"
+  pycheck "$("$ARBITER" lease --job ttl --resource "ttl-$kind" --kind "$kind" --json)" "$want" \
+    <<'PY' || fail "default TTL for $kind is wrong"
+import datetime as dt, json, sys
+want = int(sys.argv[1])
+d = json.load(sys.stdin)
+delta = dt.datetime.fromisoformat(d["expires_at"]) - dt.datetime.fromisoformat(d["acquired_at"])
+assert delta == dt.timedelta(minutes=want), (d, delta)
+assert d["ttl_min"] == want, d
+PY
+}
+check_ttl path 90
+check_ttl linear_permit 30
+pass "default TTL: path=90m, linear_permit=30m; quota_pool has no TTL"
+
+# ------------------------------------------------- ⑨ event artifact + duplicate
+"$ARBITER" claim --job ev --lane live --t T1 >/dev/null
+events_dir="$ARBITER_INBOX_ROOT/ev/events"
+[[ -f "$events_dir/00001-job.claim.json" ]] || fail "claim artifact missing"
+python3 -c 'import json,sys; json.load(open(sys.argv[1]))' "$events_dir/00001-job.claim.json" \
+  || fail "claim artifact is not valid json"
+expect_rc 0 event --job ev --kind handoff --payload hello
+[[ -f "$events_dir/00002-handoff.json" ]] || fail "event artifact missing"
+[[ -z "$(find "$events_dir" -name '.tmp-*' -print -quit)" ]] || fail "temp artifact left behind"
+pass "⑨ event artifacts land via atomic rename; no partial temp files remain"
+
+expect_rc 0 event --job ev --kind explicit --seq 50
+expect_rc 4 event --job ev --kind explicit --seq 50
+[[ "$(find "$events_dir" -name '00050-*' | wc -l | tr -d ' ')" -eq 1 ]] \
+  || fail "duplicate seq produced a second artifact"
+pass "⑨ duplicate (job_id, seq) rejected (exit 4); no duplicate artifact written"
+
+# ⑨ hk 1750: wrk numbers the same directory from its own highest prefix. An
+# arbiter write after wrk's files must take a number above the directory
+# highest, not just above its DB seq, or one record overwrites the other.
+expect_rc 0 claim --job order-mix --lane live --t T1
+mix_events="$ARBITER_INBOX_ROOT/order-mix/events"
+python3 - "$mix_events" <<'PY'
+import json, os, sys
+events = sys.argv[1]
+for seq, kind in ((7, "job.completed"), (9, "job.escalate")):
+    path = os.path.join(events, "%05d-%s.json" % (seq, kind))
+    with open(path, "w", encoding="utf-8") as handle:
+        json.dump({"kind": kind, "job_id": "order-mix", "payload": {}}, handle)
+PY
+run event --job order-mix --kind job.spawned --payload-json '{"pane_id":"w1:p1"}' --json
+[[ "$RC" -eq 0 ]] || fail "#1750: event after wrk files failed: $ERR"
+[[ "$(jget seq <<<"$OUT")" == 10 ]] ||
+  fail "#1750: arbiter seq must be max(DB seq, directory highest) + 1 (got $(jget seq <<<"$OUT"))"
+[[ -f "$mix_events/00010-job.spawned.json" ]] ||
+  fail "#1750: arbiter artifact did not take 00010"
+[[ -f "$mix_events/00009-job.escalate.json" ]] ||
+  fail "#1750: arbiter overwrote a wrk-numbered file"
+pass "⑨ #1750 arbiter numbering takes max(DB seq, directory highest) + 1"
+
+# An explicit --seq that names an existing event file is refused and the wrk
+# record's bytes survive (no overwrite, DB row rolled back).
+expect_rc 4 event --job order-mix --kind job.escalate --seq 9
+[[ "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["kind"])' \
+  "$mix_events/00009-job.escalate.json")" == "job.escalate" ]] ||
+  fail "#1750: an explicit seq overwrote a wrk-numbered file"
+[[ "$(find "$mix_events" -name '00009-*' | wc -l | tr -d ' ')" -eq 1 ]] ||
+  fail "#1750: an explicit seq produced a second artifact at 00009"
+pass "⑨ #1750 explicit seq collision is refused, never overwrites"
+
+expect_rc 3 event --job nope --kind orphan
+pass "⑨ events for an unclaimed job are refused"
+
+# ------------------------------------------ ⑨ claim kinds come from arbiter claim
+# wrk reads claim events two ways: by the body kind (job.claim, job.claimed, job.reclaim) and
+# by the events file-name suffix claim.json / reclaim.json. event must mint
+# neither, and a refused event must touch neither the DB nor the directory.
+expect_rc 0 claim --job claim-guard --lane guard-lane --t T2
+guard_events="$ARBITER_INBOX_ROOT/claim-guard/events"
+guard_rows() {
+  python3 - "$DB" <<'PY'
+import sqlite3, sys
+con = sqlite3.connect(sys.argv[1])
+for row in con.execute("SELECT seq, kind FROM events WHERE job_id = 'claim-guard' ORDER BY seq"):
+    print(row[0], row[1])
+PY
+}
+rows_before="$(guard_rows)"
+files_before="$(ls -A "$guard_events")"
+for kind in job.claim job.claimed job.reclaim x.claim "job claim"; do
+  run event --job claim-guard --kind "$kind" --payload-json '{"owner_lane":"forged"}' --seq 40
+  [[ "$RC" -eq 2 ]] || fail "event --kind [$kind] exit $RC, want 2: $ERR"
+  [[ "$(wc -l <<<"$ERR" | tr -d ' ')" -eq 1 ]] || fail "event --kind [$kind] refusal is not one stderr line: $ERR"
+  grep -qF "'$kind'" <<<"$ERR" || fail "event --kind [$kind] refusal does not name the kind: $ERR"
+  grep -qF "arbiter claim" <<<"$ERR" || fail "event --kind [$kind] refusal does not point at arbiter claim: $ERR"
+  [[ "$(guard_rows)" == "$rows_before" ]] || fail "event --kind [$kind] wrote a DB row"
+  [[ "$(ls -A "$guard_events")" == "$files_before" ]] || fail "event --kind [$kind] wrote an events file"
+done
+pass "⑨ event refuses job.claim, job.claimed, job.reclaim, x.claim and 'job claim' (exit 2) with no DB row or file"
+
+# The refusals above passed --seq 40: none of them may move the high-water mark.
+# wrk's suffix check is case-sensitive, so JOB.RECLAIM is accepted and is not a
+# claim file.
+run event --job claim-guard --kind JOB.RECLAIM --payload-json '{"owner_lane":"ok"}' --json
+[[ "$RC" -eq 0 ]] || fail "JOB.RECLAIM was refused: $ERR"
+[[ "$(jget seq <<<"$OUT")" == 2 ]] ||
+  fail "refused events moved the seq high-water mark (JOB.RECLAIM got seq $(jget seq <<<"$OUT"))"
+name="00002-JOB.RECLAIM.json"
+[[ -f "$guard_events/$name" ]] || fail "JOB.RECLAIM artifact missing"
+case "$name" in *claim.json) fail "JOB.RECLAIM file name reads as a claim" ;; esac
+pass "⑨ refused claim kinds leave the seq high-water mark unchanged; JOB.RECLAIM records as a non-claim"
+
+run event --job claim-guard --kind job.spawned --payload-json '{"pane_id":"w2:p1"}' --json
+[[ "$RC" -eq 0 ]] || fail "job.spawned no longer records: $ERR"
+[[ "$(jget seq <<<"$OUT")" == 3 ]] || fail "job.spawned seq is not 3: $OUT"
+run event --job claim-guard --kind job.task_link --payload-json '{"task_id":1453}' --json
+[[ "$RC" -eq 0 ]] || fail "job.task_link no longer records: $ERR"
+[[ "$(jget seq <<<"$OUT")" == 4 ]] || fail "job.task_link seq is not 4: $OUT"
+[[ -f "$guard_events/00004-job.task_link.json" ]] || fail "job.task_link artifact missing"
+pass "⑨ job.spawned and job.task_link still record through event"
+
+# ---------------------------------------------- profile → pool via scopefuel
+"$ARBITER" claim --job pool-a --lane live --t T1 >/dev/null
+"$SCOPEFUEL" gate -m codex-max >"$TMP/gate.out"
+run lease --job pool-a --kind quota_pool --profile codex-max --gate-output "$TMP/gate.out" --json
+[[ "$RC" -eq 0 ]] || fail "profile lease failed: $ERR"
+[[ "$(jget pool <<<"$OUT")" == "codex" ]] || fail "profile did not resolve to the scopefuel pool"
+[[ "$(jget profile <<<"$OUT")" == "codex-max" ]] || fail "profile was not recorded"
+[[ "$(jget resolved_from <<<"$OUT")" == "scopefuel:codex-max" ]] || fail "resolution provenance missing"
+pass "quota pool resolved from scopefuel output, not from a wrk-side mapping"
+
+"$ARBITER" claim --job pool-b --lane live --t T1 >/dev/null
+expect_rc 0 lease --job pool-b --kind quota_pool --profile codex-max --gate-output "$TMP/gate.out"
+pycheck "$("$ARBITER" status --json)" <<'PY' || fail "same quota pool did not record two jobs"
+import json, sys
+d = json.load(sys.stdin)
+rows = [r for r in d["quota_pool_records"] if r["pool"] == "codex"]
+assert {r["job_id"] for r in rows} >= {"pool-a", "pool-b"}, d
+assert all(set(r) == {"job_id", "pool", "profile", "started_at"} for r in rows), rows
+PY
+pass "quota_pool is non-exclusive: two jobs record the same pool successfully"
+
+"$ARBITER" claim --job pool-c --lane live --t T1 >/dev/null
+"$ARBITER" claim --job pool-d --lane live --t T1 >/dev/null
+for job in pool-c pool-d; do
+  (
+    set +e
+    "$ARBITER" lease --job "$job" --kind quota_pool --profile codex-max \
+      --gate-output "$TMP/gate.out" --json >"$TMP/$job.out" 2>&1
+    echo $? >"$TMP/$job.rc"
+  ) &
+done
+wait
+[[ "$(cat "$TMP/pool-c.rc")" -eq 0 && "$(cat "$TMP/pool-d.rc")" -eq 0 ]] \
+  || fail "concurrent quota_pool records did not both succeed"
+pass "concurrent jobs can both record the same quota_pool"
+
+printf 'gate allowed profile=codex-max\n' >"$TMP/nopool.out"
+expect_rc 6 lease --job pool-b --kind quota_pool --profile codex-max --gate-output "$TMP/nopool.out"
+"$SCOPEFUEL" gate -m opus >"$TMP/other.out"
+expect_rc 6 lease --job pool-b --kind quota_pool --profile codex-max --gate-output "$TMP/other.out"
+pass "gate output without a pool, or for another profile, is refused (exit 6)"
+
+export WRK_SCOPEFUEL_JSON_MODE=degraded
+"$ARBITER" claim --job pool-degraded --lane live --t T1 >/dev/null
+expect_rc 0 lease --job pool-degraded --kind quota_pool --profile codex-max --gate-output "$TMP/gate.out"
+expect_rc 0 release --job pool-degraded --resource codex --kind quota_pool
+unset WRK_SCOPEFUEL_JSON_MODE
+pass "scopefuel exit 1 with valid scopefuel.v1 JSON still resolves the pool"
+
+for mode in drift broken garbage empty schema; do
+  export WRK_SCOPEFUEL_JSON_MODE="$mode"
+  expect_rc 6 lease --job pool-b --kind quota_pool --profile codex-max --gate-output "$TMP/gate.out"
+  unset WRK_SCOPEFUEL_JSON_MODE
+done
+pass "pool absent from scopefuel --json, or --json unusable, is fail-closed (exit 6)"
+
+expect_rc 2 lease --job pool-b --kind path --profile codex-max
+expect_rc 2 lease --job pool-b --kind quota_pool
+expect_rc 2 lease --job pool-b --kind quota_pool --resource codex --profile codex-max
+pass "lease usage errors are rejected (exit 2), never guessed"
+
+# ------------------------------------------------------ quota record lifecycle
+"$ARBITER" claim --job quota-live --lane live --t T1 >/dev/null
+"$ARBITER" claim --job quota-dead --lane live --t T1 >/dev/null
+"$ARBITER" claim --job quota-idle --lane live --t T1 >/dev/null
+"$ARBITER" claim --job quota-done --lane live --t T1 >/dev/null
+"$ARBITER" claim --job quota-blocked --lane live --t T1 >/dev/null
+"$ARBITER" claim --job quota-custom-job --agent-label quota-custom-agent --lane live --t T1 >/dev/null
+expect_rc 0 lease --job quota-live --kind quota_pool --profile codex-max --gate-output "$TMP/gate.out"
+expect_rc 0 lease --job quota-dead --kind quota_pool --profile codex-max --gate-output "$TMP/gate.out"
+expect_rc 0 lease --job quota-idle --kind quota_pool --profile codex-max --gate-output "$TMP/gate.out"
+expect_rc 0 lease --job quota-done --kind quota_pool --profile codex-max --gate-output "$TMP/gate.out"
+expect_rc 0 lease --job quota-blocked --kind quota_pool --profile codex-max --gate-output "$TMP/gate.out"
+expect_rc 0 lease --job quota-custom-job --kind quota_pool --profile codex-max --gate-output "$TMP/gate.out"
+"$ARBITER" claim --job orphan-gc --agent-label orphan-gc-agent --lane live --t T1 >/dev/null
+expect_rc 0 lease --job orphan-gc --kind quota_pool --profile codex-max --gate-output "$TMP/gate.out"
+age_job orphan-gc 11
+"$ARBITER" claim --job gc-row-left --agent-label gc-row-left-agent --lane live --t T1 >/dev/null
+expect_rc 0 lease --job gc-row-left --kind quota_pool --profile codex-max --gate-output "$TMP/gate.out"
+expect_rc 0 lease --job gc-row-left --resource path-left --kind path
+age_job quota-dead 11
+age_job gc-row-left 11
+printf '%s\n' '{"result":{"agents":[{"name":"pool-a","agent_status":"working"},{"name":"pool-b","agent_status":"working"},{"name":"pool-c","agent_status":"working"},{"name":"pool-d","agent_status":"working"},{"name":"quota-live","agent_status":"working"},{"name":"quota-custom-agent","agent_status":"working"},{"name":"quota-idle","agent_status":"idle"},{"name":"quota-done","agent_status":"done"},{"name":"quota-blocked","agent_status":"blocked"}]}}' >"$TMP/agents.json"
+run gc --herdr-agent-list "$TMP/agents.json" --json
+[[ "$RC" -eq 0 ]] || fail "stale quota cleanup failed: $ERR"
+pycheck "$OUT" <<'PY' || fail "stale cleanup did not report the dead job"
+import json, sys
+d = json.load(sys.stdin)
+assert [r["job_id"] for r in d["stale_quota_pool"]] == ["gc-row-left", "orphan-gc", "quota-dead"], d
+assert {tuple(r["herdr_status"]) for r in d["stale_quota_pool"]} == {()}, d
+PY
+pycheck "$("$ARBITER" status --json)" <<'PY' || fail "stale quota record remains"
+import json, sys
+d = json.load(sys.stdin)
+assert {r["job_id"] for r in d["quota_pool_records"]} >= {"pool-a", "pool-b", "quota-live", "quota-custom-job", "quota-idle", "quota-done", "quota-blocked"}, d
+assert "quota-dead" not in {r["job_id"] for r in d["quota_pool_records"]}, d
+PY
+for stale_job in gc-row-left orphan-gc quota-dead; do
+  stale_seq=00003
+  [[ "$stale_job" != gc-row-left ]] || stale_seq=00004
+  [[ -f "$ARBITER_INBOX_ROOT/$stale_job/events/${stale_seq}-quota_pool.stale_cleanup.json" ]] \
+    || fail "stale cleanup event artifact missing for $stale_job"
+done
+for retained_job in quota-idle quota-done quota-blocked; do
+  pycheck "$("$ARBITER" status --job "$retained_job" --json)" <<'PY' || fail "gc released a listed idle/done/blocked pane"
+import json, sys
+d = json.load(sys.stdin)
+assert d["jobs"][0]["state"] == "leased", d
+assert len(d["quota_pool_records"]) == 1, d
+PY
+  pycheck "$("$ARBITER" job-get --job "$retained_job" --json)" <<'PY' || fail "gc wrote an orphan event for a listed idle/done/blocked pane"
+import json, sys
+d = json.load(sys.stdin)
+assert "job.orphan_release" not in d["recent_event_kinds"], d
+PY
+done
+pass "gc retains jobs for listed idle, done, and blocked panes"
+pycheck "$("$ARBITER" status --job orphan-gc --json)" <<'PY' || fail "orphan gc left the stale job leased"
+import json, sys
+d = json.load(sys.stdin)
+assert d["jobs"][0]["state"] == "released", d
+assert d["quota_pool_records"] == [], d
+PY
+pycheck "$("$ARBITER" job-get --job orphan-gc --json)" <<'PY' || fail "orphan gc did not write exactly one transition event"
+import json, sys
+d = json.load(sys.stdin)
+assert d["recent_event_kinds"].count("job.orphan_release") == 1, d
+PY
+python3 - "$ARBITER_INBOX_ROOT/orphan-gc/events/00004-job.orphan_release.json" <<'PY' \
+  || fail "gc orphan transition event is incomplete"
+import json, sys
+event = json.load(open(sys.argv[1], encoding="utf-8"))
+payload = event["payload"]
+assert event["kind"] == "job.orphan_release", event
+assert payload["job_id"] == "orphan-gc", payload
+assert payload["prior_state"] == "leased", payload
+assert payload["agent_label"] == "orphan-gc-agent", payload
+assert payload["herdr_status"] == [], payload
+assert payload["reason"] == "job absent from herdr agent list", payload
+PY
+pycheck "$("$ARBITER" status --job gc-row-left --json)" <<'PY' || fail "gc released a job with a path lease left"
+import json, sys
+d = json.load(sys.stdin)
+assert d["jobs"][0]["state"] == "leased", d
+assert [(r["resource"], r["kind"]) for r in d["leases"]] == [("path-left", "path")], d
+PY
+pycheck "$("$ARBITER" job-get --job gc-row-left --json)" <<'PY' || fail "gc wrote an orphan event with a path lease left"
+import json, sys
+d = json.load(sys.stdin)
+assert "job.orphan_release" not in d["recent_event_kinds"], d
+PY
+run claim --reclaim-released --job orphan-gc --agent-label orphan-gc-retry --lane retry --t T2 --json
+[[ "$RC" -eq 0 ]] || fail "job released by gc could not be reclaimed without duplicate override: $ERR"
+pass "gc stale cleanup atomically releases an orphaned job, audits once, and permits reclaim"
+pass "gc leaves a stale job leased while any path lease remains"
+
+# An absent pane during the spawn startup grace is not proof that its owner is
+# gone. Keep both the quota reservation and leased job for a recent claim.
+"$ARBITER" claim --job orphan-young --agent-label orphan-young-agent --lane live --t T1 >/dev/null
+expect_rc 0 lease --job orphan-young --kind quota_pool --profile codex-max --gate-output "$TMP/gate.out"
+age_job orphan-young 1
+printf '%s\n' '{"result":{"agents":[]}}' >"$TMP/absent-agents.json"
+run gc --herdr-agent-list "$TMP/absent-agents.json" --json
+[[ "$RC" -eq 0 ]] || fail "gc failed for a recently claimed absent pane: $ERR"
+grep -q 'gc skipped orphan cleanup' <<<"$ERR" || fail "startup grace skip was not logged: $ERR"
+pycheck "$OUT" <<'PY' || fail "gc retired a job still inside startup grace"
+import json, sys
+d = json.load(sys.stdin)
+assert "orphan-young" not in {r["job_id"] for r in d["stale_quota_pool"]}, d
+assert any(r["job_id"] == "orphan-young" and "startup grace" in r["reason"]
+           for r in d["skipped"]), d
+PY
+pycheck "$("$ARBITER" status --job orphan-young --json)" <<'PY' || fail "startup grace deleted the quota reservation"
+import json, sys
+d = json.load(sys.stdin)
+assert d["jobs"][0]["state"] == "leased", d
+assert len(d["quota_pool_records"]) == 1, d
+PY
+pass "gc preserves a recent claimed job and quota reservation during the 10-minute startup grace"
+
+"$ARBITER" claim --job orphan-spawn-young --agent-label orphan-spawn-young-agent --lane live --t T1 >/dev/null
+expect_rc 0 lease --job orphan-spawn-young --kind quota_pool --profile codex-max --gate-output "$TMP/gate.out"
+age_job orphan-spawn-young 11
+expect_rc 0 event --job orphan-spawn-young --kind job.spawned --payload-json '{"pane_id":"w2:p-new"}'
+run gc --herdr-agent-list "$TMP/absent-agents.json" --json
+[[ "$RC" -eq 0 ]] || fail "gc failed for a recent spawn receipt: $ERR"
+pycheck "$OUT" <<'PY' || fail "gc ignored the recent spawn receipt startup grace"
+import json, sys
+d = json.load(sys.stdin)
+assert "orphan-spawn-young" not in {r["job_id"] for r in d["stale_quota_pool"]}, d
+assert any(r["job_id"] == "orphan-spawn-young" and "latest spawn" in r["reason"]
+           for r in d["skipped"]), d
+PY
+pass "gc preserves a recent spawn receipt during startup grace"
+expect_rc 0 release --job quota-live --resource codex --kind quota_pool
+pass "normal quota release and herdr-list stale cleanup leave event evidence"
+
+# Herdr acquisition/parsing failures are fail-closed and never guess at cleanup.
+expect_rc 6 gc --herdr-agent-list "$TMP/no-such-agents.json"
+printf '%s\n' '{"result":{"agents":"not-a-list"}}' >"$TMP/malformed-agents.json"
+expect_rc 6 gc --herdr-agent-list "$TMP/malformed-agents.json"
+pass "gc refuses missing or malformed Herdr lists without guessing"
+
+# Herdr's valid `unknown` startup/detection state is not stale evidence.
+"$ARBITER" claim --job quota-unknown --agent-label quota-unknown-agent --lane live --t T1 >/dev/null
+expect_rc 0 lease --job quota-unknown --kind quota_pool --profile codex-max --gate-output "$TMP/gate.out"
+printf '%s\n' '{"result":{"agents":[{"name":"quota-unknown-agent","agent_status":"unknown"}]}}' >"$TMP/unknown-agents.json"
+run gc --herdr-agent-list "$TMP/unknown-agents.json" --json
+[[ "$RC" -eq 6 ]] || fail "gc guessed that unknown status was stale: rc=$RC out=$OUT err=$ERR"
+grep -q 'unknown' <<<"$ERR" || fail "unknown status refusal was not explained: $ERR"
+pycheck "$("$ARBITER" status --job quota-unknown --json)" <<'PY' || fail "unknown status record was deleted"
+import json, sys
+d = json.load(sys.stdin)
+assert len(d["quota_pool_records"]) == 1, d
+assert d["quota_pool_records"][0]["job_id"] == "quota-unknown", d
+PY
+pass "gc preserves a quota record matched to Herdr's valid unknown status"
+
+# Unknown Herdr identity for a stale quota row must not transition its leased
+# job or delete either its capacity row or audit history.
+pycheck "$("$ARBITER" job-get --job quota-unknown --json)" <<'PY' || fail "unknown agent wrote an orphan transition event"
+import json, sys
+d = json.load(sys.stdin)
+assert "job.orphan_release" not in d["recent_event_kinds"], d
+PY
+
+# ------------------------------------------------------ force release orphan
+printf '%s\n' '{"result":{"agents":[]}}' >"$TMP/absent-agents.json"
+"$ARBITER" claim --job manual-orphan --agent-label manual-orphan-agent --lane live --t T1 >/dev/null
+expect_rc 0 lease --job manual-orphan --kind quota_pool --profile codex-max --gate-output "$TMP/gate.out"
+drop_quota_rows manual-orphan
+age_job manual-orphan 11
+run release --force --job manual-orphan --herdr-agent-list "$TMP/absent-agents.json" --json
+[[ "$RC" -eq 0 ]] || fail "manual orphan release failed: $ERR"
+pycheck "$OUT" <<'PY' || fail "manual orphan release did not report forced=true"
+import json, sys
+d = json.load(sys.stdin)
+assert d["forced"] is True, d
+assert d["job_id"] == "manual-orphan", d
+PY
+python3 - "$ARBITER_INBOX_ROOT/manual-orphan/events/00003-job.orphan_release.json" <<'PY' \
+  || fail "manual orphan release event is incomplete"
+import json, sys
+event = json.load(open(sys.argv[1], encoding="utf-8"))
+assert event["kind"] == "job.orphan_release", event
+assert event["payload"]["forced"] is True, event
+assert event["payload"]["prior_state"] == "leased", event
+PY
+pycheck "$("$ARBITER" status --job manual-orphan --json)" <<'PY' || fail "manual orphan job did not reach released"
+import json, sys
+d = json.load(sys.stdin)
+assert d["jobs"][0]["state"] == "released", d
+PY
+pass "release --force --job atomically releases an absent-agent orphan with forced audit evidence"
+
+"$ARBITER" claim --job manual-young --agent-label manual-young-agent --lane live --t T1 >/dev/null
+expect_rc 0 lease --job manual-young --kind quota_pool --profile codex-max --gate-output "$TMP/gate.out"
+drop_quota_rows manual-young
+age_job manual-young 1
+expect_rc 5 release --force --job manual-young --herdr-agent-list "$TMP/absent-agents.json"
+grep -q 'startup grace' <<<"$ERR" || fail "young manual orphan refusal omitted startup grace: $ERR"
+pycheck "$("$ARBITER" status --job manual-young --json)" <<'PY' || fail "manual release retired a recent claim"
+import json, sys
+d = json.load(sys.stdin)
+assert d["jobs"][0]["state"] == "leased", d
+PY
+pycheck "$("$ARBITER" job-get --job manual-young --json)" <<'PY' || fail "young manual refusal wrote an orphan event"
+import json, sys
+d = json.load(sys.stdin)
+assert "job.orphan_release" not in d["recent_event_kinds"], d
+PY
+pass "release --force --job refuses an absent owner inside startup grace"
+
+"$ARBITER" claim --job manual-live --agent-label manual-live-agent --lane live --t T1 >/dev/null
+expect_rc 0 lease --job manual-live --kind quota_pool --profile codex-max --gate-output "$TMP/gate.out"
+drop_quota_rows manual-live
+age_job manual-live 11
+printf '%s\n' '{"result":{"agents":[{"name":"manual-live-agent","agent_status":"working"}]}}' >"$TMP/manual-live.json"
+expect_rc 5 release --force --job manual-live --herdr-agent-list "$TMP/manual-live.json"
+grep -q 'manual-live-agent' <<<"$ERR" || fail "live-agent refusal did not name its owner: $ERR"
+grep -q 'working' <<<"$ERR" || fail "live-agent refusal did not name its status: $ERR"
+pycheck "$("$ARBITER" status --job manual-live --json)" <<'PY' || fail "live manual release changed job state"
+import json, sys
+d = json.load(sys.stdin)
+assert d["jobs"][0]["state"] == "leased", d
+PY
+pycheck "$("$ARBITER" job-get --job manual-live --json)" <<'PY' || fail "live manual release wrote an orphan event"
+import json, sys
+d = json.load(sys.stdin)
+assert "job.orphan_release" not in d["recent_event_kinds"], d
+PY
+
+"$ARBITER" claim --job manual-unknown --agent-label manual-unknown-agent --lane live --t T1 >/dev/null
+expect_rc 0 lease --job manual-unknown --kind quota_pool --profile codex-max --gate-output "$TMP/gate.out"
+drop_quota_rows manual-unknown
+age_job manual-unknown 11
+printf '%s\n' '{"result":{"agents":[{"name":"manual-unknown-agent","agent_status":"unknown"}]}}' >"$TMP/manual-unknown.json"
+expect_rc 6 release --force --job manual-unknown --herdr-agent-list "$TMP/manual-unknown.json"
+grep -q 'unknown' <<<"$ERR" || fail "unknown-agent refusal was not explained: $ERR"
+pycheck "$("$ARBITER" status --job manual-unknown --json)" <<'PY' || fail "unknown manual release changed job state"
+import json, sys
+d = json.load(sys.stdin)
+assert d["jobs"][0]["state"] == "leased", d
+PY
+pycheck "$("$ARBITER" job-get --job manual-unknown --json)" <<'PY' || fail "unknown manual release wrote an orphan event"
+import json, sys
+d = json.load(sys.stdin)
+assert "job.orphan_release" not in d["recent_event_kinds"], d
+PY
+
+for agent_state in idle "done"; do
+  job="manual-$agent_state"
+  agent="$job-agent"
+  "$ARBITER" claim --job "$job" --agent-label "$agent" --lane live --t T1 >/dev/null
+  expect_rc 0 lease --job "$job" --kind quota_pool --profile codex-max --gate-output "$TMP/gate.out"
+  drop_quota_rows "$job"
+  age_job "$job" 11
+  printf '{"result":{"agents":[{"name":"%s","agent_status":"%s"}]}}\n' \
+    "$agent" "$agent_state" >"$TMP/$job.json"
+  expect_rc 5 release --force --job "$job" --herdr-agent-list "$TMP/$job.json"
+  grep -q "$agent_state" <<<"$ERR" \
+    || fail "$agent_state pane refusal did not name its status: $ERR"
+  pycheck "$("$ARBITER" status --job "$job" --json)" <<'PY' || fail "$agent_state pane without rows was released"
+import json, sys
+d = json.load(sys.stdin)
+assert d["jobs"][0]["state"] == "leased", d
+assert d["leases"] == [] and d["quota_pool_records"] == [], d
+PY
+  pycheck "$("$ARBITER" job-get --job "$job" --json)" <<'PY' || fail "$agent_state pane wrote an orphan event"
+import json, sys
+d = json.load(sys.stdin)
+assert "job.orphan_release" not in d["recent_event_kinds"], d
+PY
+done
+pass "release --force --job retains listed idle and done panes even without rows"
+
+"$ARBITER" claim --job manual-unreadable --agent-label manual-unreadable-agent --lane live --t T1 >/dev/null
+expect_rc 0 lease --job manual-unreadable --kind quota_pool --profile codex-max --gate-output "$TMP/gate.out"
+drop_quota_rows manual-unreadable
+age_job manual-unreadable 11
+expect_rc 6 release --force --job manual-unreadable --herdr-agent-list "$TMP/no-such-agents.json"
+pycheck "$("$ARBITER" status --job manual-unreadable --json)" <<'PY' || fail "unreadable Herdr list changed the orphan job"
+import json, sys
+d = json.load(sys.stdin)
+assert d["jobs"][0]["state"] == "leased", d
+assert d["leases"] == [] and d["quota_pool_records"] == [], d
+PY
+pycheck "$("$ARBITER" job-get --job manual-unreadable --json)" <<'PY' || fail "unreadable Herdr list wrote an orphan event"
+import json, sys
+d = json.load(sys.stdin)
+assert "job.orphan_release" not in d["recent_event_kinds"], d
+PY
+pass "release --force --job refuses an unreadable Herdr list"
+
+"$ARBITER" claim --job manual-quota-left --agent-label manual-quota-agent --lane live --t T1 >/dev/null
+expect_rc 0 lease --job manual-quota-left --kind quota_pool --profile codex-max --gate-output "$TMP/gate.out"
+expect_rc 5 release --force --job manual-quota-left --herdr-agent-list "$TMP/absent-agents.json"
+grep -q 'quota_pool' <<<"$ERR" || fail "remaining quota refusal did not name its row: $ERR"
+pycheck "$("$ARBITER" status --job manual-quota-left --json)" <<'PY' || fail "manual release deleted a remaining quota row"
+import json, sys
+d = json.load(sys.stdin)
+assert d["jobs"][0]["state"] == "leased", d
+assert len(d["quota_pool_records"]) == 1, d
+PY
+
+"$ARBITER" claim --job manual-lease-left --agent-label manual-lease-agent --lane live --t T1 >/dev/null
+expect_rc 0 lease --job manual-lease-left --kind quota_pool --profile codex-max --gate-output "$TMP/gate.out"
+expect_rc 0 lease --job manual-lease-left --resource manual-path-left --kind path
+drop_quota_rows manual-lease-left
+age_job manual-lease-left 11
+expect_rc 5 release --force --job manual-lease-left --herdr-agent-list "$TMP/absent-agents.json"
+grep -q 'manual-path-left' <<<"$ERR" || fail "remaining lease refusal did not name its row: $ERR"
+pycheck "$("$ARBITER" status --job manual-lease-left --json)" <<'PY' || fail "manual release deleted a remaining lease"
+import json, sys
+d = json.load(sys.stdin)
+assert d["jobs"][0]["state"] == "leased", d
+assert [(r["resource"], r["kind"]) for r in d["leases"]] == [("manual-path-left", "path")], d
+PY
+pycheck "$("$ARBITER" job-get --job manual-lease-left --json)" <<'PY' || fail "manual release wrote an event with a lease left"
+import json, sys
+d = json.load(sys.stdin)
+assert "job.orphan_release" not in d["recent_event_kinds"], d
+PY
+pass "release --force --job refuses live, unknown, quota-left, and lease-left jobs"
+
+# gc and manual force may race for the same stale record. BEGIN IMMEDIATE
+# permits one orphan event and one released row, then a normal reclaim works.
+"$ARBITER" claim --job orphan-race --agent-label orphan-race-agent --lane live --t T1 >/dev/null
+expect_rc 0 lease --job orphan-race --kind quota_pool --profile codex-max --gate-output "$TMP/gate.out"
+age_job orphan-race 11
+set +e
+"$ARBITER" gc --herdr-agent-list "$TMP/absent-agents.json" --json >"$TMP/race-gc.out" 2>&1 &
+gc_pid=$!
+"$ARBITER" release --force --job orphan-race --herdr-agent-list "$TMP/absent-agents.json" --json >"$TMP/race-release.out" 2>&1 &
+release_pid=$!
+wait "$gc_pid"; gc_rc=$?
+wait "$release_pid"; release_rc=$?
+set -e
+[[ "$gc_rc" -eq 0 ]] || fail "gc lost its serialized orphan transition race: rc=$gc_rc"
+[[ "$release_rc" -eq 5 ]] || fail "concurrent manual release should either see a row or released state: rc=$release_rc"
+pycheck "$("$ARBITER" status --job orphan-race --json)" <<'PY' || fail "orphan race left a partial job transition"
+import json, sys
+d = json.load(sys.stdin)
+assert d["jobs"][0]["state"] == "released", d
+assert d["quota_pool_records"] == [], d
+PY
+pycheck "$("$ARBITER" job-get --job orphan-race --json)" <<'PY' || fail "orphan race emitted more than one transition event"
+import json, sys
+d = json.load(sys.stdin)
+assert d["recent_event_kinds"].count("job.orphan_release") == 1, d
+PY
+run claim --reclaim-released --job orphan-race --agent-label orphan-race-retry --lane retry --t T1 --json
+[[ "$RC" -eq 0 ]] || fail "raced orphan release was not reclaimable: $ERR"
+pass "gc and forced orphan release serialize without duplicate transition events"
+
+# ------------------------------------------------------------ ⑤ forced release
+"$ARBITER" claim --job force --lane live --t T1 >/dev/null
+force_token="$("$ARBITER" lease --job force --resource forced --kind path --json | jget token)"
+run release --force --job force --resource forced --kind path --json
+[[ "$RC" -eq 0 ]] || fail "forced release failed: $ERR"
+[[ "$(jget forced <<<"$OUT")" == "True" ]] || fail "forced release did not report forced=true"
+[[ -f "$ARBITER_INBOX_ROOT/force/events/00003-lease.release.force.json" ]] \
+  || fail "forced release event artifact missing"
+expect_rc 5 release --job force --resource forced --kind path --token "$force_token"
+pass "release --force bypasses fencing only with a force event"
+
+# ------------------------------------------------------- ⑧ read-only status
+"$ARBITER" status >/dev/null
+before="$(mtime "$DB")"
+for _ in 1 2 3; do
+  "$ARBITER" status >/dev/null
+  "$ARBITER" status --json >/dev/null
+  "$ARBITER" status --job j1 >/dev/null
+  "$ARBITER" status --lane live >/dev/null
+done
+after="$(mtime "$DB")"
+[[ "$before" == "$after" ]] || fail "repeated status changed the db mtime ($before -> $after)"
+pass "⑧ repeated read-only status leaves the db mtime unchanged"
+
+expect_rc 2 status --job j1 --lane live
+pass "status refuses contradictory scoping"
+
+# ------------------------------------------------ ROB-1326 job recovery receipt
+# C3: the recovery reader receives one durable, read-only job view.  A receipt
+# is explicitly absent until wrk records job.spawned; absence is not a blank
+# success response that callers could mistake for a delivery.
+"$ARBITER" claim --job receipt-query --agent-label receipt-agent --lane receipt-lane --t T2 >/dev/null
+job_get_mtime_before="$(mtime "$DB")"
+run job-get --job receipt-query --json
+[[ "$RC" -eq 0 ]] || fail "job-get failed for an existing job: $ERR"
+[[ "$job_get_mtime_before" == "$(mtime "$DB")" ]] || fail "job-get wrote to the state db"
+pycheck "$OUT" <<'PY' || fail "job-get omitted the durable recovery fields"
+import json, sys
+d = json.load(sys.stdin)
+required = {
+    "job_id", "state", "owner_lane", "t_level", "created_at", "updated_at",
+    "agent_label", "receipt", "recent_event_kinds",
+}
+assert required <= set(d), d
+assert d["job_id"] == "receipt-query", d
+assert d["state"] == "claimed", d
+assert d["owner_lane"] == "receipt-lane", d
+assert d["t_level"] == "T2", d
+assert d["agent_label"] == "receipt-agent", d
+assert d["receipt"] == "absent", d
+assert d["recent_event_kinds"] == ["job.claim"], d
+PY
+expect_rc 7 job-get --job receipt-missing --json
+grep -q 'not found' <<<"$ERR" || fail "job-get not-found error was unclear: $ERR"
+pass "ROB-1326 C3: job-get is JSON read-only and has a dedicated not-found exit"
+
+# event --payload-json carries a structured spawn receipt without a schema
+# migration.  job-get surfaces its pane_id and the durable event timestamp.
+expect_rc 0 event --job receipt-query --kind job.spawned \
+  --payload-json '{"pane_id":"w:p99","label":"receipt-agent","profile":"codex-luna","workspace":"fixture"}'
+run job-get --job receipt-query --json
+[[ "$RC" -eq 0 ]] || fail "job-get failed after recording receipt: $ERR"
+pycheck "$OUT" <<'PY' || fail "job-get did not expose the spawn receipt"
+import json, sys
+d = json.load(sys.stdin)
+r = d["receipt"]
+assert r["pane_id"] == "w:p99", d
+assert r["spawned_at"], d
+assert r["label"] == "receipt-agent", d
+assert r["profile"] == "codex-luna", d
+assert r["workspace"] == "fixture", d
+assert d["recent_event_kinds"][-1] == "job.spawned", d
+PY
+pass "ROB-1326 C3: structured spawn receipt is durable in job-get"
+
+# C2/C4: ordinary claim remains fail-closed for every existing row, while the
+# explicit released-only path atomically reuses that row and keeps its history.
+"$ARBITER" claim --job reclaimable --agent-label old-agent --lane old-lane --t T1 >/dev/null
+before_reclaim="$("$ARBITER" job-get --job reclaimable --json)"
+before_created="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["created_at"])' <<<"$before_reclaim")"
+expect_rc 0 lease --job reclaimable --kind quota_pool --profile codex-max --gate-output "$TMP/gate.out"
+expect_rc 0 release --job reclaimable --resource codex --kind quota_pool
+expect_rc 4 claim --job reclaimable --agent-label wrong-path --lane new-lane --t T3
+run claim --reclaim-released --job reclaimable --agent-label new-agent --lane new-lane --t T3 --json
+[[ "$RC" -eq 0 ]] || fail "released job did not reclaim: $ERR"
+pycheck "$OUT" "$before_created" <<'PY' || fail "reclaim did not preserve the existing row/history"
+import json, sys
+d = json.load(sys.stdin)
+assert d["state"] == "claimed", d
+assert d["created_at"] == sys.argv[1], d
+assert d["reclaimed"] is True, d
+PY
+run job-get --job reclaimable --json
+[[ "$RC" -eq 0 ]] || fail "job-get failed after reclaim: $ERR"
+pycheck "$OUT" "$before_created" <<'PY' || fail "reclaimed job view is incomplete or wrong"
+import json, sys
+d = json.load(sys.stdin)
+assert d["state"] == "claimed", d
+assert d["owner_lane"] == "new-lane", d
+assert d["t_level"] == "T3", d
+assert d["created_at"] == sys.argv[1], d
+assert d["agent_label"] == "new-agent", d
+assert d["recent_event_kinds"].count("job.reclaim") == 1, d
+PY
+# An active job never enters this special path: it is still exit 4 rather than
+# silently being overwritten by a second claimant.
+expect_rc 4 claim --reclaim-released --job reclaimable --agent-label third-agent --lane third-lane --t T0
+pass "ROB-1326 C2/C4: released -> claimed reuses history; active reclaim remains duplicate exit 4"
+
+# ------------------------------------------- ⑤ schema mismatch / permission
+cp "$DB" "$TMP/good.db"
+python3 - "$DB" <<'PY'
+import sqlite3, sys
+con = sqlite3.connect(sys.argv[1])
+# Reproduce the installed v1 shape: schema version 1 and no v2 quota table.
+con.execute("DROP TABLE quota_pool_records")
+con.execute("UPDATE meta SET schema_version = 1 WHERE id = 1")
+con.commit()
+con.close()
+PY
+expect_rc 6 status
+grep -q 'schema mismatch' <<<"$ERR" || fail "schema mismatch not reported: $ERR"
+grep -q "db_path=$DB" <<<"$ERR" || fail "schema mismatch omitted the DB path: $ERR"
+grep -q 'observed_version=1' <<<"$ERR" || fail "schema mismatch omitted observed version: $ERR"
+grep -q 'expected_version=2' <<<"$ERR" || fail "schema mismatch omitted expected version: $ERR"
+grep -q 'back up' <<<"$ERR" || fail "schema mismatch omitted backup action: $ERR"
+grep -q 'recreate' <<<"$ERR" || fail "schema mismatch omitted recreate action: $ERR"
+grep -q 'no automatic migration' <<<"$ERR" || fail "schema mismatch promised no migration: $ERR"
+expect_rc 6 claim --job after-mismatch --lane live --t T1
+expect_rc 6 lease --job j1 --resource anything --kind path
+pass "⑤ schema mismatch is fail-closed on every command, including claim"
+
+restore_db
+chmod 000 "$DB"
+expect_rc 6 status
+expect_rc 6 lease --job j1 --resource anything --kind path
+chmod u+rw "$DB"
+pass "⑤ permission error is fail-closed (exit 6)"
+
+# The db survives every rejection above.
+expect_rc 0 status
+pass "state db still usable after the fail-closed battery"
+
+# A db moved without its WAL sidecars still reads, and still reads read-only.
+restore_db
+expect_rc 0 status
+before="$(mtime "$DB")"
+expect_rc 0 status
+[[ "$before" == "$(mtime "$DB")" ]] || fail "read-only status wrote to a sidecar-less db"
+pass "⑧ status reads a db that has no -wal/-shm sidecar without writing to it"
+
+python3 "$ROOT/tests/test_arbiter_orphan_mutants.py"
+echo 'PASS test-arbiter'

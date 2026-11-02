@@ -1,0 +1,406 @@
+#!/usr/bin/env bash
+# #636 part A (AC1+AC5): the polling-monitor ban must stay executable.
+#
+# A director session accumulated 256 session-bound polling monitors over 96h
+# and lost 34 of them in one reboot (hk:doc
+# task/2026-09-24/director-monitors-to-panewire). The fix is contract text:
+# ops/references/watching.md bans per-job polling loops and binds the allowed
+# signals to the deployed-build event table, and makes a spawner idle-wait on
+# pushed events instead of re-checking every turn. This guard:
+#
+#   1. watching.md §감시 정책 carries the ban, the event-subscription rule, the
+#      missing-event -> task rule, a numeric concurrency cap with its
+#      rationale, and a pointer to the event table;
+#   2. watching.md §스폰 후 대기 carries the idle-until-event rule, the per-turn re-check ban,
+#      and the single blocking-wait exception;
+#   3. ops/references/panewire-events.md keeps all four categories and marks
+#      deployed-only "있음" separately from source-only "미배포";
+#   4. mutants (wording or table rows removed) go RED through an assertion.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+python3 - "$ROOT" <<'PY'
+import os
+import re
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1])
+policy_path = Path(os.environ.get("WATCHING_DOC", root / "skills/ops/references/watching.md"))
+wait_path = policy_path
+events_path = Path(os.environ.get("EVENTS_DOC", root / "skills/ops/references/panewire-events.md"))
+
+policy_text = policy_path.read_text(encoding="utf-8")
+wait_text = wait_path.read_text(encoding="utf-8")
+events_text = events_path.read_text(encoding="utf-8")
+
+
+def flat(text: str) -> str:
+    return re.sub(r"\s+", " ", text)
+
+
+def section(text: str, heading: str) -> str:
+    """Body of a ##/### section up to the next heading of same-or-higher level."""
+    assert heading in text, f"missing heading: {heading}"
+    body = text.split(heading, 1)[1]
+    level = len(heading) - len(heading.lstrip("#"))
+    m = re.search(rf"(?m)^#{{1,{level}}} ", body)
+    return body[: m.start()] if m else body
+
+
+def check_policy(text: str) -> None:
+    """§감시 정책 must ban per-job polling loops, route to event subscription,
+    escalate missing events to tasks, and carry a numeric cap with rationale."""
+    sec = flat(section(text, "## 감시 정책"))
+    assert re.search(r"폴링 루프.{0,80}(감시하지|금지|상한은 0)", sec) or re.search(
+        r"상한은 0", sec
+    ), "per-job polling-loop ban missing (cap must be 0)"
+    assert re.search(r"job\.\*", sec) and "lane.event" in sec and "idle-wake" in sec, (
+        "event-subscription rule must name job.* / lane.event / idle-wake"
+    )
+    assert re.search(r"부족한 이벤트.{0,60}태스크", sec), (
+        "missing events must go to a task, not back to polling"
+    )
+    assert re.search(r"동시 3개 이하|3개 이하", sec), (
+        "concurrency cap number (3) missing"
+    )
+    assert re.search(r"3개 이하.{0,400}256", sec), (
+        "cap rationale must cite the 96h/256 measured count next to the cap"
+    )
+    assert "panewire-events.md" in sec, "section must point at the event table"
+    # 미배포 유실 신호(pane 소실·정체)는 걷어내지 않고 잡별 루프가 아닌 단발
+    # 조회로 커버한다는 처방이 §감시 정책 안에 있어야 한다 — 없으면 "예외 없음"
+    # 과 표의 미배포 행이 모순된다(테스터 B1).
+    assert re.search(r"공백 신호는 걷어내지 않는다.{0,300}단발", sec), (
+        "gap-signal prescription (미배포 유실 신호 → 단발 조회) missing"
+    )
+    # 처방의 수단·판정 기준도 계약이다 — herdr 는 로컬 소켓 1대분이고, 원격은
+    # ssh 또는 operator 토큰 경로며, 소실·정체 판정 기준이 있어야 실행 가능하다.
+    assert re.search(r"herdr agent list.{0,80}로컬", sec), (
+        "gap-signal means must mark herdr agent list as local-socket only"
+    )
+    assert re.search(r"ssh.{0,20}herdr agent list", sec) and "operator" in sec, (
+        "gap-signal means must cover remote hosts (ssh) and operator-token hub queries"
+    )
+    assert "판정 기준" in sec, (
+        "loss/stall judgement criteria missing from the gap-signal prescription"
+    )
+    # 정체 판정의 비교 대상은 pane 출력이다 — revision/last-event 비교는
+    # 일하는 워커를 전부 정체로 잘못 잡는다(테스터 RR1).
+    assert "pane read" in sec, (
+        "stall criterion must compare pane-read output, not revision counters"
+    )
+
+
+def check_wait(text: str) -> None:
+    """Builder must idle after spawning, wake on pushed events, never re-check
+    per turn, and get exactly one blocking wait."""
+    sec = flat(section(text, "## 스폰 후 대기"))
+    assert re.search(r"유휴로 대기하고.{0,40}알림으로 깨어난다", sec), (
+        "idle-until-completion-notification rule missing"
+    )
+    assert re.search(r"턴마다.{0,60}폴링 반복은 금지|턴.{0,20}확인.{0,20}금지", sec), (
+        "per-turn re-check ban missing"
+    )
+    assert re.search(r"블로킹 명령 1개", sec) and "panewire wait" in sec, (
+        "single bounded blocking-wait exception missing"
+    )
+    assert "bounded timeout" in sec, (
+        "the blocking wait must be bounded (timeout required)"
+    )
+    assert "panewire-events.md" in sec, "spawn-wait must point at the event table"
+    assert "공백 신호" in sec, (
+        "spawn-wait must point at the gap-signal rule for undeployed signals"
+    )
+
+
+def table_rows(text: str) -> list:
+    return [line for line in text.splitlines() if line.startswith("|")]
+
+
+def check_events_doc(text: str) -> None:
+    """The table must keep all four categories, deployed versions, and the
+    deployed/source split that keeps '있음' honest."""
+    for category in ("빌더·워커 감시", "호스트 건강", "CI·PR 대기", "기타"):
+        assert re.search(rf"(?m)^## \d+\. {re.escape(category)}\s*$", text), (
+            f"category section missing: {category}"
+        )
+    assert "pw-e401923" in text and "pw-05667f4" in text, (
+        "deployed build pins (hub pw-e401923, node pw-05667f4) missing"
+    )
+    assert "미배포" in text, "source-only rows must be marked 미배포"
+    assert "**있음**" in text, "deployed-available rows must be marked 있음"
+    # 행 단위 계약 — 배포 칸은 표 안 어딘가가 아니라 "그 행"에 있어야 한다.
+    rows = table_rows(text)
+    lost_rows = [r for r in rows if "job.lost" in r]
+    assert lost_rows and any("미배포" in r for r in lost_rows), (
+        "the job.lost row itself must be marked 미배포 (source-only, #80)"
+    )
+    stall_rows = [r for r in rows if "정체" in r]
+    assert stall_rows and any("미배포" in r for r in stall_rows), (
+        "the stall row itself must be marked 미배포 (source-only, #66)"
+    )
+    hub_rows = [r for r in rows if "orphaned" in r]
+    assert hub_rows and any("있음" in r for r in hub_rows), (
+        "hub-side job-state row (orphaned/recovered/reassigned/revoked) must "
+        "exist and be marked 있음 (deployed at pw-e401923)"
+    )
+    claim_rows = [r for r in rows if "claim" in r]
+    assert claim_rows and any("풀" in r for r in claim_rows), (
+        "the claim row must be marked pull — heartbeat registration, no lane push"
+    )
+    spawned_rows = [r for r in rows if "spawned" in r]
+    assert spawned_rows and any("없음" in r for r in spawned_rows), (
+        "the job.spawned/reaped/reclaim row must be marked 없음 — absent even "
+        "at origin/main, not merely undeployed"
+    )
+    # CI 결론은 문서 어딘가가 아니라 §5 안에 있어야 한다.
+    sec5 = section(text, "## 5. CI·PR 대기 결론")
+    assert "짧게 기다린다" in sec5 and "허브" in sec5, (
+        "CI wait conclusion (director bounded wait over hub polling) must live in §5"
+    )
+    assert "task/2026-09-24/director-monitors-to-panewire" in text, (
+        "canonical requirement ref missing"
+    )
+
+
+check_policy(policy_text)
+print("PASS watching.md policy ban=1 subscribe=1 missing->task=1 cap=3 rationale=1 doc-ptr=1")
+
+check_wait(wait_text)
+print("PASS watching.md spawn-wait idle-wait=1 no-per-turn-recheck=1 blocking-wait-1=1 doc-ptr=1")
+
+check_events_doc(events_text)
+print("PASS events-doc categories=4/4 pins=2 deployed/source-split=1 ci-conclusion=1")
+
+
+def expect_assertion(label, callback):
+    try:
+        callback()
+    except AssertionError:
+        return
+    except Exception as exc:
+        raise AssertionError(
+            f"{label} mutant errored instead of assertion RED: {exc}"
+        ) from exc
+    raise AssertionError(f"{label} mutant did not go RED")
+
+
+policy_section_removed = re.sub(
+    r"(?s)## 감시 정책.*?(?=\n## |\Z)", "", policy_text, count=1
+)
+assert policy_section_removed != policy_text, (
+    "fixture: policy 감시 정책 section not found to remove"
+)
+
+policy_cap_removed = policy_text.replace("동시 3개 이하", "동시 적당히", 1)
+assert policy_cap_removed != policy_text, (
+    "fixture: policy cap number not found to weaken"
+)
+
+policy_task_rule_removed = re.sub(
+    r"(?s)\*\*부족한 이벤트는.*?\n\n", "\n", policy_text, count=1
+)
+assert policy_task_rule_removed != policy_text, (
+    "fixture: policy missing-event->task bullet not found"
+)
+
+wait_section_removed = re.sub(
+    r"(?s)## 스폰 후 대기.*?(?=\n## |\Z)", "", wait_text, count=1
+)
+assert wait_section_removed != wait_text, (
+    "fixture: wait 대기 section not found to remove"
+)
+
+events_deployed_split_removed = events_text.replace("미배포", "있음")
+assert events_deployed_split_removed != events_text, (
+    "fixture: events doc 미배포 markers not found"
+)
+
+events_category_removed = events_text.replace("## 3. CI·PR 대기", "## 3. 대기", 1)
+assert events_category_removed != events_text, (
+    "fixture: events doc CI category heading not found"
+)
+
+# 행 단위 플립 — 전체 미배포→있음이 아니라 그 행 하나만 바꿔도 잡혀야 한다.
+def flip_row(marker):
+    row = next(
+        r for r in events_text.splitlines()
+        if r.startswith("|") and marker in r and "미배포" in r
+    )
+    return events_text.replace(row, row.replace("미배포", "있음"), 1)
+
+
+events_lost_row_flipped = flip_row("job.lost")
+assert events_lost_row_flipped != events_text, (
+    "fixture: job.lost 미배포 row not found to flip"
+)
+
+events_stall_row_flipped = flip_row("정체")
+assert events_stall_row_flipped != events_text, (
+    "fixture: stall 미배포 row not found to flip"
+)
+
+events_conclusion_removed = re.sub(
+    r"(?s)## 5\. CI·PR 대기 결론.*?(?=\n## |\Z)", "", events_text, count=1
+)
+assert events_conclusion_removed != events_text, (
+    "fixture: events doc §5 conclusion not found to remove"
+)
+
+policy_gap_rule_removed = re.sub(
+    r"(?s)- \*\*공백 신호는.*?(?=\n- )", "", policy_text, count=1
+)
+assert policy_gap_rule_removed != policy_text, (
+    "fixture: policy gap-signal bullet not found to remove"
+)
+
+policy_rationale_removed = policy_text.replace(
+    "실측 96h에 256건", "관측된 사례", 1
+)
+assert policy_rationale_removed != policy_text, (
+    "fixture: policy 256건 rationale not found to remove"
+)
+
+wait_bounded_removed = wait_text.replace(
+    "**bounded timeout 있는 블로킹 명령 1개**", "블로킹 명령 1개", 1
+)
+assert wait_bounded_removed != wait_text, (
+    "fixture: wait bounded-timeout wording not found to remove"
+)
+
+# 처방 수단·판정 기준 약화 — 문구가 남아도 의미가 무너지면 RED 여야 한다.
+policy_gap_local_lost = policy_text.replace(
+    "로컬 herdr 소켓 1대분", "fleet 조회", 1
+)
+assert policy_gap_local_lost != policy_text, (
+    "fixture: policy herdr local-scope wording not found"
+)
+
+policy_gap_remote_lost = policy_text.replace(
+    "`ssh <host> herdr agent list`", "", 1
+)
+assert policy_gap_remote_lost != policy_text, (
+    "fixture: policy ssh fallback wording not found"
+)
+
+policy_gap_judgement_lost = policy_text.replace("**판정 기준:**", "", 1)
+assert policy_gap_judgement_lost != policy_text, (
+    "fixture: policy judgement-criteria wording not found"
+)
+
+policy_stall_basis_lied = policy_text.replace("pane read", "revision")
+assert policy_stall_basis_lied != policy_text, (
+    "fixture: policy pane-read basis not found"
+)
+
+wait_gap_pointer_lost = wait_text.replace('"공백 신호" 규칙', "규칙", 1)
+assert wait_gap_pointer_lost != wait_text, (
+    "fixture: wait gap-signal pointer not found"
+)
+
+hub_row = next(
+    r for r in events_text.splitlines()
+    if r.startswith("|") and "orphaned" in r
+)
+events_hub_row_removed = events_text.replace(hub_row + "\n", "", 1)
+assert events_hub_row_removed != events_text, (
+    "fixture: hub-side job-state row not found to remove"
+)
+
+claim_row = next(
+    r for r in events_text.splitlines()
+    if r.startswith("|") and "job.claim" in r
+)
+events_claim_push_lied = events_text.replace(
+    claim_row, claim_row.replace("있음 — 풀**", "있음**"), 1
+)
+assert events_claim_push_lied != events_text, (
+    "fixture: claim row pull marking not found to weaken"
+)
+
+spawned_row = next(
+    r for r in events_text.splitlines()
+    if r.startswith("|") and "spawned" in r
+)
+events_spawned_row_flipped = events_text.replace(
+    spawned_row, spawned_row.replace("없음", "미배포"), 1
+)
+assert events_spawned_row_flipped != events_text, (
+    "fixture: spawned row 없음 marking not found to flip"
+)
+
+mutants = [
+    ("policy-section-removed", lambda: check_policy(policy_section_removed)),
+    ("policy-cap-weakened", lambda: check_policy(policy_cap_removed)),
+    (
+        "policy-missing-event-task-rule-removed",
+        lambda: check_policy(policy_task_rule_removed),
+    ),
+    (
+        "policy-gap-signal-rule-removed",
+        lambda: check_policy(policy_gap_rule_removed),
+    ),
+    (
+        "policy-cap-rationale-removed",
+        lambda: check_policy(policy_rationale_removed),
+    ),
+    ("wait-section-removed", lambda: check_wait(wait_section_removed)),
+    (
+        "wait-bounded-timeout-removed",
+        lambda: check_wait(wait_bounded_removed),
+    ),
+    (
+        "events-deployed-source-split-removed",
+        lambda: check_events_doc(events_deployed_split_removed),
+    ),
+    ("events-ci-category-renamed", lambda: check_events_doc(events_category_removed)),
+    (
+        "events-job-lost-row-flipped",
+        lambda: check_events_doc(events_lost_row_flipped),
+    ),
+    (
+        "events-stall-row-flipped",
+        lambda: check_events_doc(events_stall_row_flipped),
+    ),
+    (
+        "events-ci-conclusion-section-removed",
+        lambda: check_events_doc(events_conclusion_removed),
+    ),
+    (
+        "policy-gap-local-scope-lied",
+        lambda: check_policy(policy_gap_local_lost),
+    ),
+    (
+        "policy-gap-remote-means-removed",
+        lambda: check_policy(policy_gap_remote_lost),
+    ),
+    (
+        "policy-gap-judgement-removed",
+        lambda: check_policy(policy_gap_judgement_lost),
+    ),
+    (
+        "policy-stall-basis-lied",
+        lambda: check_policy(policy_stall_basis_lied),
+    ),
+    (
+        "wait-gap-pointer-removed",
+        lambda: check_wait(wait_gap_pointer_lost),
+    ),
+    (
+        "events-hub-row-removed",
+        lambda: check_events_doc(events_hub_row_removed),
+    ),
+    (
+        "events-claim-row-flipped",
+        lambda: check_events_doc(events_claim_push_lied),
+    ),
+    (
+        "events-spawned-row-flipped",
+        lambda: check_events_doc(events_spawned_row_flipped),
+    ),
+]
+for label, callback in mutants:
+    expect_assertion(label, callback)
+print(f"PASS mutants assertion-red={len(mutants)}/{len(mutants)}")
+PY
