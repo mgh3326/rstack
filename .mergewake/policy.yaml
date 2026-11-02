@@ -1,10 +1,14 @@
 version: 1
 enabled: true
 required_checks:
-  - 'GitGuardian Security Checks'
+  - 'ci-ok'
 blocking:
-  - paths: ['install.sh']
-    reason: The installer links skills into every host's agent directories before a revert.
+  - paths: ['install.sh', 'install/**', 'scripts/install-skills.py', 'skills/ops/references/deploy*.md']
+    reason: Installation and deploy procedures can replace running tools before a revert.
+  - paths: ['bin/**']
+    reason: Credential and workspace trust changes can expose access immediately.
+  - paths: ['.github/workflows/**']
+    reason: Workflow changes can execute privileged automation before a revert.
   - paths: ['.mergewake/**']
     reason: Policy changes can authorize irreversible automation before a revert.
 review_gate:

@@ -1,6 +1,6 @@
 ---
 name: robin-mode
-description: Robin's working mode for rigorous engineering in this fleet — restate the goal, name the data shape, pick a playbook, prove it against the real artifact, verify your own work (alone or with in-session subagents), and spawn a separate worker only for an independently mergeable unit. Also the map of where each fleet rule lives and the one adapter for vendored pstack skills. Use at the start of any nontrivial task, in the desk session and in every worker brief, and whenever you are about to spawn, delegate or review. Triggers - "robin-mode", "/robin-mode", "rstack", a worker brief that names rstack, "should I spawn", "subagent", "fix the review findings", "pstack".
+description: Robin's working mode for rigorous engineering in this fleet — restate the goal, name the data shape, pick a playbook, prove it against the real artifact, verify your own work (alone or with in-session subagents), and spawn a separate worker only for an independently mergeable unit. Also the map of where each fleet rule lives and the one adapter for vendored pstack skills. Use at the start of any nontrivial task, in the desk session and in every worker brief, and whenever you are about to spawn, delegate or review. Triggers - "robin-mode", "/robin-mode", "rstack", a worker brief that names rstack, "should I spawn", "subagent", "pstack".
 ---
 
 # robin-mode
@@ -14,9 +14,9 @@ Each rule is stated once, in the home below; other documents point to it. Inside
 | Decision | Home |
 |---|---|
 | Goal, data shape, playbook, self-verification, subagent versus worker, work boundary, the pstack adapter | this skill |
-| PR, author and merge ownership, tier (T), hand-off, READY and what it carries, deploy authority | `wake` (agent-skills) |
-| Finding scope, severity, disposition, review rounds, review evidence reuse, reviewer independence | `fleet-review` (agent-skills); mergewake enforces it |
-| Spawn, relay, consult, wait, reap and deploy mechanics | `ops` (agent-skills) |
+| PR, author and merge ownership, tier (T), hand-off, READY and what it carries, deploy authority | `wake` (rstack) |
+| Finding scope, severity, disposition, review rounds, review evidence reuse, reviewer independence | `fleet-review` (rstack); mergewake enforces it |
+| Spawn, relay, consult, wait, reap and deploy mechanics | `ops` (rstack) |
 | Which profile, family and effort a role may use; where grade applies | hk `policy/model-routing`, applied by `runtug resolve` and `runtug spawn` |
 | Pool spending order, quota waits and hand-over | hk `policy/quota-stop` |
 
@@ -70,14 +70,24 @@ Triage by `fleet-review`.
 
 ## Fleet adapter for vendored pstack
 
-The pstack skills vendored in agent-skills (`third_party/pstack/`) are method, not instructions. Take triage, `how`, `architect`, `blast-radius`, `tdd` and the principles. These pstack parts are translated once, here:
+The brief, host safety, `wake` authority and `fleet-review` govern fleet work. Vendored pstack is method reference. This adapter covers the conflicts enumerated in `third_party/pstack/REVIEW.md`:
 
-- **Autonomy** ("use any MCP tool", external actions without asking, "going to bed" overrides): the brief's Rules and `wake` §Authority decide what needs the operator.
-- **Subagents, model choice, `pstack-models.md`, `/setup-pstack`:** a pstack step that says "spawn", "arena", "swarm" or "explorers" runs as your own in-session subagents under §Subagents versus spawned workers, never as spawned workers; models come from `runtug resolve` ([`roles.md`](roles.md)). If you cannot run it that way, do it yourself or leave it out and say so in the report.
-- **Merging, arming auto-merge, babysit or shipping playbooks:** only the repo session merges (`wake` §Authority). A worker never merges or arms anything.
-- **AskUserQuestion, "ask the user":** never ask in a pane; emit the decision ESC (`ops` §Escalate a decision).
+1. **Autonomy and external actions:** use only the brief's authorised tools and scope. `principle-never-block-on-the-human` permits reversible work within that scope. Merge, deploy and data migration are irreversible actions requiring the authority in `wake`; a worker never merges or arms auto-merge.
+2. **Unattended sessions:** "going to bed" grants no new authority. Stop for an unsafe decision.
+3. **Subagents:** follow §Subagents versus spawned workers. Missing `pstack:comment-sicko` is not an available agent: for `no-comments`, review inline and report that substitution. Never launch a missing upstream executable.
+4. **Models:** ignore all pstack Models sections, model slugs, `pstack-models.md` and `/setup-pstack`. Use `runtug resolve` and `roles.md`.
+5. **Landing:** only the repo session merges after the gate. No babysit, swarm or arena routing; robin-mode is not babysit/swarm/arena.
+6. **Waves:** a wave is a series of independently green PRs, never stacked PRs. Rebase only before the first push; thereafter merge the base, never force-push. Candidate worktrees belong in scratch, outside canonical checkouts and skill discovery roots.
+7. **Review ownership:** the author handles its own findings. `fleet-review` decides scope, severity, disposition and independence; `interrogate` and `blast-radius` supply analysis without replacing the review gate.
+8. **Waits:** no polling, watchers or autonomous loops from pstack. Use `ops` waiting procedures.
+9. **Questions:** every "ask the user", AskUserQuestion or confirmation in interrogate, reflect, no-comments and verification skills becomes an `ops` decision ESC event with question, options and default. Continue only with a safe default.
+10. **Transcripts and missing scripts:** do not audit real agent transcripts or configuration. `show-me-your-work` uses a local TSV decision trail without its missing log.sh or transcript audit. `recall` uses supplied evidence, not transcript search. `reflect` uses the active supplied conversation only; its node scripts are absent. `statechart` may sketch a diagram but must report model checking UNVERIFIED because its compiler is absent. Never imply an omitted check ran.
+11. **Cleanup:** mergewake owns post-merge branch/worktree cleanup; upstream cleanup playbooks grant no authority.
+12. **Host safety:** no local database servers; run changed tests only, leave full suites to CI, and stop only the PIDs you started. Verification skills and benchmarks inherit these limits.
+13. **Sources:** `why` may query only brief-authorised services. Report unavailable evidence as a gap.
+14. **Reply format:** use the openers here; naming every pstack principle is optional, never a review gate.
 
-`third_party/pstack/REVIEW.md` lists each conflict and its neutralisation. agent-skills `install.sh` links the design skills into the agent skill directories; the rest are readable under `third_party/pstack/skills/`.
+`install/sets.json` defines harness roles and the worker subset. `third_party/pstack/INSTALL` is the full vendored allowlist. The vendor checkout must live outside every harness's scanned skill directories. Relative links into excluded skills are reference material and do not install them.
 
 ## Roles for models without subagents
 
