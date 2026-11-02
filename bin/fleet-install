@@ -278,8 +278,8 @@ def install_local(args):
               f"refusing to install an unverified artifact", file=sys.stderr)
         return False
     if args.dry_run:
-        print(f"[dry-run] install -m 755 {artifact} {target}")
-        print(f"[dry-run] {target} --version")
+        print(f"[dry-run] install -m 755 {artifact} {target}.new")
+        print(f"[dry-run] {target}.new --version && rename to {target}")
         return True
     if not os.path.isfile(artifact):
         print(f"{PROG}: no artifact for this host's arch: "
@@ -302,13 +302,21 @@ def install_local(args):
             pass
         return False
     try:
+        ver = run([staged, "--version"])
+    except OSError as exc:
+        print(f"{PROG}: cannot validate {staged}: {exc}", file=sys.stderr)
+        os.unlink(staged)
+        return False
+    print(ver.stdout.strip() or ver.stderr.strip())
+    if ver.returncode != 0:
+        os.unlink(staged)
+        return False
+    try:
         os.replace(staged, target)
     except OSError as exc:
         print(f"{PROG}: cannot promote {staged}: {exc}", file=sys.stderr)
         return False
-    ver = run([target, "--version"])
-    print(ver.stdout.strip() or ver.stderr.strip())
-    return ver.returncode == 0
+    return True
 
 
 def install_host(args, host):
@@ -316,6 +324,7 @@ def install_host(args, host):
     tool = args.tool
     if args.dry_run:
         print(f"[dry-run] ssh -n {host} '{REMOTE_ARCH_CMD}'")
+        print(f"[dry-run] ssh -n {host} 'mkdir -p ~/.local/bin'")
         print(f"[dry-run] scp {tool}-<arch> {host}:.local/bin/{tool}.new; "
               f"chmod+mv+--version over ssh")
         return True, None
@@ -332,6 +341,11 @@ def install_host(args, host):
     if args.sums is not None and f"{tool}-{arch}" not in args.sums:
         print(f"{PROG}: {host}: {tool}-{arch} is not listed in SHA256SUMS; "
               f"refusing to install an unverified artifact", file=sys.stderr)
+        return False, arch
+    proc = run([args.ssh, "-n", host, "mkdir -p ~/.local/bin"])
+    if proc.returncode != 0:
+        print(f"{PROG}: {host}: cannot create ~/.local/bin: "
+              f"{proc.stderr.strip()}", file=sys.stderr)
         return False, arch
     proc = run([args.scp, artifact, f"{host}:.local/bin/{tool}.new"])
     if proc.returncode != 0:
@@ -396,6 +410,9 @@ def main():
                         default=int(os.environ.get(
                             "FLEET_INSTALL_POLL_INTERVAL", DEFAULT_POLL_INTERVAL)))
     args = parser.parse_args()
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", args.tool):
+        parser.error("tool must start with an ASCII letter or digit and contain "
+                     "only ASCII letters, digits, underscores or hyphens")
 
     args.gh = os.environ.get("FLEET_INSTALL_GH", "gh")
     args.ssh = os.environ.get("FLEET_INSTALL_SSH", "ssh")
@@ -420,7 +437,8 @@ def main():
         if args.dry_run:
             print(f"[dry-run] gh release download {args.tag} -R "
                   f"{ORG}/{args.tool} --clobber --dir <tmp>")
-            print(f"[dry-run] {' '.join(checksum_tool())}")
+            print("[dry-run] verify SHA256SUMS with shasum -a 256 -c "
+                  "or sha256sum -c")
             args.sums = None
         else:
             proc = run([args.gh, "release", "download", args.tag,

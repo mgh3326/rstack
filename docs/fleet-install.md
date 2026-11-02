@@ -11,6 +11,11 @@ fleet-install mergewake v1.2.3 --hosts build-a,build-b
 fleet-install mergewake v1.2.3 --hosts build-a --dry-run
 ```
 
+Tool names must begin with an ASCII letter or digit and contain only ASCII
+letters, digits, underscores or hyphens. Unsafe names are rejected before any
+external call. `--dry-run` previews checksum verification without requiring a
+checksum executable; an actual installation always verifies checksums.
+
 What it does, in order:
 
 1. Polls `gh run list -R mgh3326/<tool> --branch <tag>` until the release
@@ -23,11 +28,13 @@ What it does, in order:
 3. `shasum -a 256 -c SHA256SUMS` (or `sha256sum -c`). Required, never skipped —
    and every artifact about to be installed must be listed in it.
 4. Detects this host's `<os>-<arch>` (`uname`, x86_64→amd64, aarch64→arm64),
-   stages `install -m 755` to `~/.local/bin/<tool>.new` and renames it into
-   place, then prints `<tool> --version`.
-5. Per `--hosts` entry: probes `<os>-<arch>` over ssh, `scp` the matching
-   binary to `.local/bin/<tool>.new`, runs `<tool>.new --version` to validate
-   it, then `mv -f` into place (atomic replace). If the staged binary cannot
+   stages `install -m 755` to `~/.local/bin/<tool>.new`, verifies the staged
+   binary with `--version`, then renames it into place. Failed validation
+   removes the staging file and preserves the working install.
+5. Per `--hosts` entry: probes `<os>-<arch>` over ssh, creates `~/.local/bin`
+   before upload, then uses `scp` to copy the matching binary to
+   `.local/bin/<tool>.new`, runs `<tool>.new --version` to validate it,
+   then `mv -f` into place (atomic replace). If the staged binary cannot
    run, the previous install stays untouched.
 6. Runs the configured restart hooks for every target that installed.
 

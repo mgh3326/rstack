@@ -20,5 +20,4 @@ esac
 
 home="${FLEET_INSTALL_FAKE_ROOT:?}/$(printf '%s' "$alias" | tr -c 'A-Za-z0-9_-' '_')"
 [[ -d "$home" ]] || { echo "fake scp: no fixture home for alias $alias" >&2; exit 254; }
-mkdir -p "$home/$(dirname "$path")"
 cp "$src" "$home/$path"

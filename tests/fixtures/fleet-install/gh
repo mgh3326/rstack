@@ -65,7 +65,9 @@ case "${1:-}" in
     : >"$dest/SHA256SUMS"
     while read -r name; do
       [[ -n "${name:-}" && "$name" != \#* ]] || continue
-      if [[ "${FLEET_INSTALL_FAKE_BROKEN:-}" == "$name" ]]; then
+      if [[ "${FLEET_INSTALL_FAKE_INVALID_FORMAT:-}" == "$name" ]]; then
+        printf '\177ELFinvalid-release' >"$dest/$name"
+      elif [[ "${FLEET_INSTALL_FAKE_BROKEN:-}" == "$name" ]]; then
         printf '#!/bin/sh\nexit 1\n' >"$dest/$name"
       else
         printf '#!/bin/sh\necho "%s %s (%s)"\n' "$tool" "$tag" "$name" >"$dest/$name"
