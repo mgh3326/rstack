@@ -43,3 +43,8 @@ read-only worker probes confirm current discovery; no actual host links were cha
 Plugins and project/configured roots outside the manifest remain host audit scope.
 
 Source host aliases in first-party references and fixture labels are anonymised.
+
+PR B carries the final agent-skills #333 delta from `00ac4bd` to source head
+`269e6d9e98fa5158dee0cf060322827501c52dc5` (author commit `4b53f85`).
+Code, tests and workspace guidance are copied; the source README configuration
+warning is adapted into docs/fleet-rev.md without private host inventory.

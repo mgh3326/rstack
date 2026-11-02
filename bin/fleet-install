@@ -16,9 +16,10 @@ Replaces the desk's ad-hoc install script:
   2. `gh release download <tag> -R mgh3326/<tool> --clobber` into a temp dir;
   3. `shasum -a 256 -c SHA256SUMS` (or `sha256sum -c`) — required, never skipped;
   4. install <tool>-<os>-<arch> for this host's detected arch into
-     ~/.local/bin/<tool> (mode 755) and print `<tool> --version`;
+     a unique sibling stage, validate it, then atomically replace
+     ~/.local/bin/<tool> (mode 755);
   5. per --hosts entry: detect <os>-<arch> over ssh, scp the matching binary
-     to .local/bin/<tool>.new, validate it with `<tool>.new --version`, then
+     to a unique .local/bin/<tool>.<token>.new, validate it with `--version`, then
      `mv -f` into place (atomic replace — a staged binary that cannot run
      never replaces the working install);
   6. post-install restart hooks from the local config file (below) run for
@@ -57,6 +58,7 @@ import json
 import os
 import platform
 import re
+import secrets
 import shutil
 import subprocess
 import sys
@@ -278,8 +280,8 @@ def install_local(args):
               f"refusing to install an unverified artifact", file=sys.stderr)
         return False
     if args.dry_run:
-        print(f"[dry-run] install -m 755 {artifact} {target}.new")
-        print(f"[dry-run] {target}.new --version && rename to {target}")
+        print(f"[dry-run] install -m 755 {artifact} {args.bin_dir}/<unique>/{args.tool}.new")
+        print(f"[dry-run] validate unique stage with --version && rename to {target}")
         return True
     if not os.path.isfile(artifact):
         print(f"{PROG}: no artifact for this host's arch: "
@@ -287,34 +289,20 @@ def install_local(args):
         return False
     try:
         os.makedirs(args.bin_dir, exist_ok=True)
+        # Sibling staging stays on the target filesystem; each install owns its directory.
+        with tempfile.TemporaryDirectory(prefix=f".{args.tool}-", dir=args.bin_dir) as stage_dir:
+            staged = os.path.join(stage_dir, args.tool + ".new")
+            proc = run(["install", "-m", "755", artifact, staged])
+            if proc.returncode != 0:
+                print(f"{PROG}: install failed: {proc.stderr.strip()}", file=sys.stderr)
+                return False
+            ver = run([staged, "--version"])
+            print(ver.stdout.strip() or ver.stderr.strip())
+            if ver.returncode != 0:
+                return False
+            os.replace(staged, target)
     except OSError as exc:
-        print(f"{PROG}: cannot create {args.bin_dir}: {exc}", file=sys.stderr)
-        return False
-    # Stage to a sibling path and rename: an interrupted install must not
-    # leave a truncated binary at the live path.
-    staged = target + ".new"
-    proc = run(["install", "-m", "755", artifact, staged])
-    if proc.returncode != 0:
-        print(f"{PROG}: install failed: {proc.stderr.strip()}", file=sys.stderr)
-        try:
-            os.unlink(staged)
-        except OSError:
-            pass
-        return False
-    try:
-        ver = run([staged, "--version"])
-    except OSError as exc:
-        print(f"{PROG}: cannot validate {staged}: {exc}", file=sys.stderr)
-        os.unlink(staged)
-        return False
-    print(ver.stdout.strip() or ver.stderr.strip())
-    if ver.returncode != 0:
-        os.unlink(staged)
-        return False
-    try:
-        os.replace(staged, target)
-    except OSError as exc:
-        print(f"{PROG}: cannot promote {staged}: {exc}", file=sys.stderr)
+        print(f"{PROG}: local install failed: {exc}", file=sys.stderr)
         return False
     return True
 
@@ -325,7 +313,7 @@ def install_host(args, host):
     if args.dry_run:
         print(f"[dry-run] ssh -n {host} '{REMOTE_ARCH_CMD}'")
         print(f"[dry-run] ssh -n {host} 'mkdir -p ~/.local/bin'")
-        print(f"[dry-run] scp {tool}-<arch> {host}:.local/bin/{tool}.new; "
+        print(f"[dry-run] scp {tool}-<arch> {host}:.local/bin/{tool}.<unique>.new; "
               f"chmod+mv+--version over ssh")
         return True, None
     proc = run([args.ssh, "-n", host, REMOTE_ARCH_CMD])
@@ -347,17 +335,19 @@ def install_host(args, host):
         print(f"{PROG}: {host}: cannot create ~/.local/bin: "
               f"{proc.stderr.strip()}", file=sys.stderr)
         return False, arch
-    proc = run([args.scp, artifact, f"{host}:.local/bin/{tool}.new"])
+    staged = f".local/bin/{tool}.{secrets.token_hex(16)}.new"
+    proc = run([args.scp, artifact, f"{host}:{staged}"])
     if proc.returncode != 0:
         print(f"{PROG}: {host}: scp failed: {proc.stderr.strip()}",
               file=sys.stderr)
+        run([args.ssh, "-n", host, f"rm -f ~/{staged}"])
         return False, arch
-    # Validate the staged .new before it replaces the working binary: if
-    # --version fails the old install stays untouched and .new is dropped.
+    # Each attempt validates and cleans only its own upload.
     remote = (
-        f"chmod 755 ~/.local/bin/{tool}.new && "
-        f"~/.local/bin/{tool}.new --version && "
-        f"mv -f ~/.local/bin/{tool}.new ~/.local/bin/{tool}"
+        f"trap 'rm -f ~/{staged}' EXIT; "
+        f"chmod 755 ~/{staged} && "
+        f"~/{staged} --version && "
+        f"mv -f ~/{staged} ~/.local/bin/{tool}"
     )
     proc = run([args.ssh, "-n", host, remote])
     out = (proc.stdout + proc.stderr).strip()
@@ -432,7 +422,7 @@ def main():
                      args.wait_timeout, args.poll_interval, args.dry_run,
                      workflow=args.workflow)
 
-    with tempfile.TemporaryDirectory(prefix=f"{args.tool}-{args.tag}-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="fleet-install-") as tmp:
         args.dir = tmp
         if args.dry_run:
             print(f"[dry-run] gh release download {args.tag} -R "

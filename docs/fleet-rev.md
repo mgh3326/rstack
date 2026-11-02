@@ -24,3 +24,9 @@ Reinstallation is desk-owned; fleet-rev never performs it:
 - **panewire**: follow its [node update runbook](https://github.com/mgh3326/panewire/blob/main/docs/runbooks/node-update.md).
 - **handoffkeep**: use its currently approved installation procedure; this
   document grants no deployment authority.
+
+If the canonical configuration is unreadable and only `WRK_HOSTS_CONFIG` or
+`wrk/hosts.toml` remains, fleet-rev refuses with exit 2 instead of silently
+auditing only the local host. Set `FLEET_HOSTS_CONFIG` to the intended file or
+migrate it to `fleet/hosts.toml`. A readable canonical configuration takes
+precedence over obsolete settings.
