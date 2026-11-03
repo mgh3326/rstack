@@ -17,6 +17,7 @@ Each rule is stated once, in the home below; other documents point to it. Inside
 | PR, author and merge ownership, tier (T), hand-off, READY and what it carries, deploy authority | `wake` (rstack) |
 | Finding scope, severity, disposition, review rounds, review evidence reuse, reviewer independence | `fleet-review` (rstack); mergewake enforces it |
 | Spawn, relay, consult, wait, reap and deploy mechanics | `ops` (rstack) |
+| Desk coordination: commitments, resume order, task intake, delegation threshold, task record | `desk` (rstack) |
 | Which profile, family and effort a role may use; where grade applies | hk `policy/model-routing`, applied by `panewire resolve` and `panewire spawn` |
 | Pool spending order, quota waits and hand-over | hk `policy/quota-stop` |
 

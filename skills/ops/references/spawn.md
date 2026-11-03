@@ -126,3 +126,15 @@ visible 큐 표시와 `herdr agent read <pane> --source recent-unwrapped --lines
 실측 4회 중 3회 유실(자동 응답은 정상이었지만 실제 화면에는 브리프가 표시되지 않은 채 워커가
 idle로 멈춰 있었다). 이 원칙("자동 보고는 증거가 아니다")은 launcher 자동화가 착지를 보증하게
 되더라도 별개로 유지한다 — 자동화 자체가 실패하거나 우회되는 경로는 항상 남는다.
+
+### 4-3. 🔴 첫 턴 확인 — 보고 없이 멈춘 워커
+
+**워커가 첫 턴 뒤 보고 없이 멈추면 한 번만 재촉한다. 그 뒤에도 보고 없이 멈추면 그 attempt 는 terminal
+이다.** 턴이 끝났다고 태스크가 끝난 것은 아니다(2026-11-03: 단일 턴 프로필에 맡긴 구현 워커가 전부 첫 턴
+뒤 멈췄다).
+
+- 판정: pane 이 비-working 인데 report·READY·ESC 가 없다. 상태가 플랩하는 하네스는 §4 대로 상태 대신
+  화면과 산출물로 본다.
+- 재촉: `relay.md` §3-3 경로로 "Continue the brief until READY or ESC." 를 한 번 보낸다.
+- terminal 뒤에는 더 재촉하지 않고 원인별로 재시도한다(`wake` §Harvest). 다른 프로필로 띄우는
+  기준은 `robin-mode` roles.md 다.

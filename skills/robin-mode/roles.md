@@ -6,10 +6,13 @@ A role is what a session is asked to do. Pick it from the harness's capabilities
 |---|---|
 | In-session subagents | **Lead**: a whole PR with design comparison, blast-radius and self-verification in one session. **Desk**: coordination, merge gate, small fixes. **Consult**: design and strategy advice. |
 | No subagents, strong coder | **Implementer**: one closed-contract unit (acceptance list given, files named, no open design). **Reviewer lane**: one mergewake review pass. |
-| Any harness | **Verifier**: run the acceptance list against the built artifact, answer PASS / PASS+NOTES / FAIL, no fixing, no free bug hunting. **Reader**: read-only investigation with cited evidence. |
+| Any multi-turn harness | **Verifier**: run the acceptance list against the built artifact, answer PASS / PASS+NOTES / FAIL, no fixing, no free bug hunting. **Reader**: read-only investigation with cited evidence. |
+| One-turn (stops after its first turn) | **Explorer** and **Consult** only, whatever else it can do. |
 
 ## Rules
 
+- **Leads and implementers must run on harnesses that keep going across turns**, until READY or ESC, with nobody pressing continue. **One-turn profiles may take explorer and consult roles only.** On 2026-11-03 a one-turn profile routed to implementation stopped after its first turn on every attempt. A worker that stops this way goes through `ops` spawn §4-3.
+- A lead's every report carries a `next unit:` line (`ops` reap §6-2). A lead whose last report names a unit is not closed.
 - A lead delegates and spawns under `robin-mode` §Subagents versus spawned workers.
 - An implementer gets a brief whose design is already decided (data shape, files, acceptance). If the brief needs a design choice, it escalates instead of guessing.
 - Whether a review pass counts as independent: `fleet-review` §Independence.

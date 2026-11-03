@@ -35,3 +35,24 @@ pane 메시지는 그 알림이다. 콘솔(큐 drawer · Decisions)은 이 기�
 - 종료(merged·dropped)된 태스크에 열린 요청이 남으면 콘솔에 "미정리 요청"으로 뜬다 —
   `decision-resolve`로 정리한다.
 - 콘솔의 답변 버튼은 #580 소관이다. 그 전까지 운영자는 pane 으로 답하고 요청한 레인이 기록한다.
+
+## 데스크 결정 루프
+
+결정 요청이 약 120건 쌓였다(2026-11-03). 질문이 자유 글 lane event 로 나갔고, 채팅으로 받은 답은 기록되지
+않았다. 데스크는 질문 하나를 아래 순서로 처리한다.
+
+1. **질문 하나에 기록 하나.** 운영자에게는 `tasks decision-request` 로만 묻는다. lane event 나 채팅
+   질문은 request_id 를 실은 알림일 뿐 기록이 아니다.
+2. **다시 물을 때는 같은 요청을 쓴다.** 같은 명령을 재실행하면 `duplicate` 가 돌아온다. 새 요청을 만들지
+   않는다.
+3. **채팅으로 받은 답은 같은 턴에 hk 에서 닫는다.** 그 답대로 움직이기 전에 닫는다. `--text` 에 운영자의
+   말을 그대로 옮긴다:
+
+       handoffkeep tasks decision-resolve <task-id> --request <request_id> --kind answered \
+         --option <X> --responder operator --text '<운영자 원문>'
+
+4. **진행은 해결이 아니다.** 일이 다른 길로 넘어갔으면 요청을 명시적으로 닫는다(`answered`,
+   `withdrawn --text <이유>`, `default_applied --receipt <증거>`).
+5. **resume 마다 열린 요청을 검토한다**(`desk` §Resume 3번). `--due` 가 지났거나, `--due` 가 없고 48시간이
+   지난 요청마다 처분을 하나 정한다: 닫기, 철회, 또는 새 기한으로 한 번 다시 묻기. request_id 없는 decision
+   lane event 는 `decision-request` 로 기록하거나, 낡은 것이면 `panewire inbox ack <id>` 로 치운다.

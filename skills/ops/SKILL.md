@@ -45,6 +45,11 @@ anything here. Unset or missing is normal — the abstract rules below apply alo
   commands (`pacelever`, `panewire`) use the real HOME.
 - **A test harness that does a real spawn stops its completion watchers before removing
   its temp root**; signal only pids it started.
+- **A clock time in a record comes from `date` or the server, never from your head.** Any time written
+  into hk, a report, or a commit or PR body is produced by `date` in the same command
+  (`--body "… $(date '+%F %T %Z')"`) or is the record's own server timestamp. A relative time is
+  computed: `date -v+30M '+%F %T %Z'` on macOS, `date -d '+30 min' '+%F %T %Z'` on Linux. Estimated times
+  written into records were later read as fact (2026-11-03).
 - **Test only what you changed, on any host** — e.g. `go test -p 2 ./<changed pkg>/...` or the touched
   pytest files; full suites are CI's job. On macOS keep `-p 2`: wider parallelism stalls in syspolicyd.
 
@@ -59,6 +64,7 @@ anything here. Unset or missing is normal — the abstract rules below apply alo
 | Ask a stronger model for advice | [`consult.md`](references/consult.md) | profile from `panewire resolve --role consult`, self-contained packet, pane by default |
 | Escalate a decision from a pane | §Escalate a decision (below) | ESC event `--type decision`, never an in-pane question |
 | Ask the operator to choose | [`decision-request.md`](references/decision-request.md) | `handoffkeep tasks decision-request` first, then notify with the request_id |
+| Bring a repo session's design outcome to the desk | [`handoff.md`](references/handoff.md) | hk doc `handoff/<repo>/<date>-<slug>`: prioritized items, decisions, open questions; the desk makes the tasks |
 | Wait for a worker, job or CI | [`watching.md`](references/watching.md), [`panewire-events.md`](references/panewire-events.md) | push events, one bounded wait, at most 3 temporary waits |
 | Reap finished panes | [`reap.md`](references/reap.md) | mergewake reaps merged PRs' workers; the spawner reaps the rest with `panewire reap --lane`, preview then `--apply` |
 | Deploy one change | [`deploy.md`](references/deploy.md) (+ [`deploy-checklist.md`](references/deploy-checklist.md)) | installer seat, spawned by and reporting only to operator-desk; fixed 9 steps, no judgement |
