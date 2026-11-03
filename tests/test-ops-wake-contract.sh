@@ -98,6 +98,7 @@ REQUIRED = [
     ("wake", "## The loop", "no-unlanded-blocker", r"Spawn only tickets with no unlanded blocker"),
     ("wake", "## The loop", "accepted-proves-nothing", r"it proves nothing about a pane"),
     ("wake", "## The loop", "landing-proof", r"you read it with `panewire spawn … --wait --wait-timeout 2m`.{0,120}never with your own HTTP call"),
+    ("wake", "## The loop", "landing-hk-claim", r"`handoffkeep tasks show <id>` with `claimed_by` and `refs\.job_id` equal to `<job>`"),
     ("wake", "## The loop", "landing-exit-85", r"\| `85` \(`wait timeout for job`\) \| Landed"),
     ("wake", "## The loop", "landing-refused-no-replay", r"`spawn refused: <reason> \(operation <id>\)` \| `failed` or `retryable`: not landed \| §On spawn failure; never replay"),
     ("wake", "## Authority", "no-credential-reads", r"\*\*No session reads credentials\.\*\* No session \(design, seat or worker\) reads, sources, copies or prints"),

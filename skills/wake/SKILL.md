@@ -185,7 +185,11 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    --wait-timeout 2m`), never with your own HTTP call: panewire reads the hub credential from its own
    config. It first follows the spawn state until it is terminal, then waits for the job, so its exit
    says which one ended it (panewire `internal/fleet/submission.go` `WaitSpawn`, `internal/fleet/wait.go`).
-   Run it in the background and wait for it to exit; do not loop around it.
+   Run it in the background and wait for it to exit; do not loop around it. `--wait-timeout` bounds only
+   the job wait; the spawn-state phase ends by the hub's request deadline (600 s).
+   A second proof needs no credential: the executing node claims the hk task only after the brief is
+   delivered, so `handoffkeep tasks show <id>` with `claimed_by` and `refs.job_id` equal to `<job>`
+   means it landed; a task still `backlog` with empty `refs` did not.
 
    | Exit | Meaning | Do |
    |---|---|---|
