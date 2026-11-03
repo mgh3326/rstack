@@ -93,8 +93,6 @@ The brief, host safety, `wake` authority and `fleet-review` govern fleet work. V
 
 See [`roles.md`](roles.md). Pick the role from the harness's capability, not its brand.
 
-## Done
-
 ## Bug playbook
 
 1. Reproduce the bug and identify one deterministic, fast command that can fail on the bug
@@ -108,5 +106,7 @@ See [`roles.md`](roles.md). Pick the role from the harness's capability, not its
 
 Adapted from mattpocock/skills `engineering/diagnosing-bugs` (MIT, copyright Matthew Pocock):
 red-command gate and falsifiable hypotheses. https://github.com/mattpocock/skills
+
+## Done
 
 Prove it against the real artifact (`principle-prove-it-works`): run the changed thing the way its user runs it — the real binary, script, install dry-run or rendered file — not only a unit test or the diff. Quote the command and its output, and check `git ls-remote`. If the real artifact cannot run in this environment, say UNVERIFIED rather than substituting a mock. Report facts, failures and skips as they are.

@@ -32,10 +32,15 @@ Review every change on both axes:
 - **Spec coverage:** compare each acceptance requirement with implementation and evidence. A
   missing or partial requirement is a finding even when the changed code is otherwise sound.
 
-For changes to tests, validation or enforcement, make a mutation probe: temporarily weaken or
-remove one relevant assertion or guard and confirm the focused check fails, then restore it.
+For changes to tests, validation or enforcement, make a mutation probe in a throwaway worktree
+or disposable copy, never in the PR checkout. Temporarily weaken or remove one relevant
+assertion or guard and confirm the focused check fails, then restore it. Do not commit or push
+while the mutation is applied; after restoring, require a clean `git diff` in the probe before
+discarding it.
 Label findings **regression** when introduced by this change or **pre-existing** when evidence
-shows they already existed at the base; only regressions and contract gaps block this PR.
+shows they already existed at the base. Ordinary pre-existing findings are non-blocking, but
+pre-existing security, privacy, auth, permission-boundary, migration, irreversible-mutation,
+money/order-path or data-loss findings remain fix-or-ESC under the never-skip rule below.
 
 Adapted from mattpocock/skills `engineering/code-review` (MIT, copyright Matthew Pocock),
 Standards and Spec axes; addyosmani/agent-skills `code-review-and-quality` (MIT), mutation
