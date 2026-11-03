@@ -154,4 +154,3 @@ stage.
 | Closing a lead pane | `ops` reap §6-2: its last report's `next unit:` line decides |
 | A worker stopped after its first turn | `ops` spawn §4-3 |
 | Choosing a harness for a lead or implementer | `robin-mode` roles.md |
-| A repo session brings a design outcome | `ops` handoff |

@@ -2,8 +2,8 @@
 # hk 2780: the desk method lives in skills/desk plus ops and roles.md.
 #   1. skills/desk/SKILL.md has its eight sections; each cites the failure it prevents.
 #   2. The resume read order is fixed, and the skill stays harness-neutral.
-#   3. The required lines stay in the desk skill, ops references, roles.md and the
-#      handoff reference, and install/sets.json gives desk to the full set only.
+#   3. The required lines stay in the desk skill, ops references and roles.md, and
+#      install/sets.json gives desk to the full set only.
 # Every required row has a mutant that deletes the matched text and must go RED.
 set -euo pipefail
 
@@ -23,7 +23,6 @@ PATHS = {
     "ops": "skills/ops/SKILL.md",
     "roles": "skills/robin-mode/roles.md",
     "robin": "skills/robin-mode/SKILL.md",
-    "handoff": "skills/ops/references/handoff.md",
 }
 docs = {name: (root / rel).read_text(encoding="utf-8") for name, rel in PATHS.items()}
 
@@ -83,14 +82,6 @@ REQUIRED = [
     ("roles", "## Rules", "lead-next-unit", r"A lead's every report carries a `next unit:` line"),
     ("roles", None, "one-turn-row", r"\| One-turn \(stops after its first turn\) \| \*\*Explorer\*\* and \*\*Consult\*\* only"),
     ("robin", "## Where each rule lives", "desk-home", r"\| `desk` \(rstack\) \|"),
-    ("handoff", None, "doc-key", r"An hk doc with the key `handoff/<repo>/<date>-<slug>`"),
-    ("handoff", None, "prioritized-items", r"## Items \(highest priority first\)"),
-    ("handoff", None, "evidence", r"evidence: <file:line>"),
-    ("handoff", None, "effort", r"effort: <2h \| 6h \| 1d>"),
-    ("handoff", None, "dependency", r"dependency: <item number \| hk id \| none>"),
-    ("handoff", None, "decisions-made", r"## Decisions made"),
-    ("handoff", None, "open-questions", r"## Open questions"),
-    ("handoff", "## What the desk does with it", "item-to-task", r"each item into a task linked under the project"),
 ]
 
 

@@ -64,7 +64,6 @@ anything here. Unset or missing is normal — the abstract rules below apply alo
 | Ask a stronger model for advice | [`consult.md`](references/consult.md) | profile from `panewire resolve --role consult`, self-contained packet, pane by default |
 | Escalate a decision from a pane | §Escalate a decision (below) | ESC event `--type decision`, never an in-pane question |
 | Ask the operator to choose | [`decision-request.md`](references/decision-request.md) | `handoffkeep tasks decision-request` first, then notify with the request_id |
-| Bring a repo session's design outcome to the desk | [`handoff.md`](references/handoff.md) | hk doc `handoff/<repo>/<date>-<slug>`: prioritized items, decisions, open questions; the desk makes the tasks |
 | Wait for a worker, job or CI | [`watching.md`](references/watching.md), [`panewire-events.md`](references/panewire-events.md) | push events, one bounded wait, at most 3 temporary waits |
 | Reap finished panes | [`reap.md`](references/reap.md) | mergewake reaps merged PRs' workers; the spawner reaps the rest with `panewire reap --lane`, preview then `--apply` |
 | Deploy one change | [`deploy.md`](references/deploy.md) (+ [`deploy-checklist.md`](references/deploy-checklist.md)) | installer seat, spawned by and reporting only to operator-desk; fixed 9 steps, no judgement |
