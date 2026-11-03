@@ -46,7 +46,7 @@ CLI_FLAGS = {
     "handoffkeep tasks decision-resolve": {"request", "kind", "option", "responder", "text"},
     "handoffkeep doc put": {"key", "kind", "file"},
     "handoffkeep doc get": set(),
-    "panewire emit": {"kind", "lane", "text"},
+    "panewire emit": {"kind", "lane", "event-id", "text"},
     "panewire lead": {"c", "p", "dry-run"},
     "panewire work": {"c", "p", "dry-run"},
 }
@@ -92,6 +92,8 @@ REQUIRED = [
     ("skill", "## Verify before closing", "check-show", r"`handoffkeep tasks show` returns each id"),
     ("skill", "## Verify before closing", "check-readback", r"The doc reads back"),
     ("skill", "## Notify the desk", "line", r"`\[handoff\] <slug> <parent-id> \| handoff/<repo>/<date>-<slug>`\. Then the session may be closed"),
+    ("skill", "## Notify the desk", "event-id-required", r"`panewire` requires `--event-id` and refuses a repeated one"),
+    ("skill", "## Notify the desk", "inbox-root", r"Set `PANEWIRE_INBOX_ROOT=<root>` from that message and rerun the whole script"),
     ("skill", "## Provenance", "grilling", r"`skills/productivity/grilling/SKILL\.md`"),
     ("skill", "## Provenance", "to-tickets", r"`skills/engineering/to-tickets/SKILL\.md`"),
     ("skill", "## Provenance", "agent-brief", r"`skills/engineering/triage/AGENT-BRIEF\.md`"),
@@ -273,7 +275,9 @@ def scenario_happy(skill):
     doc = good.hk["docs"][key]
     for text in ("## Decisions", "## Operator questions", "## Commits read", f"| 1/2 | {one} |", f"| 2/2 | {two} |", f"Parent: {parent}"):
         assert text in doc, f"doc lacks {text!r}"
-    assert good.notified == [f"emit --kind lane.event --lane operator-desk --text [handoff] demo {parent} | {key}"], f"notify: {good.notified}"
+    assert len(good.notified) == 1, f"notify: {good.notified}"
+    assert re.fullmatch(rf"emit --kind lane\.event --lane operator-desk --event-id handoff-demo-{parent}-\d+-\d+ --text \[handoff\] demo {parent} \| {re.escape(key)}", good.notified[0]), f"notify: {good.notified}"
+    assert (parent, "notified: operator-desk") in {(c["task_id"], c["body"]) for c in good.hk["comments"]}, "notice not recorded in hk"
 
 
 def scenario_retry(skill):
@@ -285,6 +289,8 @@ def scenario_retry(skill):
     assert again.proc.returncode == 0, f"rerun failed: {again.proc.stderr}"
     assert again.hk["tasks"] == before["tasks"], "rerun created tasks"
     assert again.hk["comments"] == before["comments"], "rerun repeated comments"
+    assert len(again.notified) == 1, f"rerun notified again: {again.notified}"
+    assert "already notified" in again.proc.stdout, f"rerun did not report the earlier notice: {again.proc.stdout}"
     state = again.hk
     state["tasks"] = state["tasks"][:2]
     state["comments"], state["docs"] = [], {}
@@ -320,7 +326,22 @@ def scenario_read_back(skill):
     assert not bad_read.notified, "notified after a failed read-back"
 
 
-SCENARIOS = (scenario_happy, scenario_retry, scenario_gate, scenario_failed_search, scenario_read_back)
+def scenario_notify_refused(skill):
+    """A refused emit fails the run, a plain rerun stays failed, and only a real delivery counts."""
+    mismatch = {"PANEWIRE_STUB_ROOT_MISMATCH": "1"}
+    notice = {"notified: operator-desk"}
+    refused = Run(skill, GOOD_BODY, env=mismatch)
+    assert refused.proc.returncode != 0, "script exited 0 although the desk was not notified"
+    assert "inbox root mismatch" in refused.proc.stderr, f"notify refusal: {refused.proc.stderr}"
+    assert not notice & {c["body"] for c in refused.hk["comments"]}, "recorded a notice that was refused"
+    rerun = Run(skill, GOOD_BODY, env=mismatch, state_dir=refused.dir)
+    assert rerun.proc.returncode != 0, "a rerun claimed success although the desk was never notified"
+    fixed = Run(skill, GOOD_BODY, state_dir=refused.dir)
+    assert fixed.proc.returncode == 0, f"rerun after the fix failed: {fixed.proc.stderr}"
+    assert len(fixed.notified) == 1, f"delivered notices: {fixed.notified}"
+
+
+SCENARIOS = (scenario_happy, scenario_retry, scenario_gate, scenario_failed_search, scenario_read_back, scenario_notify_refused)
 
 
 def check_all(d, s):
@@ -392,7 +413,11 @@ BEHAVIOUR = {
     "child-search-removed": (scenario_retry, 'id=$(find_task "[handoff:$slug $n/")\n', "id=\n"),
     "comments-repeat": (scenario_retry, "jq -e --arg b \"$2\" 'any(.comments[]; .body == $b)' <<<\"$existing\" >/dev/null ||\n    ", ""),
     "read-back-removed": (scenario_read_back, '[ "$(cat "$out")" = "$(cat "$readback")" ] || refuse "doc $doc does not read back as written"\n', ""),
-    "notify-removed": (scenario_happy, 'panewire emit --kind lane.event --lane operator-desk --text "[handoff] $slug $parent | $doc"\n', ":\n"),
+    "notify-removed": (scenario_happy, 'panewire emit --kind lane.event --lane operator-desk --event-id "handoff-$slug-$parent-$(date +%s)-$$" \\\n    --text "[handoff] $slug $parent | $doc"\n', ":\n"),
+    "event-id-dropped": (scenario_happy, ' --event-id "handoff-$slug-$parent-$(date +%s)-$$" \\\n    --text', ' --text'),
+    "notice-repeats-on-rerun": (scenario_retry, """if jq -e 'any(.comments[]; .body == "notified: operator-desk")' <<<"$existing" >/dev/null; then""", "if false; then"),
+    "notice-recorded-before-emit": (scenario_notify_refused, """  panewire emit --kind lane.event""", """  handoffkeep tasks comment "$parent" --body 'notified: operator-desk' >/dev/null\n  panewire emit --kind lane.event"""),
+    "fixed-event-id": (scenario_notify_refused, '"handoff-$slug-$parent-$(date +%s)-$$"', '"handoff-$slug-$parent"'),
     "ids-not-in-doc": (scenario_happy, """printf '| %s/%s | %s | %s |\\n' "$n" "$N" "${ids[n - 1]}" """, """printf '| %s/%s | %s | %s |\\n' "$n" "$N" "?" """),
 }
 for label, (scenario, old, new) in BEHAVIOUR.items():

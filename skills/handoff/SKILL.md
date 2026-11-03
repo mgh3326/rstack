@@ -303,10 +303,22 @@ echo "verified parent=$parent tickets=${#ids[@]}"
 ## Notify the desk
 
 Send one line: `[handoff] <slug> <parent-id> | handoff/<repo>/<date>-<slug>`. Then the session may be closed.
-Emit rc 0 is enough. A rerun sends the line again, which is harmless because intake is idempotent.
+Emit rc 0 is enough. `panewire` requires `--event-id` and refuses a repeated one, so each attempt gets its own id.
+Only emit rc 0 writes the `notified:` comment, and a rerun skips the notice only when that comment exists. Do not
+read `duplicate event_id` as delivered: emit keeps its record even when the daemon refuses it.
+
+If emit reports `inbox root mismatch (daemon=<root>, ...)`, nothing reached the desk: this shell's default inbox
+differs from the daemon's. Set `PANEWIRE_INBOX_ROOT=<root>` from that message and rerun the whole script.
 
 ```sh
-panewire emit --kind lane.event --lane operator-desk --text "[handoff] $slug $parent | $doc"
+existing=$(handoffkeep tasks comments "$parent" --limit 500)
+if jq -e 'any(.comments[]; .body == "notified: operator-desk")' <<<"$existing" >/dev/null; then
+  echo "already notified: $parent"
+else
+  panewire emit --kind lane.event --lane operator-desk --event-id "handoff-$slug-$parent-$(date +%s)-$$" \
+    --text "[handoff] $slug $parent | $doc"
+  handoffkeep tasks comment "$parent" --body 'notified: operator-desk' >/dev/null
+fi
 ```
 
 Open operator questions stay in the doc. The desk turns them into one decision request (`references/intake.md`).
