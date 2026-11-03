@@ -52,7 +52,7 @@ mergewake reap 이 한다.
   ```
   `--dry-run` 은 고른 호스트·프로필·selection 기록과 host-safety preamble 이 붙은 최종 브리프를
   보이고 pane·lease·claim 을 만들지 않는다. 모르는 인자는 무시되지 않고 rc 2 다. 수동 기동은
-  `herdr agent start <유일이름> --workspace <ws> --cwd <worktree> --no-focus -- <argv>`.
+  `herdr agent start <유일이름> --workspace <ws> --cwd <worktree> --no-focus -- <argv>` 이고, 디자인 세션은 쓰지 않는다(`wake` §On spawn failure).
 - **모델은 panewire 가 고른다**(`-m auto` 또는 생략): 쿼타 카탈로그 rung 을 task 의 grade·role·
   `--tags` 로 거르고, hk `policy/quota-stop` 의 풀 순서(urgency 는 `--urgency` 또는 hk priority
   1–2)로 줄 세운 뒤 presence 와 quota gate 를 통과한 첫

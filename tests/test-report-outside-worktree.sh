@@ -4,7 +4,7 @@
 # worktree. wake/SKILL.md must carry both sides of the fix:
 #   write side — §Brief rules and the §Worker brief template put the report
 #   outside the worktree and tell the worker not to delete it;
-#   collect side — merge step 8 harvests a missing report from the pane before
+#   collect side — after-merge step 8 harvests a missing report from the pane before
 #   the pane is reaped.
 # Each mutant weakens one clause in memory and must go RED by assertion.
 set -euo pipefail
@@ -62,8 +62,8 @@ def check_template(text: str) -> None:
 
 def check_collect(text: str) -> None:
     loop = flat(section(text, "## The loop"))
-    m = re.search(r"8\. \*\*Merge\*\*.*", loop)
-    assert m, "merge step 8 missing"
+    m = re.search(r"8\. \*\*After the merge\.\*\*.*", loop)
+    assert m, "after-merge step 8 missing"
     step = m.group(0)
     assert re.search(r"check the report exists at its path outside the worktree", step), (
         "step 8 must check the report outside the worktree"

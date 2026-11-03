@@ -7,7 +7,7 @@ description: Lane mechanics every session needs whatever method it runs — spaw
 
 How to do the things every lane needs. This file is a routing table and the rules
 that hold everywhere; each procedure lives in one reference file, read on demand.
-Deciding *what* to build and merging it is the `wake` skill's job, not this one.
+Deciding *what* to build is the `wake` skill's job, not this one; mergewake merges.
 
 Domain overlay: if `$AGENT_SKILLS_DOMAIN/ops.md` exists, read it before applying
 anything here. Unset or missing is normal — the abstract rules below apply alone.
@@ -92,6 +92,6 @@ panewire emit --kind lane.event --lane <parent-lane> --type decision \
 
 ## Who does what
 
-Authority of the repo session, workers, delegated seats, operator-desk and the operator is
+Authority of the design session, workers, delegated seats, operator-desk and the operator is
 `wake` §Authority; what READY means is `wake` §READY. operator-desk spawns the installer seat;
 the **Installer** executes one deploy and judges nothing (`deploy.md`).
