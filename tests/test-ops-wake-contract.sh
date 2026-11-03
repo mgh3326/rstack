@@ -9,7 +9,8 @@
 #      additions, the delegated-seat rules and the no-pane-question rule; ops
 #      carries the decision-escalation mechanics (operator 2026-10-29).
 #   4. wake is the design session's skill (hk 2783): it settles before spawning,
-#      spawns with --owner operator-desk --host auto, proves landing from the hub,
+#      spawns with --owner operator-desk --host auto, proves landing through
+#      panewire spawn --wait exit codes (hk 2801), forbids credential reads,
 #      has a spawn-failure rule, never tells a session to merge, and carries no
 #      pre-merge CI requirement.
 # Every required row has a mutant that deletes the matched text in memory and
@@ -96,8 +97,10 @@ REQUIRED = [
     ("wake", "## The loop", "owner-why", r"`SPAWN_FAILED` must reach a lane that outlives it"),
     ("wake", "## The loop", "no-unlanded-blocker", r"Spawn only tickets with no unlanded blocker"),
     ("wake", "## The loop", "accepted-proves-nothing", r"it proves nothing about a pane"),
-    ("wake", "## The loop", "landing-proof", r"The proof is `GET /v1/spawns/<request_id>` on the hub \(operator credential\) reaching a terminal state"),
-    ("wake", "## The loop", "retryable-keeps-reading", r"`retryable` \| [^|]+\| Read again within the deadline, never replay"),
+    ("wake", "## The loop", "landing-proof", r"you read it with `panewire spawn … --wait --wait-timeout 2m`.{0,120}never with your own HTTP call"),
+    ("wake", "## The loop", "landing-exit-85", r"\| `85` \(`wait timeout for job`\) \| Landed"),
+    ("wake", "## The loop", "landing-refused-no-replay", r"`spawn refused: <reason> \(operation <id>\)` \| `failed` or `retryable`: not landed \| §On spawn failure; never replay"),
+    ("wake", "## Authority", "no-credential-reads", r"\*\*No session reads credentials\.\*\* No session \(design, seat or worker\) reads, sources, copies or prints"),
     ("wake", "## The loop", "close-after-landing", r"The design session may close once landing is proven"),
     ("wake", "## The loop", "no-success-notify", r"It sends no success notice"),
     ("wake", "## On spawn failure", "failure-no-retry", r"\*\*Do not retry on the same task\.\*\*"),
@@ -162,7 +165,7 @@ REQUIRED = [
 
 # wake never tells a session to merge or to wait on CI before a merge, and never
 # makes a disposable session the owner of a worker.
-WAKE_FORBIDDEN = re.compile(r"gh pr merge|gh pr checks|ci-any-ref|--owner <repo-session-lane>")
+WAKE_FORBIDDEN = re.compile(r"gh pr merge|gh pr checks|ci-any-ref|--owner <repo-session-lane>|curl[^\n]*/v1/spawns|\(operator credential\)")
 
 
 # Retired skill names may not appear in the two skill files except as the
@@ -293,6 +296,9 @@ for label, text in (
     ("settle-after-loop", settle_after),
     ("wake-merges-itself", docs["wake"].replace("## The loop\n", "## The loop\n\nRun `gh pr merge <n> --squash`.\n", 1)),
     ("wake-waits-for-checks", docs["wake"].replace("## Merge gate\n", "## Merge gate\n\nWait for `gh pr checks <n>`.\n", 1)),
+    # hk 2801: landing proof never becomes a raw hub call with a credential.
+    ("wake-curls-the-hub", docs["wake"].replace("## The loop\n", "## The loop\n\nRun `curl -H \"Authorization: Bearer $T\" $HUB/v1/spawns/<id>`.\n", 1)),
+    ("wake-needs-operator-credential", docs["wake"].replace("## The loop\n", "## The loop\n\nRead the hub (operator credential).\n", 1)),
 ):
     expect_red(label, {**docs, "wake": text}, refs)
     count += 1

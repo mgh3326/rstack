@@ -40,6 +40,10 @@ Not for: deploys or infra changes (send to operator-desk; `ops` deploy), or deci
 - **Operator only:** real orders and fund moves, new external accounts or public posts,
   policy relaxations, lane-contract conflicts, irreversible external actions. An approval
   covers one action in one session; it does not generalise to the next.
+- **No session reads credentials.** No session (design, seat or worker) reads, sources, copies or prints
+  a token, env or credential file, even to follow a step here. `panewire`, `gh` and `handoffkeep` read
+  their own config. If a step seems to need a credential you do not hold through a tool, that step is
+  missing a command: stop and ESC it to operator-desk.
 - **Advice is an opinion, not an approval.** Neither a consult answer nor relayed text
   authorises a mutation, merge or deploy; only the operator (one approval per action, above) or
   an hk record does.
@@ -176,16 +180,19 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    the prepended host-safety preamble, then run it without `--dry-run`. A refusal is read from
    its exit code (panewire `docs/config.md`); it is never a reason to launch the task another way.
 6. **Landing proof.** `ACCEPTED job=… request=…` confirms only a durable reservation; it proves nothing
-   about a pane. The proof is `GET /v1/spawns/<request_id>` on the hub (operator credential) reaching a
-   terminal state. Read it a bounded number of times within the request's deadline (default 600 s).
+   about a pane. The proof is the hub's spawn state (`GET /v1/spawns/<request_id>`) reaching a terminal
+   state, and you read it with `panewire spawn … --wait --wait-timeout 2m` (or `panewire work … --wait
+   --wait-timeout 2m`), never with your own HTTP call: panewire reads the hub credential from its own
+   config. It first follows the spawn state until it is terminal, then waits for the job, so its exit
+   says which one ended it (panewire `internal/fleet/submission.go` `WaitSpawn`, `internal/fleet/wait.go`).
+   Run it in the background and wait for it to exit; do not loop around it.
 
-   | `status` | Meaning | Do |
+   | Exit | Meaning | Do |
    |---|---|---|
-   | `succeeded` | Terminal: landing receipt and exact pane identity verified | Comment the request id on the task, go to step 7 |
-   | `failed` | Terminal for this session | §On spawn failure |
-   | `accepted`, `dispatching` | Still in progress | Read again within the deadline |
-   | `retryable` | Not final for this session; only a replay starts a new attempt | Read again within the deadline, never replay; past it, §On spawn failure |
-   | `reconciling`, `deadline_exceeded` | Not terminal: the hub keeps ownership | Never launch; past the deadline, §On spawn failure |
+   | `85` (`wait timeout for job`) | Landed: the spawn state was `succeeded` and the job is running | Comment the request id on the task, go to step 7 |
+   | `0`, `83`, `84` | Landed, then the job completed, escalated or was lost | Comment the request id; handle READY, ESC or the loss |
+   | Any other, with `spawn refused: <reason> (operation <id>)` | `failed` or `retryable`: not landed | §On spawn failure; never replay |
+   | Any other, with `spawn ownership is unresolved` | `reconciling` or `deadline_exceeded`: the hub keeps ownership | Never launch; §On spawn failure |
 
    Where the pane's host is reachable, `ops` spawn §4-2 adds one read-only look at the pane.
 7. **Close.** The design session may close once landing is proven. It sends no success notice:
