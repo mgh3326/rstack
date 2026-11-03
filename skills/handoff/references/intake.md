@@ -18,14 +18,14 @@ accept that ticket.
 
 ## 2. Dedupe against open tasks
 
-Export open tasks once, and stop if any export fails: a partial list would hide the duplicate. Then search by
+Export open tasks once, and stop if any export fails or is truncated: a partial list would hide the duplicate. Then search by
 keyword for each ticket, leaving this handoff's own tasks out:
 
 ```sh
 snap=$(mktemp)
 if (for s in backlog claimed in_progress hold needs_decision verifying join reopened; do
-  handoffkeep tasks export --state "$s" --limit 5000 || exit 1
-done) >"$snap"; then
+  handoffkeep tasks export --state "$s" --limit 10000 || exit 1
+done) >"$snap" && jq -es 'all(.[]; (.counts.total | type) == "number" and .counts.total <= (.tasks | length))' "$snap" >/dev/null; then
   jq -r --arg own '[handoff:<slug>' '.tasks[]
     | select((.title | startswith($own)) | not)
     | select(.title | test("<keyword>"; "i"))
@@ -102,7 +102,7 @@ panewire lead <parent-or-group-id> -c <worktree> -p <brief> --dry-run
 panewire work <ticket-id> -c <worktree> -p <brief> --dry-run
 ```
 
-Start a ticket only when every task whose `blocks:` names it has landed. A lead spawns its group's later
+Start a ticket only when every task whose newest `blocks:` comment names it has landed. A lead spawns its group's later
 tickets itself and reports a `next unit:` line (`robin-mode` roles.md).
 
 ## 6. Put operator questions into one decision request

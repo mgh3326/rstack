@@ -94,6 +94,8 @@ REQUIRED = [
     ("skill", "## Notify the desk", "line", r"`\[handoff\] <slug> <parent-id> \| handoff/<repo>/<date>-<slug>`\. Then the session may be closed"),
     ("skill", "## Notify the desk", "event-id-required", r"`panewire` requires `--event-id` and refuses a repeated one"),
     ("skill", "## Notify the desk", "inbox-root", r"Set `PANEWIRE_INBOX_ROOT=<root>` from that message and rerun the whole script"),
+    ("skill", "## Emit to hk", "values-are-data", r"Every value comes from the doc and is treated as data"),
+    ("skill", "## Emit to hk", "newest-comment", r"the newest `blocks:` or `children:` comment on a task is the current one"),
     ("skill", "## Provenance", "grilling", r"`skills/productivity/grilling/SKILL\.md`"),
     ("skill", "## Provenance", "to-tickets", r"`skills/engineering/to-tickets/SKILL\.md`"),
     ("skill", "## Provenance", "agent-brief", r"`skills/engineering/triage/AGENT-BRIEF\.md`"),
@@ -103,14 +105,14 @@ REQUIRED = [
     ("license", None, "license-grant", r"Permission is hereby granted, free of charge"),
     ("intake", "## 1. Read the handoff doc", "read-doc", r"handoffkeep doc get <doc-key>"),
     ("intake", "## 2. Dedupe against open tasks", "dedupe", r"--to dropped --by operator-desk --note 'duplicate of hk <id>'"),
-    ("intake", "## 2. Dedupe against open tasks", "export-failure-stops", r"stop if any export fails"),
+    ("intake", "## 2. Dedupe against open tasks", "export-failure-stops", r"stop if any export fails or is truncated"),
     ("intake", "## 2. Dedupe against open tasks", "move-edges", r"Move a dropped ticket's edges"),
     ("intake", "## 2. Dedupe against open tasks", "rejected-blockers", r"Re-judge each ticket it blocks before you accept that ticket"),
     ("intake", "## 3. Record a disposition per ticket", "accepted", r"disposition: <n>/<N> accepted → <ticket-id>"),
     ("intake", "## 3. Record a disposition per ticket", "reason", r"disposition: <n>/<N> rejected: <one-line reason>"),
     ("intake", "## 4. Group tickets into lead sessions", "group", r"One lead per chain"),
     ("intake", "## 5. Spawn", "spawn", r"panewire lead <parent-or-group-id> -c <worktree> -p <brief> --dry-run"),
-    ("intake", "## 5. Spawn", "wait-blockers", r"Start a ticket only when every task whose `blocks:` names it has landed"),
+    ("intake", "## 5. Spawn", "wait-blockers", r"Start a ticket only when every task whose newest `blocks:` comment names it has landed"),
     ("intake", "## 6. Put operator questions into one decision request", "one-request", r"All of a handoff's questions go into one request on the parent"),
     ("intake", "## 6. Put operator questions into one decision request", "human-only", r"handoffkeep tasks decision-request <parent-id> --human-only"),
     ("intake", "## 6. Put operator questions into one decision request", "resolve", r"handoffkeep tasks decision-resolve <parent-id>"),
@@ -167,11 +169,21 @@ def script_blocks(skill):
     blocks = []
     for heading in SECTIONS[2:]:
         blocks += re.findall(r"(?ms)^```sh\n(.*?)^```$", section(skill, heading))
-    assert len(blocks) == 4, f"skill: expected 4 sh blocks in Emit, Verify and Notify, found {len(blocks)}"
+    assert len(blocks) == 3, f"skill: expected 3 sh blocks in Emit, Verify and Notify, found {len(blocks)}"
     return blocks
 
 
 GOOD_BODY = """# Handoff
+
+## Handoff
+
+**Slug:** demo
+**Repo:** demo-repo
+**Project:** fleet-ops
+**Kind:** implement
+**Goal:** Ship the demo
+**Grade:** A, T1
+**Expected:** 1d
 
 ## Decisions
 
@@ -229,9 +241,7 @@ class Run:
         atexit.register(shutil.rmtree, self.dir, ignore_errors=True)
         body_path = self.dir / "body.md"
         body_path.write_text(body, encoding="utf-8")
-        values = (f"set -euo pipefail\nslug=demo\nrepo=demo-repo\nproject=fleet-ops\nkind=implement\n"
-                  f"goal='Ship the demo'\ngrade='A, T1'\nexpected=1d\nbody={body_path}\n")
-        (self.dir / "run.sh").write_text(values + "\n".join(script_blocks(skill)[1:]), encoding="utf-8")
+        (self.dir / "run.sh").write_text("\n".join(script_blocks(skill)), encoding="utf-8")
         self.state = self.dir / "state.json"
         self.log = self.dir / "panewire.log"
         full_env = {**os.environ, "PATH": f"{self.dir / 'bin'}:{os.environ['PATH']}", "HK_STUB_STATE": str(self.state),
@@ -242,7 +252,7 @@ class Run:
             for tool in ("handoffkeep", "panewire"):
                 shutil.copy(FIXTURES / tool, bin_dir / tool)
                 (bin_dir / tool).chmod(0o755)
-        self.proc = subprocess.run(["bash", str(self.dir / "run.sh")], env=full_env, capture_output=True, text=True, timeout=120)
+        self.proc = subprocess.run(["bash", str(self.dir / "run.sh"), str(body_path)], env=full_env, cwd=self.dir, capture_output=True, text=True, timeout=120)
 
     @property
     def hk(self):
@@ -303,6 +313,23 @@ def scenario_retry(skill):
     assert [t["id"] for t in resumed.hk["tasks"]] == [1000, 1001, 1002], "resume did not create only the missing ticket"
 
 
+def scenario_values_are_data(skill):
+    """Shell syntax in the doc stays text: nothing runs, and the title keeps it literally."""
+    hostile = "it's $(touch pwned-a) `touch pwned-b` '; touch pwned-c; '"
+    run = Run(skill, GOOD_BODY.replace("**Goal:** Ship the demo", f"**Goal:** {hostile}").replace("**Title:** Add the writer", f"**Title:** {hostile}"))
+    assert run.proc.returncode == 0, f"a goal with shell syntax failed: {run.proc.stderr}"
+    assert not list(run.dir.glob("pwned-*")), "shell syntax in the doc was executed"
+    titles = [t["title"] for t in run.hk["tasks"]]
+    assert titles[0] == f"[handoff:demo] {hostile} (grade A, T1)", f"parent title: {titles[0]}"
+    assert titles[2] == f"[handoff:demo 2/2] {hostile} (grade S+, T2)", f"child title: {titles[2]}"
+
+
+def scenario_truncated_search(skill):
+    """An export that does not hold every row can hide a handoff, so nothing is written."""
+    Run(skill, GOOD_BODY, env={"HK_STUB_TRUNCATE_EXPORT": "1"}).assert_refused("truncated", "export was truncated")
+    Run(skill, GOOD_BODY, env={"HK_STUB_NO_COUNTS": "1"}).assert_refused("no-counts", "export was truncated")
+
+
 def scenario_slug_reuse(skill):
     """A slug taken by another repo or a closed handoff never reuses its tasks or overwrites its doc."""
     for label, change, reason in (
@@ -337,6 +364,9 @@ def scenario_intake_export(intake):
     failed = subprocess.run(["bash", "-c", block], env={**env, "HK_STUB_FAIL_EXPORT": "join"}, capture_output=True, text=True, timeout=60)
     assert "export failed: do not accept any ticket yet" in failed.stderr, f"failed export was not reported: {failed.stderr!r}"
     assert failed.stdout.strip() == "", f"searched a partial export: {failed.stdout!r}"
+    cut = subprocess.run(["bash", "-c", block], env={**env, "HK_STUB_TRUNCATE_EXPORT": "1"}, capture_output=True, text=True, timeout=60)
+    assert "export failed: do not accept any ticket yet" in cut.stderr, f"truncated export was not reported: {cut.stderr!r}"
+    assert cut.stdout.strip() == "", f"searched a truncated export: {cut.stdout!r}"
 
 
 def scenario_gate(skill):
@@ -352,6 +382,11 @@ def scenario_gate(skill):
     Run(skill, GOOD_BODY.replace("No reader.", "TBD")).assert_refused("tbd-in-ticket", "only an operator question may stay open")
     Run(skill, GOOD_BODY.replace("**Blocks:** none", "**Blocks:** 1")).assert_refused("backward-edge", "ticket-2 may block only")
     Run(skill, GOOD_BODY.replace("- `repo@abc1234`\n", "")).assert_refused("no-commits", "no commit SHAs")
+    Run(skill, GOOD_BODY.replace("**Kind:** fix", "**Kind:** typo")).assert_refused("ticket-kind", "ticket-2 Kind must be")
+    Run(skill, GOOD_BODY.replace("**Kind:** implement\n**Goal", "**Kind:** fix\n**Goal")).assert_refused("parent-kind", "## Handoff Kind must be")
+    Run(skill, GOOD_BODY.replace("**Slug:** demo", "**Slug:** de mo")).assert_refused("slug-shape", "Slug must be kebab-case")
+    Run(skill, GOOD_BODY.replace("**Repo:** demo-repo", "**Repo:** a/b")).assert_refused("repo-shape", "Repo is not a repo name")
+    Run(skill, GOOD_BODY.replace("**Goal:** Ship the demo\n", "")).assert_refused("no-goal", "## Handoff has no Goal")
     Run(skill, GOOD_BODY.replace("### ticket-2\n", "### ticket-2 \n")).assert_refused("heading-trailing-space", "headings must be exactly")
     Run(skill, GOOD_BODY.replace("### ticket-2\n", "### ticket-2: Writer\n")).assert_refused("heading-with-title", "headings must be exactly")
     Run(skill, GOOD_BODY.replace("### q-1\n", "### q-1 \n")).assert_refused("question-heading-space", "headings must be exactly")
@@ -386,7 +421,7 @@ def scenario_notify_refused(skill):
     assert len(fixed.notified) == 1, f"delivered notices: {fixed.notified}"
 
 
-SCENARIOS = (scenario_happy, scenario_retry, scenario_slug_reuse, scenario_gate, scenario_failed_search, scenario_read_back, scenario_notify_refused)
+SCENARIOS = (scenario_happy, scenario_retry, scenario_values_are_data, scenario_truncated_search, scenario_slug_reuse, scenario_gate, scenario_failed_search, scenario_read_back, scenario_notify_refused)
 
 
 def check_all(d, s):
@@ -434,14 +469,17 @@ expect_red("sections-swapped", {**docs, "skill": swapped})
 expect_red("harness-specific-term", {**docs, "skill": skill + "\nUse the Claude Agent tool.\n"})
 expect_red("private-lane", {**docs, "intake": docs["intake"] + "\n--lane other-lane\n"})
 expect_red("refused-flag", {**docs, "skill": skill.replace('--kind "$kind" --doc "$doc"', '--kind "$kind" --expected 1d --doc "$doc"', 1)})
-intake_mutant = {**docs, "intake": docs["intake"].replace(' --limit 5000 || exit 1\n', ' --limit 5000\n')}
+intake_mutant = {**docs, "intake": docs["intake"].replace(' --limit 10000 || exit 1\n', ' --limit 10000\n')}
 assert intake_mutant["intake"] != docs["intake"], "fixture: intake export mutant matched nothing"
 expect_red("intake-export-failure-swallowed", intake_mutant, scenario=lambda _: scenario_intake_export(intake_mutant["intake"]))
+cut_mutant = {**docs, "intake": docs["intake"].replace(""" && jq -es 'all(.[]; (.counts.total | type) == "number" and .counts.total <= (.tasks | length))' "$snap" >/dev/null; then""", "; then")}
+assert cut_mutant["intake"] != docs["intake"], "fixture: intake truncation mutant matched nothing"
+expect_red("intake-truncation-ignored", cut_mutant, scenario=lambda _: scenario_intake_export(cut_mutant["intake"]))
 expect_red("phase-removed", {**docs, "design": re.sub(r"(?m)^\| 3\. Stress.*\n", "", docs["design"])})
 expect_red("skill-not-installed", docs, {**sets, "full": [n for n in sets["full"] if n != "interrogate"]})
 expect_red("handoff-not-in-full-set", docs, {**sets, "full": [n for n in sets["full"] if n != "handoff"]})
 expect_red("handoff-in-worker-set", docs, {**sets, "worker": sets["worker"] + ["handoff"]})
-count += 9
+count += 10
 
 # The whole Close decisions gate removed: the prose and the check that enforces it.
 close = section(skill, "## Close decisions")
@@ -457,7 +495,7 @@ BEHAVIOUR = {
     "tickets-unchecked": (scenario_gate, '  check_tickets "$1"\n', "  N=$(grep -c '^### ticket-[0-9][0-9]*$' \"$1\")\n"),
     "open-items-unchecked": (scenario_gate, '  check_open_items "$1"\n', ""),
     "commits-unchecked": (scenario_gate, '  check_commits "$1"\n', ""),
-    "export-failure-ignored": (scenario_failed_search, '  handoffkeep tasks export --state "$s" --limit 5000\n', '  handoffkeep tasks export --state "$s" --limit 5000 || true\n'),
+    "export-failure-ignored": (scenario_failed_search, '  handoffkeep tasks export --state "$s" --limit 10000\n', '  handoffkeep tasks export --state "$s" --limit 10000 || true\n'),
     "parent-search-removed": (scenario_retry, 'parent=$(find_task "[handoff:$slug]")\n', "parent=\n"),
     "child-search-removed": (scenario_retry, 'id=$(find_task "[handoff:$slug $n/")\n', "id=\n"),
     "comments-repeat": (scenario_retry, "jq -e --arg b \"$2\" 'any(.comments[]; .body == $b)' <<<\"$existing\" >/dev/null ||\n    ", ""),
@@ -473,6 +511,11 @@ BEHAVIOUR = {
     "other-goal-slug-reused": (scenario_slug_reuse, """  [ "$(jq -er .title <<<"$row")" = "[handoff:$slug] $goal (grade $grade)" ] ||\n    refuse "slug $slug belongs to a handoff with another goal ($doc); choose another slug"\n""", ""),
     "heading-typo-drops-ticket": (scenario_gate, """  if grep -E '^### *(ticket|q)' "$1" | grep -vE '^### (ticket|q)-[0-9]+$' >&2; then\n    refuse "ticket and question headings must be exactly '### ticket-<n>' or '### q-<n>'"\n  fi\n""", ""),
     "field-trailing-space-refused": (scenario_gate, 'gsub(/^ +| +$/, "", v)', 'sub(/^ +/, "", v)'),
+    "handoff-header-unchecked": (scenario_gate, '  check_handoff "$1"\n', ""),
+    "ticket-kind-unchecked": (scenario_gate, """    field "$sec" Kind | grep -E '^(implement|verify|fix|decide|ops)$' >/dev/null ||\n      refuse "ticket-$n Kind must be implement, verify, fix, decide or ops"\n""", ""),
+    "doc-value-evaluated": (scenario_values_are_data, 'goal=$(field "$meta" Goal)\n', 'goal=$(field "$meta" Goal)\neval "probe=\"$goal\""\n'),
+    "truncated-export-accepted": (scenario_truncated_search, """  refuse "a task export was truncated, so an existing handoff could be missed"\n""", "  true\n"),
+    "missing-counts-accepted": (scenario_truncated_search, """(.counts.total | type) == "number" and .counts.total""", """.counts.total"""),
     "ids-not-in-doc": (scenario_happy, """printf '| %s/%s | %s | %s |\\n' "$n" "$N" "${ids[n - 1]}" """, """printf '| %s/%s | %s | %s |\\n' "$n" "$N" "?" """),
 }
 for label, (scenario, old, new) in BEHAVIOUR.items():

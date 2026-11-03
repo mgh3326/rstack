@@ -73,6 +73,16 @@ they approve the granularity and the edges. Then write each ticket into the doc.
 - **Evidence is pinned.** An unpinned path goes stale while a ticket waits, so cite `<repo>@<sha> <path>:<line>`.
 
 ```markdown
+## Handoff
+
+**Slug:** <kebab-case slug>
+**Repo:** <repo>
+**Project:** <one name from `handoffkeep tasks projects`; use what the repo's recent tasks use>
+**Kind:** <implement or decide>
+**Goal:** <one-line goal>
+**Grade:** <S+, S, A, B or C>, <T0, T1, T2 or T3>
+**Expected:** <duration of the whole handoff>
+
 ## Tickets
 
 ### ticket-1
@@ -94,7 +104,7 @@ they approve the granularity and the edges. Then write each ticket into the doc.
 - `<repo>@<sha>`
 ```
 
-The doc body must have exactly these four `##` sections: `## Decisions`, `## Tickets`,
+The doc body must have exactly these five `##` sections: `## Handoff`, `## Decisions`, `## Tickets`,
 `## Operator questions` and `## Commits read`. §Emit adds `## Ticket ids`. The ticket's Current, Desired,
 Key interfaces, Out of scope and Acceptance fields map one to one onto the `wake` worker brief, so the
 desk can copy them.
@@ -103,15 +113,20 @@ desk can copy them.
 
 ## Emit to hk
 
-Save the code blocks of this section, §Verify and §Notify in order to one scratch file, fill in the first
-block, and run `bash <file>`. Use bash: the arrays are 0-indexed and `set -e` would close an interactive
-shell. The script stops before any write if the doc fails §Close decisions or §Slice.
+Save the code blocks of this section, §Verify and §Notify in order to one scratch file, unchanged, and run
+`bash <file> <doc body path>`. Use bash: the arrays are 0-indexed and `set -e` would close an interactive shell.
+The script stops before any write if the doc fails §Close decisions or §Slice.
+
+Every value comes from the doc and is treated as data, so nothing you write there runs as shell: a goal such as
+`don't` is safe.
 
 **Retries are idempotent, so rerun the same file after any failure.** It searches every task state for an
 existing `[handoff:<slug>]` and for each `[handoff:<slug> <n>/`, reuses the first doc key, and skips a
-comment that is already there. A failed search aborts the run; it never counts as "nothing found". A slug
+comment that is already there. A failed or truncated search aborts the run; it never counts as "nothing found". A
+slug
 already used by another repo, a closed handoff or another goal is refused, so a new handoff never overwrites an
-old doc. A retry must keep the same slug and goal.
+old doc. A retry must keep the same slug and goal. hk comments are append-only, so after a retry with edited
+tickets the newest `blocks:` or `children:` comment on a task is the current one.
 
 The script writes these records, with today's CLI:
 
@@ -128,23 +143,27 @@ The script writes these records, with today's CLI:
 
 ```sh
 set -euo pipefail
-slug=<slug>          # kebab-case, no spaces
-repo=<repo>
-project=<project>    # one name from `handoffkeep tasks projects`; use what the repo's recent tasks use
-kind=<kind>          # implement or decide
-goal='<goal>'        # one line
-grade='<G>, <Tn>'
-expected=<duration>  # for the whole handoff
-body=<path>          # the doc body written in the two sections above
-```
+body=${1:?usage: bash <file> <doc body path>}
 
-```sh
 section() { awk -v h="$2" '$0 == h { f = 1; next } /^##/ { f = 0 } f' "$1"; }
 field() { awk -v h="**$2:**" 'index($0, h) == 1 { v = substr($0, length(h) + 1); gsub(/^ +| +$/, "", v); print v; exit }' <<<"$1"; }
 field_body() { awk -v h="**$2:**" 'index($0, h) == 1 { f = 1; print; next } /^\*\*/ { f = 0 } f' <<<"$1"; }
 refuse() { echo "handoff: $*" >&2; exit 1; }
 
 # The gate: §Close decisions and §Slice, checked on the doc itself.
+check_handoff() {
+  local sec f
+  sec=$(section "$1" '## Handoff')
+  for f in Slug Repo Project Kind Goal Grade Expected; do
+    [ -n "$(field "$sec" "$f")" ] || refuse "## Handoff has no $f"
+  done
+  field "$sec" Slug | grep -E '^[a-z0-9][a-z0-9-]*$' >/dev/null || refuse "Slug must be kebab-case"
+  field "$sec" Repo | grep -E '^[A-Za-z0-9._-]+$' >/dev/null || refuse "Repo is not a repo name"
+  field "$sec" Project | grep -E '^[A-Za-z0-9._-]+$' >/dev/null || refuse "Project is not a project name"
+  field "$sec" Kind | grep -E '^(implement|decide)$' >/dev/null || refuse "## Handoff Kind must be implement or decide"
+  field "$sec" Grade | grep -E '^(S\+|S|A|B|C), T[0-3]$' >/dev/null || refuse "## Handoff Grade must look like 'A, T1'"
+}
+
 check_decisions() {
   awk -F'|' '
     /^## / { sec = $0; next }
@@ -188,6 +207,8 @@ check_tickets() {
     field_body "$sec" Evidence | grep -E '[^[:space:]]+@[0-9a-f]{7,40} [^[:space:]]+:[0-9]+' >/dev/null ||
       refuse "ticket-$n has no pinned evidence (<repo>@<sha> <path>:<line>)"
     field "$sec" Grade | grep -E '^(S\+|S|A|B|C), T[0-3]$' >/dev/null || refuse "ticket-$n Grade must look like 'A, T1'"
+    field "$sec" Kind | grep -E '^(implement|verify|fix|decide|ops)$' >/dev/null ||
+      refuse "ticket-$n Kind must be implement, verify, fix, decide or ops"
     case "$(field "$sec" Title)" in *'|'*) refuse "ticket-$n Title has a |" ;; esac
     if [ "$(field "$sec" Blocks)" != none ]; then
       for m in $(field "$sec" Blocks); do
@@ -208,6 +229,7 @@ check_open_items() {
 check_commits() { section "$1" '## Commits read' | grep -E '[0-9a-f]{7,40}' >/dev/null || refuse "no commit SHAs under ## Commits read"; }
 
 check_body() {
+  check_handoff "$1"
   check_decisions "$1"
   check_questions "$1"
   check_tickets "$1"
@@ -217,14 +239,25 @@ check_body() {
 
 check_body "$body"
 
-# Search one snapshot of every state. An export failure aborts here.
+meta=$(section "$body" '## Handoff')
+slug=$(field "$meta" Slug)
+repo=$(field "$meta" Repo)
+project=$(field "$meta" Project)
+kind=$(field "$meta" Kind)
+goal=$(field "$meta" Goal)
+grade=$(field "$meta" Grade)
+expected=$(field "$meta" Expected)
+
+# Search one snapshot of every state. A failed or truncated export aborts here.
 snap=$(mktemp)
 out=$(mktemp)
 readback=$(mktemp)
 trap 'rm -f "$snap" "$out" "$readback"' EXIT
 for s in backlog claimed in_progress hold needs_decision verifying join reopened merged dropped; do
-  handoffkeep tasks export --state "$s" --limit 5000
+  handoffkeep tasks export --state "$s" --limit 10000
 done >"$snap"
+jq -es 'all(.[]; (.counts.total | type) == "number" and .counts.total <= (.tasks | length))' "$snap" >/dev/null ||
+  refuse "a task export was truncated, so an existing handoff could be missed"
 find_task() { jq -rs --arg p "$1" '[.[].tasks[] | select(.title | startswith($p)) | .id] | min // empty' "$snap"; }
 
 parent=$(find_task "[handoff:$slug]")

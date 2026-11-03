@@ -2,6 +2,7 @@
 """Stand-in for the handoffkeep CLI. It keeps the flag rules of the installed binary, so a
 command the real CLI refuses (--expected, a decision doc, no --project) fails here too.
 State lives in $HK_STUB_STATE. $HK_STUB_FAIL_EXPORT makes one state's export fail, and
+$HK_STUB_TRUNCATE_EXPORT and $HK_STUB_NO_COUNTS change what export reports, and
 $HK_STUB_CORRUPT_DOC changes what doc get returns."""
 import json
 import os
@@ -69,7 +70,11 @@ def main(argv):
             die("invalid_export_query: unknown state")
         if os.environ.get("HK_STUB_FAIL_EXPORT") == flags["state"]:
             die("export failed")
-        print(json.dumps({"tasks": [t for t in state["tasks"] if t["state"] == flags["state"]]}))
+        tasks = [t for t in state["tasks"] if t["state"] == flags["state"]]
+        row = {"tasks": tasks, "counts": {"total": len(tasks) + (1 if os.environ.get("HK_STUB_TRUNCATE_EXPORT") else 0)}}
+        if os.environ.get("HK_STUB_NO_COUNTS"):
+            del row["counts"]
+        print(json.dumps(row))
     elif argv[:2] == ["tasks", "comment"]:
         flags, positional = parse(argv[2:], {"body"})
         if not flags.get("body"):
