@@ -32,8 +32,8 @@ class InstallerReview(unittest.TestCase):
             self.env['FLEET_INSTALL_'+tool.upper()] = str(FIX / tool)
             self.env['FLEET_INSTALL_'+tool.upper()+'_LOG'] = str(self.base / (tool+'.log'))
 
-    def install(self, tool='panewire', *args):
-        return subprocess.run([sys.executable, str(ROOT / 'bin/fleet-install'), tool, 'v9', *args],
+    def install(self, tool='panewire', *args, tag='v9'):
+        return subprocess.run([sys.executable, str(ROOT / 'bin/fleet-install'), tool, tag, *args],
                               env=self.env, text=True, capture_output=True, timeout=15)
 
     def test_reject_shell_and_path_tool_names_before_external_calls(self):
@@ -71,6 +71,13 @@ class InstallerReview(unittest.TestCase):
 
     def test_unexecutable_local_artifact_preserves_old_install_and_removes_stage(self):
         self.assert_failed_local_preserves_install('FLEET_INSTALL_FAKE_INVALID_FORMAT')
+
+    def test_slash_tag_works_for_install_and_dry_run(self):
+        for args in [(), ('--dry-run',)]:
+            with self.subTest(args=args):
+                r = self.install('panewire', *args, tag='release/v9')
+                self.assertEqual(r.returncode, 0, r.stdout+r.stderr)
+                self.assertIn('release/v9', r.stdout)
 
     def test_dry_run_without_checksum_tools(self):
         empty_path = self.base / 'empty-path'
