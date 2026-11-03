@@ -22,6 +22,7 @@ jobs:
           python3 tests/test-install.py
           python3 tests/test-adapter.py
           python3 tests/test-fleet-install-review.py
+          python3 tests/test-fleet-install-concurrent.py
           for test in tests/test-*.sh; do bash "$test"; done
   ci-ok:
     if: always()

@@ -28,15 +28,20 @@ What it does, in order:
 3. `shasum -a 256 -c SHA256SUMS` (or `sha256sum -c`). Required, never skipped —
    and every artifact about to be installed must be listed in it.
 4. Detects this host's `<os>-<arch>` (`uname`, x86_64→amd64, aarch64→arm64),
-   stages `install -m 755` to `~/.local/bin/<tool>.new`, verifies the staged
-   binary with `--version`, then renames it into place. Failed validation
-   removes the staging file and preserves the working install.
+   stages `install -m 755` in a unique temporary directory beside the target,
+   verifies the staged binary with `--version`, then atomically renames it into
+   place. Failed validation removes only this attempt's stage and preserves
+   the working install.
 5. Per `--hosts` entry: probes `<os>-<arch>` over ssh, creates `~/.local/bin`
    before upload, then uses `scp` to copy the matching binary to
-   `.local/bin/<tool>.new`, runs `<tool>.new --version` to validate it,
-   then `mv -f` into place (atomic replace). If the staged binary cannot
+   a unique `.local/bin/<tool>.<token>.new`, validates it with `--version`,
+   then uses `mv -f` into place (atomic replace). If the staged binary cannot
    run, the previous install stays untouched.
 6. Runs the configured restart hooks for every target that installed.
+
+Overlapping installs stage and validate independently; the last successful
+atomic replacement determines the live version. Release tags, including tags
+with `/`, are passed unchanged to GitHub and never used as temporary path prefixes.
 
 Exit codes: `0` all targets ok · `1` at least one target (host or local)
 failed — other hosts still install · `2` usage · `3` release wait timed
