@@ -110,7 +110,8 @@ shell. The script stops before any write if the doc fails Â§Close decisions or Â
 **Retries are idempotent, so rerun the same file after any failure.** It searches every task state for an
 existing `[handoff:<slug>]` and for each `[handoff:<slug> <n>/`, reuses the first doc key, and skips a
 comment that is already there. A failed search aborts the run; it never counts as "nothing found". A slug
-already used by another repo or by a closed handoff is refused, so a new handoff never overwrites an old doc.
+already used by another repo, a closed handoff or another goal is refused, so a new handoff never overwrites an
+old doc. A retry must keep the same slug and goal.
 
 The script writes these records, with today's CLI:
 
@@ -139,7 +140,7 @@ body=<path>          # the doc body written in the two sections above
 
 ```sh
 section() { awk -v h="$2" '$0 == h { f = 1; next } /^##/ { f = 0 } f' "$1"; }
-field() { awk -v h="**$2:**" 'index($0, h) == 1 { v = substr($0, length(h) + 1); sub(/^ +/, "", v); print v; exit }' <<<"$1"; }
+field() { awk -v h="**$2:**" 'index($0, h) == 1 { v = substr($0, length(h) + 1); gsub(/^ +| +$/, "", v); print v; exit }' <<<"$1"; }
 field_body() { awk -v h="**$2:**" 'index($0, h) == 1 { f = 1; print; next } /^\*\*/ { f = 0 } f' <<<"$1"; }
 refuse() { echo "handoff: $*" >&2; exit 1; }
 
@@ -172,6 +173,10 @@ check_questions() {
 
 check_tickets() {
   local n m sec f
+  # A heading the patterns below would miss must not drop a ticket silently.
+  if grep -E '^### *(ticket|q)' "$1" | grep -vE '^### (ticket|q)-[0-9]+$' >&2; then
+    refuse "ticket and question headings must be exactly '### ticket-<n>' or '### q-<n>'"
+  fi
   N=$(grep -c '^### ticket-[0-9][0-9]*$' "$1") || refuse "no tickets"
   for n in $(seq 1 "$N"); do
     sec=$(section "$1" "### ticket-$n")
@@ -233,6 +238,8 @@ if [ -n "$parent" ]; then
   case "$(jq -er .state <<<"$row")" in
     merged | dropped) refuse "slug $slug belongs to a closed handoff ($doc); choose another slug" ;;
   esac
+  [ "$(jq -er .title <<<"$row")" = "[handoff:$slug] $goal (grade $grade)" ] ||
+    refuse "slug $slug belongs to a handoff with another goal ($doc); choose another slug"
 else
   doc="handoff/$repo/$(date +%F)-$slug"
   parent=$(handoffkeep tasks add --lane operator-desk --project "$project" --kind "$kind" --doc "$doc" \
@@ -315,7 +322,8 @@ echo "verified parent=$parent tickets=${#ids[@]}"
 Send one line: `[handoff] <slug> <parent-id> | handoff/<repo>/<date>-<slug>`. Then the session may be closed.
 Emit rc 0 is enough. `panewire` requires `--event-id` and refuses a repeated one, so each attempt gets its own id.
 Only emit rc 0 writes the `notified:` comment, and a rerun skips the notice only when that comment exists. Do not
-read `duplicate event_id` as delivered: emit keeps its record even when the daemon refuses it.
+read `duplicate event_id` as delivered: emit keeps its record even when the daemon refuses it. If emit succeeds and
+the comment then fails, a rerun sends the line twice, which is harmless because intake is idempotent.
 
 If emit reports `inbox root mismatch (daemon=<root>, ...)`, nothing reached the desk: this shell's default inbox
 differs from the daemon's. Set `PANEWIRE_INBOX_ROOT=<root>` from that message and rerun the whole script.

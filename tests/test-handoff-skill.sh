@@ -309,6 +309,7 @@ def scenario_slug_reuse(skill):
         ("other-repo", {"body_doc": "handoff/other-repo/2026-01-01-demo"}, "belongs to another handoff"),
         ("closed", {"state": "merged"}, "belongs to a closed handoff"),
         ("closed-dropped", {"state": "dropped"}, "belongs to a closed handoff"),
+        ("other-goal", {"title": "[handoff:demo] Another goal (grade A, T1)"}, "belongs to a handoff with another goal"),
     ):
         first = Run(skill, GOOD_BODY)
         assert first.proc.returncode == 0, f"{label}: first run failed: {first.proc.stderr}"
@@ -351,6 +352,11 @@ def scenario_gate(skill):
     Run(skill, GOOD_BODY.replace("No reader.", "TBD")).assert_refused("tbd-in-ticket", "only an operator question may stay open")
     Run(skill, GOOD_BODY.replace("**Blocks:** none", "**Blocks:** 1")).assert_refused("backward-edge", "ticket-2 may block only")
     Run(skill, GOOD_BODY.replace("- `repo@abc1234`\n", "")).assert_refused("no-commits", "no commit SHAs")
+    Run(skill, GOOD_BODY.replace("### ticket-2\n", "### ticket-2 \n")).assert_refused("heading-trailing-space", "headings must be exactly")
+    Run(skill, GOOD_BODY.replace("### ticket-2\n", "### ticket-2: Writer\n")).assert_refused("heading-with-title", "headings must be exactly")
+    Run(skill, GOOD_BODY.replace("### q-1\n", "### q-1 \n")).assert_refused("question-heading-space", "headings must be exactly")
+    spaced = Run(skill, GOOD_BODY.replace("**Blocks:** none\n", "**Blocks:** none \n").replace("**Grade:** A, T1\n", "**Grade:** A, T1  \n"))
+    assert spaced.proc.returncode == 0, f"a trailing space on a field was refused: {spaced.proc.stderr}"
 
 
 def scenario_failed_search(skill):
@@ -464,6 +470,9 @@ BEHAVIOUR = {
     "evidence-not-pinned": (scenario_gate, "[^[:space:]]+@[0-9a-f]{7,40} [^[:space:]]+:[0-9]+", "[^[:space:]]+:[0-9]+"),
     "other-repo-slug-reused": (scenario_slug_reuse, """    *) refuse "slug $slug belongs to another handoff ($doc); choose another slug" ;;\n""", ""),
     "closed-slug-reused": (scenario_slug_reuse, """    merged | dropped) refuse "slug $slug belongs to a closed handoff ($doc); choose another slug" ;;\n""", ""),
+    "other-goal-slug-reused": (scenario_slug_reuse, """  [ "$(jq -er .title <<<"$row")" = "[handoff:$slug] $goal (grade $grade)" ] ||\n    refuse "slug $slug belongs to a handoff with another goal ($doc); choose another slug"\n""", ""),
+    "heading-typo-drops-ticket": (scenario_gate, """  if grep -E '^### *(ticket|q)' "$1" | grep -vE '^### (ticket|q)-[0-9]+$' >&2; then\n    refuse "ticket and question headings must be exactly '### ticket-<n>' or '### q-<n>'"\n  fi\n""", ""),
+    "field-trailing-space-refused": (scenario_gate, 'gsub(/^ +| +$/, "", v)', 'sub(/^ +/, "", v)'),
     "ids-not-in-doc": (scenario_happy, """printf '| %s/%s | %s | %s |\\n' "$n" "$N" "${ids[n - 1]}" """, """printf '| %s/%s | %s | %s |\\n' "$n" "$N" "?" """),
 }
 for label, (scenario, old, new) in BEHAVIOUR.items():
