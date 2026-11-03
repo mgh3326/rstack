@@ -204,7 +204,8 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
 `failed`, `retryable`, `SPAWN_FAILED`, a non-zero refusal, or ownership still unresolved past the deadline:
 
 - **Do not retry on the same task.** Replaying the same command and saved request after a lost response
-  is not a retry; it reuses the reservation (`ops` spawn).
+  is not a retry; it reuses the reservation (`ops` spawn). On `retryable` the same replay starts a new
+  attempt, so it is a retry: do not run it.
 - **Never launch with `herdr agent start` or any other route.**
 - **Comment the request id, rc, stage and reason on the task:**
   `handoffkeep tasks comment <id> --body 'spawn failed request=<request_id> rc=<rc> stage=<stage> reason=<reason>'`.
@@ -352,9 +353,11 @@ holds once that is fixed.
 - **Queue.** The seat reads and transitions only its own task
   (`handoffkeep tasks show|transition <id>`); it never runs `tasks next` or `tasks claim`.
   Children it spawns inherit the task.
-- **Loop.** It runs steps 2–6 as a design session would, then reports
-  READY to the parent exactly like a worker (`panewire emit --kind lane.event … READY`) with
-  the PR, head and report path. **It never merges** — mergewake does.
+- **Loop.** It runs steps 2–6 as a design session would, but does not close at landing: no PR exists
+  yet. It waits for its worker's READY, verifies the head with `git ls-remote` and that the report
+  exists. Only then does it report READY to the parent exactly like a worker
+  (`panewire emit --kind lane.event … READY`) with the PR, head and report path. **It never merges** —
+  mergewake does.
 - **Escalate instead of guessing:** a policy choice, a lane-contract conflict, any need for
   secrets, deploys or broker access, an unclear gate result, or an acceptance criterion whose
   meaning would have to change.
