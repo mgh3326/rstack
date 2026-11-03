@@ -107,6 +107,7 @@ REQUIRED = [
     ("wake", "## Merge gate", "gate-done-marker", r"lists `…/<reviewed head>-done`"),
     ("wake", "## Merge gate", "gate-no-critical-high", r"\*\*No unresolved critical/high finding\.\*\*"),
     ("wake", "## Merge gate", "gate-no-ci", r"\*\*CI is not a merge requirement\.\*\* CI runs after the merge, and a red main is reverted"),
+    ("wake", "## Merge gate", "gate-revert-actor", r"mergewake's `watch` opens one revert PR and never merges it"),
     ("wake", "## Merge gate", "gate-slice-5", r"hk 2788 slice 5 may remove this check"),
     ("wake", "## BLOCKED", "blocked-live-author", r"The fix goes to the PR's \*\*live author\*\*"),
     ("wake", "## BLOCKED", "blocked-desk-spawns", r"\*\*The spawner is the desk, and it uses a fresh hk task\*\*"),

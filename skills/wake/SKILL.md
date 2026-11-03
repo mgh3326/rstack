@@ -168,8 +168,9 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
      -l <job> --t <T> --task <id> --role worker --owner operator-desk --host auto [--tags unity] \
      --report ~/work/herdr-inbox/jobs/<job>/report.md --dry-run
    ```
-   `panewire work <task-id>` with the same `-m auto --host auto --role worker --owner operator-desk`
-   flags does the same. The owner is the desk lane because the design session is disposable: ESC and
+   `panewire work <task-id>` with the same `-c`, `-p`, `-l`, `--report` and
+   `-m auto --host auto --role worker --owner operator-desk` flags does the same. Pass them all: its
+   task-derived defaults need not match the worktree and brief you prepared. The owner is the desk lane because the design session is disposable: ESC and
    `SPAWN_FAILED` must reach a lane that outlives it.
    `-l <job>` is also the job id and the pane name mergewake looks up. Check profile, host and
    the prepended host-safety preamble, then run it without `--dry-run`. A refusal is read from
@@ -191,7 +192,8 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    mergewake already notifies the desk lane. The worker opens the PR and reports READY (§READY);
    mergewake reviews and merges it on §Merge gate. Nothing in this session merges.
 8. **After the merge.** Whichever session is open (otherwise the desk) acts on READY and on mergewake's
-   merge notice. Verify the push: `git ls-remote origin wk/<slug>` must show the reported head. Then
+   merge notice. On READY, verify the push: `git ls-remote origin wk/<slug>` must show the reported head. A later fix or
+   a mergewake branch update moves the head, so after the merge read the merged head from the PR instead. Then
    check the report exists at its path outside the worktree
    (harvest it from the pane first if not — a closed pane loses it); once it exists, close
    the hk task. The mergewake daemon closes the worker pane once it is `idle`/`done` and its
@@ -249,13 +251,17 @@ All must hold for head `$H`:
   the desk orders it after the merge.
 
 **CI is not a merge requirement.** CI runs after the merge, and a red main is reverted (Scion; hk 2788
-owns the mechanics). Nobody waits for CI before a merge; never replay CI on a host as a
+owns the mechanics; today's actors are below). Nobody waits for CI before a merge; never replay CI on a host as a
 substitute.
 
 **Until the hk 2788 slice 5 cutover ships,** mergewake's own code still holds on the policy's
 `required_checks` (`mergewake@969c151 internal/pipeline/gate.go:87`), and merging needs its daemon
 acting rather than in shadow. That is the tool's remaining behaviour, not a step for a session here. A PR
-it holds or does not merge in the meantime is the desk's, never the design session's.
+it holds or does not merge in the meantime is the desk's, never the design session's. A red main is not
+yet reverted automatically: mergewake's `watch` opens one revert PR and never merges it, and its
+`mergewake-recovery-latch` tag then stops further recovery until an operator inspects it and removes the
+tag and any `mergewake/recovery` branch (mergewake README). The desk merges that revert and takes the latch
+to the operator, and main stays red until then. If `watch` is not running, nothing opens the revert.
 
 ## READY
 
