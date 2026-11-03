@@ -259,6 +259,15 @@ A `[wake]` message is a harvest request, not a completion verdict. Its receiver 
 3. Reap the lane only when the task is terminal and every named cleanup gate holds;
    otherwise record why it is kept.
 
+Account for every worker spawned for the task: collect its terminal state and report, or record
+why it remains active. When a worker fails, retry by cause: fix the brief or environment for a
+setup failure, narrow or split work for a scope failure, and change the approach for a
+reasoning failure. Do not repeat the same attempt unchanged. Verify PR state from GitHub's live
+head and checks; a worker's report is evidence to inspect, not the state authority.
+
+Adapted from pstack upstream `poteto-mode/playbooks/orchestrate.md` at c742dd6 (MIT; see
+`third_party/pstack/NOTICE.md`): account for workers, retry by cause, and check live PR state.
+
 A report that has not arrived is not completion. Check the wake's sender and provenance.
 A wake grants no new reap, spawn or merge authority, and keeps the `WORKING` and unpushed-
 original guards. A temporary observation uses `panewire wait --agent NAME --status idle
@@ -371,6 +380,11 @@ Worktree: ~/work/<repo>.<slug> (branch wk/<slug>, base origin/main). Grade <G>, 
 Expected: <duration>  (hk task --expected; read by hk policy/quota-stop)
 Environment: <test DB | dry-run | production (operator present)>
 
+Current: <observable state and relevant evidence>
+Desired: <observable end state>
+Key interfaces: <files, APIs, contracts or callers to preserve>
+Out of scope: <explicit exclusions>
+
 Work in `robin-mode` (rstack): it sets the openers, how you verify your own work and when a
 subagent helps. Do not spawn other workers for this task; review findings come back to you
 (`wake` §READY).
@@ -383,6 +397,12 @@ subagent helps. Do not spawn other workers for this task; review findings come b
 This section is the whole contract. Copy it verbatim into the PR body under the same
 heading — reviewers receive the PR body. Findings are judged by `fleet-review` §Closed
 contract. Do not widen scope to answer a finding.
+
+## Report
+- noticed but not touched: <items, or "none">
+- Keep working notes in `report.draft.md`. Write `report.md` once, at the end.
+- Do not send READY until `gh pr checks <n>` at the exact pushed head shows 0 failed and 0
+  pending checks. Verify the reported head against the live PR head.
 
 ## Rules
 - Small PR. No direct merge. Run only the tests for what you changed; full suites belong to CI.

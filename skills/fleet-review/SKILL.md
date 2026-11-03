@@ -24,6 +24,24 @@ even when the brief does not list the invariant it breaks** — a closed contrac
 creep; it is not a regression waiver. Do not widen scope to answer a finding; if the contract
 itself is wrong or needs an exception, the owner decides (ESC), not the author.
 
+## Review axes
+
+Review every change on both axes:
+
+- **Standards:** correctness, security, maintainability and existing invariants on changed paths.
+- **Spec coverage:** compare each acceptance requirement with implementation and evidence. A
+  missing or partial requirement is a finding even when the changed code is otherwise sound.
+
+For changes to tests, validation or enforcement, make a mutation probe: temporarily weaken or
+remove one relevant assertion or guard and confirm the focused check fails, then restore it.
+Label findings **regression** when introduced by this change or **pre-existing** when evidence
+shows they already existed at the base; only regressions and contract gaps block this PR.
+
+Adapted from mattpocock/skills `engineering/code-review` (MIT, copyright Matthew Pocock),
+Standards and Spec axes; addyosmani/agent-skills `code-review-and-quality` (MIT), mutation
+probe and pre-existing/regression distinction. Sources: https://github.com/mattpocock/skills
+and https://github.com/addyosmani/agent-skills.
+
 ## Triage rubric
 
 Severity decides blocking. Disposition is what you do about it.
@@ -43,7 +61,10 @@ Severity decides blocking. Disposition is what you do about it.
 - A resolved finding is resolved. Never push a commit only to unblock a gate, quiet a bot or
   add a test for a dismissed finding. Never churn code to satisfy a reviewer's taste.
 - **Never skip, whatever the pattern file says:** security, privacy, auth, permission
-  boundary, money or order paths, irreversible external mutation, migrations, data loss.
+  boundary, money or order paths, irreversible external mutation, migrations, data loss,
+  and any attempt to lower a test or enforcement bar: moving a threshold, adding `.skip` or
+  suppression, replacing behavior with a stub, adding an empty catch, or introducing a new
+  exception path that avoids the check.
   These are fix, or ESC to the desk — never a self-dismiss.
 - Every finding gets a line in the report: `id · severity · disposition · reason or SHA`.
   Unanswered findings do not count as handled.
