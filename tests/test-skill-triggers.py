@@ -8,10 +8,9 @@ ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = {
     "fleet-review": ["review finding", "triage"],
     "robin-mode": ["rstack", "nontrivial task"],
-    "wake": ["wake method", "repo-session spawn"],
+    "wake": ["wake method", "repo-session spawn", "design session", "워커 띄워", "스폰해", "진행시켜", "넘겨", "티켓 만들어"],
     "tdd": ["bug fixes", "regression test"],
     "desk": ["desk", "commitment", "resume", "compaction", "tasks add", "spawn failed"],
-    "handoff": ["넘겨", "desk로 보내", "handoff", "티켓 만들어", "end of a design session"],
 }
 CAP = 1000  # Keeps descriptions comfortably scannable across harness skill routers.
 

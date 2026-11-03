@@ -44,7 +44,7 @@ Arbiter is retired, replaced by `panewire jobs list` (hk 2718). Rollout waits fo
 that panewire release, sequenced by the desk. Installing links does not execute the tools. See [fleet-rev](docs/fleet-rev.md)
 and [fleet-install](docs/fleet-install.md) for the retained interfaces.
 
-First-party skills are in `skills/`: robin-mode, wake, ops, fleet-review, desk and handoff.
+First-party skills are in `skills/`: robin-mode, wake, ops, fleet-review and desk.
 `skills/robin-mode/SKILL.md` owns the work boundary and fleet adapter. Upstream
 pstack lives in `third_party/pstack`, outside discovery; only INSTALL names are
 linked. The vendor tree is under its own MIT licenses and notices: see PINNED,
