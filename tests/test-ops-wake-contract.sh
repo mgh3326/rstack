@@ -97,7 +97,7 @@ REQUIRED = [
     ("wake", "## The loop", "owner-why", r"`SPAWN_FAILED` must reach a lane that outlives it"),
     ("wake", "## The loop", "no-unlanded-blocker", r"Spawn only tickets with no unlanded blocker"),
     ("wake", "## The loop", "accepted-proves-nothing", r"it proves nothing about a pane"),
-    ("wake", "## The loop", "landing-proof", r"you read it with `panewire spawn … --wait --wait-timeout 2m`.{0,120}never with your own HTTP call"),
+    ("wake", "## The loop", "landing-proof", r"you read it from the exit of the step 5 run with `--wait --wait-timeout 2m` \(one launch, not a second spawn\), never with your own HTTP call"),
     ("wake", "## The loop", "landing-hk-claim", r"`handoffkeep tasks show <id>` with `claimed_by` and `refs\.job_id` equal to `<job>`"),
     ("wake", "## The loop", "landing-exit-85", r"\| `85` \(`wait timeout for job`\) \| Landed"),
     ("wake", "## The loop", "landing-refused-no-replay", r"`spawn refused: <reason> \(operation <id>\)` \| `failed` or `retryable`: not landed \| §On spawn failure; never replay"),
@@ -166,7 +166,7 @@ REQUIRED = [
 
 # wake never tells a session to merge or to wait on CI before a merge, and never
 # makes a disposable session the owner of a worker.
-WAKE_FORBIDDEN = re.compile(r"gh pr merge|gh pr checks|ci-any-ref|--owner <repo-session-lane>|curl[^\n]*/v1/spawns|\(operator credential\)")
+WAKE_FORBIDDEN = re.compile(r"gh pr merge|gh pr checks|ci-any-ref|--owner <repo-session-lane>|curl[^\n]*/v1/spawns|\(operator credential\)|operator (?:credential|token)s? to|(?:source|cat|\. ) ?[~\w/.-]*(?:\.env|token|credential)")
 
 
 # Retired skill names may not appear in the two skill files except as the
@@ -299,6 +299,8 @@ for label, text in (
     ("wake-waits-for-checks", docs["wake"].replace("## Merge gate\n", "## Merge gate\n\nWait for `gh pr checks <n>`.\n", 1)),
     # hk 2801: landing proof never becomes a raw hub call with a credential.
     ("wake-curls-the-hub", docs["wake"].replace("## The loop\n", "## The loop\n\nRun `curl -H \"Authorization: Bearer $T\" $HUB/v1/spawns/<id>`.\n", 1)),
+    ("wake-sources-env", docs["wake"].replace("## The loop\n", "## The loop\n\nRun `source ~/.config/panewire/hub-operator.env` first.\n", 1)),
+    ("wake-uses-operator-token", docs["wake"].replace("## The loop\n", "## The loop\n\nUse the operator token to read the hub.\n", 1)),
     ("wake-needs-operator-credential", docs["wake"].replace("## The loop\n", "## The loop\n\nRead the hub (operator credential).\n", 1)),
 ):
     expect_red(label, {**docs, "wake": text}, refs)

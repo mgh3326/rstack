@@ -177,12 +177,13 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    task-derived defaults need not match the worktree and brief you prepared. The owner is the desk lane
    because the design session is disposable: ESC and `SPAWN_FAILED` must reach a lane that outlives it.
    `-l <job>` is also the job id and the pane name mergewake looks up. Check profile, host and
-   the prepended host-safety preamble, then run it without `--dry-run`. A refusal is read from
-   its exit code (panewire `docs/config.md`); it is never a reason to launch the task another way.
+   the prepended host-safety preamble, then run that same command once without `--dry-run` and with
+   `--wait --wait-timeout 2m` (step 6 reads its exit). A refusal is read from its exit code (panewire
+   `docs/config.md`); it is never a reason to launch the task another way.
 6. **Landing proof.** `ACCEPTED job=… request=…` confirms only a durable reservation; it proves nothing
    about a pane. The proof is the hub's spawn state (`GET /v1/spawns/<request_id>`) reaching a terminal
-   state, and you read it with `panewire spawn … --wait --wait-timeout 2m` (or `panewire work … --wait
-   --wait-timeout 2m`), never with your own HTTP call: panewire reads the hub credential from its own
+   state, and you read it from the exit of the step 5 run with `--wait --wait-timeout 2m` (one launch, not a
+   second spawn), never with your own HTTP call: panewire reads the hub credential from its own
    config. It first follows the spawn state until it is terminal, then waits for the job, so its exit
    says which one ended it (panewire `internal/fleet/submission.go` `WaitSpawn`, `internal/fleet/wait.go`).
    Run it in the background and wait for it to exit; do not loop around it. `--wait-timeout` bounds only
