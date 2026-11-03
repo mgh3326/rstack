@@ -113,6 +113,7 @@ REQUIRED = [
     ("wake", "## BLOCKED", "blocked-desk-spawns", r"\*\*The spawner is the desk, and it uses a fresh hk task\*\*"),
     ("wake", "## Delegated seat", "seat-ready-after-worker", r"It waits for its worker's READY.{0,120}Only then does it report READY"),
     ("wake", "## On spawn failure", "failure-retryable-replay", r"On `retryable` the same replay starts a new attempt, so it is a retry"),
+    ("wake", "## Delegated seat", "seat-owns-workers", r"`--owner <seat-lane>` in step 5, and `<seat-lane>` as the brief's `<parent-lane>`"),
     ("wake", "## Delegated seat", "seat-builder-fails", r"`--role builder` spawns currently fail \(hk 2741\)"),
     # Authority.
     ("wake", "## Authority", "design-never-merges", r"It \*\*never merges\*\*: mergewake merges on review pass"),

@@ -170,8 +170,8 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    ```
    `panewire work <task-id>` with the same `-c`, `-p`, `-l`, `--report` and
    `-m auto --host auto --role worker --owner operator-desk` flags does the same. Pass them all: its
-   task-derived defaults need not match the worktree and brief you prepared. The owner is the desk lane because the design session is disposable: ESC and
-   `SPAWN_FAILED` must reach a lane that outlives it.
+   task-derived defaults need not match the worktree and brief you prepared. The owner is the desk lane
+   because the design session is disposable: ESC and `SPAWN_FAILED` must reach a lane that outlives it.
    `-l <job>` is also the job id and the pane name mergewake looks up. Check profile, host and
    the prepended host-safety preamble, then run it without `--dry-run`. A refusal is read from
    its exit code (panewire `docs/config.md`); it is never a reason to launch the task another way.
@@ -365,13 +365,18 @@ holds once that is fixed.
   exists. Only then does it report READY to the parent exactly like a worker
   (`panewire emit --kind lane.event … READY`) with the PR, head and report path. **It never merges** —
   mergewake does.
+- **Its workers.** Unlike a design session, a seat stays open for its worker's READY, so it owns them:
+  `--owner <seat-lane>` in step 5, and `<seat-lane>` as the brief's `<parent-lane>`. With
+  `--owner operator-desk` that READY goes to the desk and the seat waits forever. Its §On spawn failure
+  ESC goes to its parent lane.
 - **Escalate instead of guessing:** a policy choice, a lane-contract conflict, any need for
   secrets, deploys or broker access, an unclear gate result, or an acceptance criterion whose
   meaning would have to change.
 
 ## Brief rules
 
-- **`<parent-lane>` in a design session's worker brief is `operator-desk`** (§The loop step 5).
+- **`<parent-lane>` in a design session's worker brief is `operator-desk`** (§The loop step 5); in a
+  delegated seat's worker brief it is the seat's lane (§Delegated seat).
 - **Every instruction maps 1:1 to an observable acceptance check** (`<command>` → expected
   output). Re-read the brief backwards: an instruction without a check is either given one
   or deleted. Small tasks need this most — nobody re-reads them.
