@@ -45,6 +45,11 @@ anything here. Unset or missing is normal — the abstract rules below apply alo
   commands (`pacelever`, `panewire`) use the real HOME.
 - **A test harness that does a real spawn stops its completion watchers before removing
   its temp root**; signal only pids it started.
+- **A clock time in a record comes from `date` or the server, never from your head.** Any time written
+  into hk, a report, or a commit or PR body is produced by `date` in the same command
+  (`--body "… $(date '+%F %T %Z')"`) or is the record's own server timestamp. A relative time is
+  computed: `date -v+30M '+%F %T %Z'` on macOS, `date -d '+30 min' '+%F %T %Z'` on Linux. Estimated times
+  written into records were later read as fact (2026-11-03).
 - **Test only what you changed, on any host** — e.g. `go test -p 2 ./<changed pkg>/...` or the touched
   pytest files; full suites are CI's job. On macOS keep `-p 2`: wider parallelism stalls in syspolicyd.
 
