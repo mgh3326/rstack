@@ -82,7 +82,9 @@ def main(argv):
         state["comments"].append({"task_id": task_id(positional), "body": flags["body"]})
         print("{}")
     elif argv[:2] == ["tasks", "comments"]:
-        _, positional = parse(argv[2:], {"limit"})
+        flags, positional = parse(argv[2:], {"limit"})
+        if not 1 <= int(flags.get("limit", "100")) <= 500:
+            die("--after-id must be >= 0 and --limit between 1 and 500")
         wanted = task_id(positional)
         print(json.dumps({"comments": [c for c in state["comments"] if c["task_id"] == wanted]}))
     elif argv[:2] == ["tasks", "show"]:

@@ -2,17 +2,17 @@
 
 A `[handoff] <slug> <parent-id> | <doc-key>` line is a pointer; the doc and the tasks are the record. The
 session that wrote them may already be gone, so read them instead of asking back. Rerunning intake is safe:
-step 1 shows which tickets already have a disposition.
+step 1 lists the dispositions already recorded on the parent.
 
 ## 1. Read the handoff doc
 
 ```sh
 handoffkeep doc get <doc-key> | jq -r .body
 handoffkeep tasks show <parent-id>
-handoffkeep tasks comments <parent-id> --limit 500
+handoffkeep tasks comments <parent-id> --limit 500 | jq -r '.comments[].body | select(startswith("disposition: "))'
 ```
 
-Skip any ticket that already has a `disposition:` comment. Compare `## Commits read` with
+Dispositions live on the parent, not on the ticket. Skip any ticket whose `<n>/<N>` is already listed. Compare `## Commits read` with
 `git rev-parse origin/main`. If a file a ticket cites has changed since, re-read the citation before you
 accept that ticket.
 
@@ -63,10 +63,10 @@ handoffkeep tasks comment <parent-id> --body 'disposition: <n>/<N> rejected: <on
 ```
 
 These are plain comments; `handoffkeep tasks disposition` is a different record. Before moving on, check that
-the count of `disposition:` comments equals `<N>`:
+the number of tickets with a disposition equals `<N>`:
 
 ```sh
-handoffkeep tasks comments <parent-id> --limit 500 | jq '[.comments[] | select(.body | startswith("disposition: "))] | length'
+handoffkeep tasks comments <parent-id> --limit 500 | jq '[.comments[].body | select(startswith("disposition: ")) | split(" ")[1]] | unique | length'
 ```
 
 A ticket that fails the bar is rejected, or fixed by the desk from the doc. An unclear ticket is not a reason

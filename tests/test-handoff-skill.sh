@@ -105,6 +105,7 @@ REQUIRED = [
     ("license", None, "license-grant", r"Permission is hereby granted, free of charge"),
     ("intake", "## 1. Read the handoff doc", "read-doc", r"handoffkeep doc get <doc-key>"),
     ("intake", "## 2. Dedupe against open tasks", "dedupe", r"--to dropped --by operator-desk --note 'duplicate of hk <id>'"),
+    ("intake", "## 1. Read the handoff doc", "parent-holds-dispositions", r"Dispositions live on the parent, not on the ticket\. Skip any ticket whose `<n>/<N>` is already listed"),
     ("intake", "## 2. Dedupe against open tasks", "export-failure-stops", r"stop if any export fails or is truncated"),
     ("intake", "## 2. Dedupe against open tasks", "move-edges", r"Move a dropped ticket's edges"),
     ("intake", "## 2. Dedupe against open tasks", "rejected-blockers", r"Re-judge each ticket it blocks before you accept that ticket"),
@@ -369,6 +370,30 @@ def scenario_intake_export(intake):
     assert cut.stdout.strip() == "", f"searched a truncated export: {cut.stdout!r}"
 
 
+def scenario_intake_dispositions(intake):
+    """Step 1 lists the parent's dispositions, and step 3 counts tickets rather than comments."""
+    first = Run(docs["skill"], GOOD_BODY)
+    assert first.proc.returncode == 0, f"setup failed: {first.proc.stderr}"
+    state = first.hk
+    parent, key = state["tasks"][0]["id"], state["tasks"][0]["body_doc"]
+    for body in ("disposition: 1/2 accepted → 1001", "disposition: 1/2 accepted → 1001", "next: something else"):
+        state["comments"].append({"task_id": parent, "body": body})
+    first.state.write_text(json.dumps(state))
+    env = {**os.environ, "PATH": f"{first.dir / 'bin'}:{os.environ['PATH']}", "HK_STUB_STATE": str(first.state)}
+
+    def run(heading, index):
+        block = re.findall(r"(?ms)^```sh\n(.*?)^```$", section(intake, heading))[index]
+        block = block.replace("<doc-key>", key).replace("<parent-id>", str(parent))
+        return subprocess.run(["bash", "-c", block], env=env, capture_output=True, text=True, timeout=60)
+
+    listed = run("## 1. Read the handoff doc", 0)
+    assert listed.returncode == 0, f"step 1 failed: {listed.stderr}"
+    assert "disposition: 1/2 accepted → 1001" in listed.stdout, f"step 1 does not list the parent's dispositions: {listed.stdout}"
+    assert "next: something else" not in listed.stdout, "step 1 lists comments that are not dispositions"
+    counted = run("## 3. Record a disposition per ticket", 1)
+    assert counted.stdout.strip() == "1", f"step 3 counted comments rather than tickets: {counted.stdout!r} {counted.stderr!r}"
+
+
 def scenario_gate(skill):
     """Nothing is written while the doc fails §Close decisions or §Slice."""
     Run(skill, GOOD_BODY.replace("| Scope | Two tickets | operator |", "| Scope | | operator |")).assert_refused("open-decision", "close the decisions")
@@ -433,6 +458,7 @@ check_all(docs, sets)
 for scenario in SCENARIOS:
     scenario(docs["skill"])
 scenario_intake_export(docs["intake"])
+scenario_intake_dispositions(docs["intake"])
 print(f"PASS handoff-skill sections={len(SECTIONS)} rows={len(REQUIRED)} phases={len(PHASES)}")
 
 
@@ -475,11 +501,22 @@ expect_red("intake-export-failure-swallowed", intake_mutant, scenario=lambda _: 
 cut_mutant = {**docs, "intake": docs["intake"].replace(""" && jq -es 'all(.[]; (.counts.total | type) == "number" and .counts.total <= (.tasks | length))' "$snap" >/dev/null; then""", "; then")}
 assert cut_mutant["intake"] != docs["intake"], "fixture: intake truncation mutant matched nothing"
 expect_red("intake-truncation-ignored", cut_mutant, scenario=lambda _: scenario_intake_export(cut_mutant["intake"]))
+count_mutant = {**docs, "intake": docs["intake"].replace(' | split(" ")[1]] | unique | length', '] | length')}
+assert count_mutant["intake"] != docs["intake"], "fixture: intake count mutant matched nothing"
+expect_red("intake-counts-comments", count_mutant, scenario=lambda _: scenario_intake_dispositions(count_mutant["intake"]))
+list_mutant = {**docs, "intake": docs["intake"].replace("""handoffkeep tasks show <parent-id>
+handoffkeep tasks comments <parent-id> --limit 500 | jq -r '.comments[].body | select(startswith("disposition: "))'""", """handoffkeep tasks show <parent-id>
+handoffkeep tasks comments <parent-id> --limit 500 >/dev/null""")}
+assert list_mutant["intake"] != docs["intake"], "fixture: intake list mutant matched nothing"
+expect_red("intake-does-not-list-dispositions", list_mutant, scenario=lambda _: scenario_intake_dispositions(list_mutant["intake"]))
+over_limit = {**docs, "skill": docs["skill"].replace('existing=$(handoffkeep tasks comments "$parent" --limit 500)', 'existing=$(handoffkeep tasks comments "$parent" --limit 1000)')}
+assert over_limit["skill"] != docs["skill"], "fixture: over-limit mutant matched nothing"
+expect_red("comment-limit-over-cli-max", over_limit, scenario=scenario_happy)
 expect_red("phase-removed", {**docs, "design": re.sub(r"(?m)^\| 3\. Stress.*\n", "", docs["design"])})
 expect_red("skill-not-installed", docs, {**sets, "full": [n for n in sets["full"] if n != "interrogate"]})
 expect_red("handoff-not-in-full-set", docs, {**sets, "full": [n for n in sets["full"] if n != "handoff"]})
 expect_red("handoff-in-worker-set", docs, {**sets, "worker": sets["worker"] + ["handoff"]})
-count += 10
+count += 13
 
 # The whole Close decisions gate removed: the prose and the check that enforces it.
 close = section(skill, "## Close decisions")
