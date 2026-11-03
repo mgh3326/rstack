@@ -88,8 +88,9 @@ done | jq -r '.tasks[] | select(.title | test("<keyword>"; "i")) | "\(.id) \(.st
 with the result written to an hk doc** (`handoffkeep doc put --key research/<date>/<slug> --file <path>`).
 Read the doc, not the raw evidence, and judge from there.
 
-The desk keeps gates, merges, deploy orders and operator decisions. If a problem is inside a tool, its
-fix belongs to that tool's task (§Spawn failure).
+The desk keeps deploy orders, operator decisions, spawn-failure handling and revert merges. mergewake
+reviews and merges PRs, and design sessions spawn their own workers (`wake`). If a problem is inside a
+tool, its fix belongs to that tool's task (§Spawn failure).
 
 **Prevents:** the desk debugged spawn failures itself for an hour, on guessed causes, while everything
 else it owed waited.
