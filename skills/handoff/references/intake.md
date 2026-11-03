@@ -18,15 +18,21 @@ accept that ticket.
 
 ## 2. Dedupe against open tasks
 
-For each ticket, search open tasks by keyword and leave this handoff's own tasks out:
+Export open tasks once, and stop if any export fails: a partial list would hide the duplicate. Then search by
+keyword for each ticket, leaving this handoff's own tasks out:
 
 ```sh
-for s in backlog claimed in_progress hold needs_decision verifying join reopened; do
-  handoffkeep tasks export --state "$s" --limit 5000
-done | jq -r --arg own '[handoff:<slug>' '.tasks[]
-  | select((.title | startswith($own)) | not)
-  | select(.title | test("<keyword>"; "i"))
-  | "\(.id) \(.state) \(.title)"'
+snap=$(mktemp)
+if (for s in backlog claimed in_progress hold needs_decision verifying join reopened; do
+  handoffkeep tasks export --state "$s" --limit 5000 || exit 1
+done) >"$snap"; then
+  jq -r --arg own '[handoff:<slug>' '.tasks[]
+    | select((.title | startswith($own)) | not)
+    | select(.title | test("<keyword>"; "i"))
+    | "\(.id) \(.state) \(.title)"' "$snap"
+else
+  echo 'export failed: do not accept any ticket yet' >&2
+fi
 ```
 
 If an open task already covers the work, drop the ticket and record that task in step 3:
@@ -37,6 +43,15 @@ handoffkeep tasks transition <ticket-id> --to dropped --by operator-desk --note 
 
 Similar is not the same. If the work really differs, keep the ticket and name the other task in its
 disposition.
+
+**Move a dropped ticket's edges.** Its `blocks:` tickets would otherwise wait for a task that never lands, so copy
+the edge to the task that replaced it:
+
+```sh
+handoffkeep tasks comment <id> --body 'blocks: <ids from the dropped ticket>'
+```
+
+A rejected ticket has no replacement. Re-judge each ticket it blocks before you accept that ticket.
 
 ## 3. Record a disposition per ticket
 

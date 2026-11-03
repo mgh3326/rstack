@@ -109,7 +109,8 @@ shell. The script stops before any write if the doc fails Â§Close decisions or Â
 
 **Retries are idempotent, so rerun the same file after any failure.** It searches every task state for an
 existing `[handoff:<slug>]` and for each `[handoff:<slug> <n>/`, reuses the first doc key, and skips a
-comment that is already there. A failed search aborts the run; it never counts as "nothing found".
+comment that is already there. A failed search aborts the run; it never counts as "nothing found". A slug
+already used by another repo or by a closed handoff is refused, so a new handoff never overwrites an old doc.
 
 The script writes these records, with today's CLI:
 
@@ -179,7 +180,8 @@ check_tickets() {
       [ -n "$(field "$sec" "$f")" ] || refuse "ticket-$n has no $f"
     done
     field_body "$sec" Acceptance | grep '^- ' >/dev/null || refuse "ticket-$n has no acceptance check"
-    field_body "$sec" Evidence | grep -E '[^[:space:]]+:[0-9]+' >/dev/null || refuse "ticket-$n has no file:line evidence"
+    field_body "$sec" Evidence | grep -E '[^[:space:]]+@[0-9a-f]{7,40} [^[:space:]]+:[0-9]+' >/dev/null ||
+      refuse "ticket-$n has no pinned evidence (<repo>@<sha> <path>:<line>)"
     field "$sec" Grade | grep -E '^(S\+|S|A|B|C), T[0-3]$' >/dev/null || refuse "ticket-$n Grade must look like 'A, T1'"
     case "$(field "$sec" Title)" in *'|'*) refuse "ticket-$n Title has a |" ;; esac
     if [ "$(field "$sec" Blocks)" != none ]; then
@@ -222,7 +224,15 @@ find_task() { jq -rs --arg p "$1" '[.[].tasks[] | select(.title | startswith($p)
 
 parent=$(find_task "[handoff:$slug]")
 if [ -n "$parent" ]; then
-  doc=$(jq -ers --argjson id "$parent" 'first(.[].tasks[] | select(.id == $id)) | .body_doc' "$snap")
+  row=$(jq -cs --argjson id "$parent" 'first(.[].tasks[] | select(.id == $id))' "$snap")
+  doc=$(jq -er .body_doc <<<"$row")
+  case "$doc" in
+    "handoff/$repo/"*"-$slug") ;;
+    *) refuse "slug $slug belongs to another handoff ($doc); choose another slug" ;;
+  esac
+  case "$(jq -er .state <<<"$row")" in
+    merged | dropped) refuse "slug $slug belongs to a closed handoff ($doc); choose another slug" ;;
+  esac
 else
   doc="handoff/$repo/$(date +%F)-$slug"
   parent=$(handoffkeep tasks add --lane operator-desk --project "$project" --kind "$kind" --doc "$doc" \

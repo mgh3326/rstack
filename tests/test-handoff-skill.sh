@@ -103,6 +103,9 @@ REQUIRED = [
     ("license", None, "license-grant", r"Permission is hereby granted, free of charge"),
     ("intake", "## 1. Read the handoff doc", "read-doc", r"handoffkeep doc get <doc-key>"),
     ("intake", "## 2. Dedupe against open tasks", "dedupe", r"--to dropped --by operator-desk --note 'duplicate of hk <id>'"),
+    ("intake", "## 2. Dedupe against open tasks", "export-failure-stops", r"stop if any export fails"),
+    ("intake", "## 2. Dedupe against open tasks", "move-edges", r"Move a dropped ticket's edges"),
+    ("intake", "## 2. Dedupe against open tasks", "rejected-blockers", r"Re-judge each ticket it blocks before you accept that ticket"),
     ("intake", "## 3. Record a disposition per ticket", "accepted", r"disposition: <n>/<N> accepted → <ticket-id>"),
     ("intake", "## 3. Record a disposition per ticket", "reason", r"disposition: <n>/<N> rejected: <one-line reason>"),
     ("intake", "## 4. Group tickets into lead sessions", "group", r"One lead per chain"),
@@ -300,6 +303,41 @@ def scenario_retry(skill):
     assert [t["id"] for t in resumed.hk["tasks"]] == [1000, 1001, 1002], "resume did not create only the missing ticket"
 
 
+def scenario_slug_reuse(skill):
+    """A slug taken by another repo or a closed handoff never reuses its tasks or overwrites its doc."""
+    for label, change, reason in (
+        ("other-repo", {"body_doc": "handoff/other-repo/2026-01-01-demo"}, "belongs to another handoff"),
+        ("closed", {"state": "merged"}, "belongs to a closed handoff"),
+        ("closed-dropped", {"state": "dropped"}, "belongs to a closed handoff"),
+    ):
+        first = Run(skill, GOOD_BODY)
+        assert first.proc.returncode == 0, f"{label}: first run failed: {first.proc.stderr}"
+        state = first.hk
+        state["tasks"][0].update(change)
+        first.state.write_text(json.dumps(state))
+        again = Run(skill, GOOD_BODY.replace("Add the writer", "Other work"), state_dir=first.dir)
+        assert again.proc.returncode != 0 and reason in again.proc.stderr, f"{label}: expected {reason!r}: {again.proc.stderr}"
+        assert again.hk["docs"] == state["docs"], f"{label}: overwrote the other handoff's doc"
+        assert again.hk["tasks"] == state["tasks"], f"{label}: changed tasks"
+
+
+def scenario_intake_export(intake):
+    """The dedupe block in intake.md finds the other task, and says so when an export fails."""
+    block = re.search(r"(?ms)^```sh\n(.*?)^```$", section(intake, "## 2. Dedupe against open tasks")).group(1)
+    block = block.replace("<slug>", "demo").replace("<keyword>", "reader")
+    first = Run(docs["skill"], GOOD_BODY)
+    assert first.proc.returncode == 0, f"setup failed: {first.proc.stderr}"
+    state = first.hk
+    state["tasks"].append({"id": 900, "state": "hold", "title": "Add a reader elsewhere"})
+    first.state.write_text(json.dumps(state))
+    env = {**os.environ, "PATH": f"{first.dir / 'bin'}:{os.environ['PATH']}", "HK_STUB_STATE": str(first.state)}
+    found = subprocess.run(["bash", "-c", block], env=env, capture_output=True, text=True, timeout=60)
+    assert found.stdout.strip() == "900 hold Add a reader elsewhere", f"dedupe search: {found.stdout!r} {found.stderr!r}"
+    failed = subprocess.run(["bash", "-c", block], env={**env, "HK_STUB_FAIL_EXPORT": "join"}, capture_output=True, text=True, timeout=60)
+    assert "export failed: do not accept any ticket yet" in failed.stderr, f"failed export was not reported: {failed.stderr!r}"
+    assert failed.stdout.strip() == "", f"searched a partial export: {failed.stdout!r}"
+
+
 def scenario_gate(skill):
     """Nothing is written while the doc fails §Close decisions or §Slice."""
     Run(skill, GOOD_BODY.replace("| Scope | Two tickets | operator |", "| Scope | | operator |")).assert_refused("open-decision", "close the decisions")
@@ -308,7 +346,8 @@ def scenario_gate(skill):
     Run(skill, no_table).assert_refused("no-decisions", "close the decisions")
     Run(skill, GOOD_BODY.replace("**Default:** A — stays off\n", "")).assert_refused("question-no-default", "q-1 has no Default")
     Run(skill, GOOD_BODY.replace("- `tool read` → prints the row\n", "")).assert_refused("no-acceptance", "ticket-1 has no acceptance")
-    Run(skill, GOOD_BODY.replace("`repo@abc1234 store.go:20` — the row", "see the table")).assert_refused("no-evidence", "ticket-2 has no file:line evidence")
+    Run(skill, GOOD_BODY.replace("`repo@abc1234 store.go:20` — the row", "see the table")).assert_refused("no-evidence", "ticket-2 has no pinned evidence")
+    Run(skill, GOOD_BODY.replace("`repo@abc1234 store.go:20`", "`store.go:20`")).assert_refused("unpinned-evidence", "ticket-2 has no pinned evidence")
     Run(skill, GOOD_BODY.replace("No reader.", "TBD")).assert_refused("tbd-in-ticket", "only an operator question may stay open")
     Run(skill, GOOD_BODY.replace("**Blocks:** none", "**Blocks:** 1")).assert_refused("backward-edge", "ticket-2 may block only")
     Run(skill, GOOD_BODY.replace("- `repo@abc1234`\n", "")).assert_refused("no-commits", "no commit SHAs")
@@ -341,7 +380,7 @@ def scenario_notify_refused(skill):
     assert len(fixed.notified) == 1, f"delivered notices: {fixed.notified}"
 
 
-SCENARIOS = (scenario_happy, scenario_retry, scenario_gate, scenario_failed_search, scenario_read_back, scenario_notify_refused)
+SCENARIOS = (scenario_happy, scenario_retry, scenario_slug_reuse, scenario_gate, scenario_failed_search, scenario_read_back, scenario_notify_refused)
 
 
 def check_all(d, s):
@@ -352,6 +391,7 @@ def check_all(d, s):
 check_all(docs, sets)
 for scenario in SCENARIOS:
     scenario(docs["skill"])
+scenario_intake_export(docs["intake"])
 print(f"PASS handoff-skill sections={len(SECTIONS)} rows={len(REQUIRED)} phases={len(PHASES)}")
 
 
@@ -388,11 +428,14 @@ expect_red("sections-swapped", {**docs, "skill": swapped})
 expect_red("harness-specific-term", {**docs, "skill": skill + "\nUse the Claude Agent tool.\n"})
 expect_red("private-lane", {**docs, "intake": docs["intake"] + "\n--lane other-lane\n"})
 expect_red("refused-flag", {**docs, "skill": skill.replace('--kind "$kind" --doc "$doc"', '--kind "$kind" --expected 1d --doc "$doc"', 1)})
+intake_mutant = {**docs, "intake": docs["intake"].replace(' --limit 5000 || exit 1\n', ' --limit 5000\n')}
+assert intake_mutant["intake"] != docs["intake"], "fixture: intake export mutant matched nothing"
+expect_red("intake-export-failure-swallowed", intake_mutant, scenario=lambda _: scenario_intake_export(intake_mutant["intake"]))
 expect_red("phase-removed", {**docs, "design": re.sub(r"(?m)^\| 3\. Stress.*\n", "", docs["design"])})
 expect_red("skill-not-installed", docs, {**sets, "full": [n for n in sets["full"] if n != "interrogate"]})
 expect_red("handoff-not-in-full-set", docs, {**sets, "full": [n for n in sets["full"] if n != "handoff"]})
 expect_red("handoff-in-worker-set", docs, {**sets, "worker": sets["worker"] + ["handoff"]})
-count += 8
+count += 9
 
 # The whole Close decisions gate removed: the prose and the check that enforces it.
 close = section(skill, "## Close decisions")
@@ -418,6 +461,9 @@ BEHAVIOUR = {
     "notice-repeats-on-rerun": (scenario_retry, """if jq -e 'any(.comments[]; .body == "notified: operator-desk")' <<<"$existing" >/dev/null; then""", "if false; then"),
     "notice-recorded-before-emit": (scenario_notify_refused, """  panewire emit --kind lane.event""", """  handoffkeep tasks comment "$parent" --body 'notified: operator-desk' >/dev/null\n  panewire emit --kind lane.event"""),
     "fixed-event-id": (scenario_notify_refused, '"handoff-$slug-$parent-$(date +%s)-$$"', '"handoff-$slug-$parent"'),
+    "evidence-not-pinned": (scenario_gate, "[^[:space:]]+@[0-9a-f]{7,40} [^[:space:]]+:[0-9]+", "[^[:space:]]+:[0-9]+"),
+    "other-repo-slug-reused": (scenario_slug_reuse, """    *) refuse "slug $slug belongs to another handoff ($doc); choose another slug" ;;\n""", ""),
+    "closed-slug-reused": (scenario_slug_reuse, """    merged | dropped) refuse "slug $slug belongs to a closed handoff ($doc); choose another slug" ;;\n""", ""),
     "ids-not-in-doc": (scenario_happy, """printf '| %s/%s | %s | %s |\\n' "$n" "$N" "${ids[n - 1]}" """, """printf '| %s/%s | %s | %s |\\n' "$n" "$N" "?" """),
 }
 for label, (scenario, old, new) in BEHAVIOUR.items():
