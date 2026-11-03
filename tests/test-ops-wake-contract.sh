@@ -97,6 +97,7 @@ REQUIRED = [
     ("wake", "## The loop", "no-unlanded-blocker", r"Spawn only tickets with no unlanded blocker"),
     ("wake", "## The loop", "accepted-proves-nothing", r"it proves nothing about a pane"),
     ("wake", "## The loop", "landing-proof", r"The proof is `GET /v1/spawns/<request_id>` on the hub \(operator credential\) reaching a terminal state"),
+    ("wake", "## The loop", "retryable-keeps-reading", r"`retryable` \| [^|]+\| Read again within the deadline, never replay"),
     ("wake", "## The loop", "close-after-landing", r"The design session may close once landing is proven"),
     ("wake", "## The loop", "no-success-notify", r"It sends no success notice"),
     ("wake", "## On spawn failure", "failure-no-retry", r"\*\*Do not retry on the same task\.\*\*"),

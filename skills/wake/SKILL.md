@@ -181,8 +181,9 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    | `status` | Meaning | Do |
    |---|---|---|
    | `succeeded` | Terminal: landing receipt and exact pane identity verified | Comment the request id on the task, go to step 7 |
-   | `failed`, `retryable` | Terminal for this session | §On spawn failure |
+   | `failed` | Terminal for this session | §On spawn failure |
    | `accepted`, `dispatching` | Still in progress | Read again within the deadline |
+   | `retryable` | Not final for this session; only a replay starts a new attempt | Read again within the deadline, never replay; past it, §On spawn failure |
    | `reconciling`, `deadline_exceeded` | Not terminal: the hub keeps ownership | Never launch; past the deadline, §On spawn failure |
 
    Where the pane's host is reachable, `ops` spawn §4-2 adds one read-only look at the pane.
@@ -201,7 +202,7 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
 
 ## On spawn failure
 
-`failed`, `retryable`, `SPAWN_FAILED`, a non-zero refusal, or ownership still unresolved past the deadline:
+`failed`, `SPAWN_FAILED`, a non-zero refusal, or a status still not terminal past the deadline:
 
 - **Do not retry on the same task.** Replaying the same command and saved request after a lost response
   is not a retry; it reuses the reservation (`ops` spawn). On `retryable` the same replay starts a new
