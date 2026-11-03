@@ -95,4 +95,18 @@ See [`roles.md`](roles.md). Pick the role from the harness's capability, not its
 
 ## Done
 
+## Bug playbook
+
+1. Reproduce the bug and identify one deterministic, fast command that can fail on the bug
+   before changing code. If no such command is available, stop and emit ESC with the missing
+   evidence and a proposed safe default.
+2. Write three to five falsifiable hypotheses, each with the observation that would rule it
+   out. Check them against code and the red command; do not edit until one cause is supported.
+3. Add or refine the regression check, confirm the red command fails for the bug, make the
+   smallest fix, and confirm the same command passes. Then check nearby behavior and report the
+   evidence. Questions that require an owner decision become an ESC to the parent.
+
+Adapted from mattpocock/skills `engineering/diagnosing-bugs` (MIT, copyright Matthew Pocock):
+red-command gate and falsifiable hypotheses. https://github.com/mattpocock/skills
+
 Prove it against the real artifact (`principle-prove-it-works`): run the changed thing the way its user runs it — the real binary, script, install dry-run or rendered file — not only a unit test or the diff. Quote the command and its output, and check `git ls-remote`. If the real artifact cannot run in this environment, say UNVERIFIED rather than substituting a mock. Report facts, failures and skips as they are.

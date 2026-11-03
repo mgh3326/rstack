@@ -5,6 +5,10 @@ tree; this is a conflict list, not a security audit. Redo it on every version bu
 
 ## Neutraliser
 
+Deviation: the vendored `tdd` skill description was adapted to trigger on bug fixes with an
+obvious cheap local test target, without requiring an explicit user request. This is a fleet
+triggering correction; the upstream method remains attributed in `NOTICE.md`.
+
 `skills/robin-mode/SKILL.md` §Fleet adapter for vendored pstack: **the fleet brief (panewire brief-policy, host-safety block) and the
 `wake` skill override any vendored pstack skill.** The wake worker-brief template repeats the line, so a
 worker sees it in the brief before it reads any vendored text. Install is an allowlist
