@@ -17,7 +17,7 @@ Each rule is stated once, in the home below; other documents point to it. Inside
 | PR, author and merge ownership, tier (T), hand-off, READY and what it carries, deploy authority | `wake` (rstack) |
 | Finding scope, severity, disposition, review rounds, review evidence reuse, reviewer independence | `fleet-review` (rstack); mergewake enforces it |
 | Spawn, relay, consult, wait, reap and deploy mechanics | `ops` (rstack) |
-| Which profile, family and effort a role may use; where grade applies | hk `policy/model-routing`, applied by `runtug resolve` and `runtug spawn` |
+| Which profile, family and effort a role may use; where grade applies | hk `policy/model-routing`, applied by `panewire resolve` and `panewire spawn` |
 | Pool spending order, quota waits and hand-over | hk `policy/quota-stop` |
 
 ## Openers (every task)
@@ -57,7 +57,7 @@ Subagents share your quota and context budget, write no branches, and their outp
 
 **The author verifies its own acceptance**, alone or through in-session subagents (or a delegate). That evidence is the author's and never replaces independent review (`fleet-review` §Independence). A separate verifier step is not a required path for every PR, and the tier sets risk and permissions, not which process runs the tests. Work that writes uses an isolated worktree or one clear writer.
 
-**Spawn a worker with `runtug spawn`** only when all of these hold:
+**Spawn a worker with `panewire spawn`** only when all of these hold:
 - the unit is independently mergeable (its own PR, its own acceptance contract);
 - it can run in parallel with what you are doing, or needs a different host, tool or model family;
 - a PR loop pays for itself (a cost hint, not a rule: roughly more than ~30 changed lines or an hour of work).
@@ -75,7 +75,7 @@ The brief, host safety, `wake` authority and `fleet-review` govern fleet work. V
 1. **Autonomy and external actions:** use only the brief's authorised tools and scope. `principle-never-block-on-the-human` permits reversible work within that scope. Merge, deploy and data migration are irreversible actions requiring the authority in `wake`; a worker never merges or arms auto-merge.
 2. **Unattended sessions:** "going to bed" grants no new authority. Stop for an unsafe decision.
 3. **Subagents:** follow §Subagents versus spawned workers. Missing `pstack:comment-sicko` is not an available agent: for `no-comments`, review inline and report that substitution. Never launch a missing upstream executable.
-4. **Models:** ignore all pstack Models sections, model slugs, `pstack-models.md` and `/setup-pstack`. Use `runtug resolve` and `roles.md`.
+4. **Models:** ignore all pstack Models sections, model slugs, `pstack-models.md` and `/setup-pstack`. Use `panewire resolve` and `roles.md`.
 5. **Landing:** only the repo session merges after the gate. No babysit, swarm or arena routing; robin-mode is not babysit/swarm/arena.
 6. **Waves:** a wave is a series of independently green PRs, never stacked PRs. Rebase only before the first push; thereafter merge the base, never force-push. Candidate worktrees belong in scratch, outside canonical checkouts and skill discovery roots.
 7. **Review ownership:** the author handles its own findings. `fleet-review` decides scope, severity, disposition and independence; `interrogate` and `blast-radius` supply analysis without replacing the review gate.

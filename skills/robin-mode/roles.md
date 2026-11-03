@@ -1,6 +1,6 @@
 # Roles by capability
 
-A role is what a session is asked to do. Pick it from the harness's capabilities, never from a model brand. Which profiles, families and effort a role may use is hk `policy/model-routing`, applied by `runtug`; this file keeps no model or harness table.
+A role is what a session is asked to do. Pick it from the harness's capabilities, never from a model brand. Which profiles, families and effort a role may use is hk `policy/model-routing`, applied by `panewire`; this file keeps no model or harness table.
 
 | Capability | Roles it can take |
 |---|---|
@@ -23,12 +23,12 @@ A role is what a session is asked to do. Pick it from the harness's capabilities
 
 ## Models and effort for in-session subagents
 
-In-session subagents take their model from the same routing policy `runtug` enforces for spawned workers, through one call, so a lead, its subagents and its spawned workers never disagree:
+In-session subagents take their model from the same routing policy `panewire` enforces for spawned workers, through one call, so a lead, its subagents and its spawned workers never disagree:
 
 ```sh
-runtug resolve --role lead                                   # lead and consult take no --grade
-runtug resolve --role <implementer|explorer|verifier> --grade <G> --t <Tn>
-runtug resolve --role <reviewer|judge> --builder-family <author family>
+panewire resolve --role lead                                   # lead and consult take no --grade
+panewire resolve --role <implementer|explorer|verifier> --grade <G> --t <Tn>
+panewire resolve --role <reviewer|judge> --builder-family <author family>
 # the last line prints:  profile=<name> effort=<rung>
 ```
 
@@ -38,4 +38,4 @@ runtug resolve --role <reviewer|judge> --builder-family <author family>
   - `reviewer`, `judge`: escalate. Never do it yourself — your own check is not independent.
   - `explorer`, `implementer`: the one allowed fallback is your own session (no new model choice); do the step there and say so in the result.
 - Effort steps, the `max` rung, grade and verifier rules are hk `policy/model-routing`; do not restate them in a brief.
-- No `runtug` on the host: use your own session model for exploration only, and say so in the result.
+- No `panewire` on the host: use your own session model for exploration only, and say so in the result.
