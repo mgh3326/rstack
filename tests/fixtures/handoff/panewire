@@ -1,0 +1,3 @@
+#!/bin/sh
+# Stand-in for panewire: records each call, one line per argument list, in $PANEWIRE_STUB_LOG.
+printf '%s\n' "$*" >>"$PANEWIRE_STUB_LOG"

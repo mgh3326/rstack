@@ -18,6 +18,7 @@ Each rule is stated once, in the home below; other documents point to it. Inside
 | Finding scope, severity, disposition, review rounds, review evidence reuse, reviewer independence | `fleet-review` (rstack); mergewake enforces it |
 | Spawn, relay, consult, wait, reap and deploy mechanics | `ops` (rstack) |
 | Desk coordination: commitments, resume order, task intake, delegation threshold, task record | `desk` (rstack) |
+| Closing a design session: open-point closure, tickets into hk, the handoff doc, desk intake of a `[handoff]` event | `handoff` (rstack) |
 | Which profile, family and effort a role may use; where grade applies | hk `policy/model-routing`, applied by `panewire resolve` and `panewire spawn` |
 | Pool spending order, quota waits and hand-over | hk `policy/quota-stop` |
 
