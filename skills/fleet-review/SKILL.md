@@ -108,6 +108,11 @@ only because it lies outside the delta.
 
 ## Independence
 
+**Temporary relief (operator 2026-11-04, hk 2856; hk 2857 restores the rule).** Until hk 2857
+lands, a same-family pass counts toward the gate like any other pass. Routing still prefers
+another family (hk `policy/model-routing`), and every pass still records `same_family`, so the
+PRs merged on a same-family pass can be listed later. The rule below is suspended, not removed.
+
 Wherever independent review is required — the `wake` merge gate requires it for every PR — a pass
 counts only when its reviewer's family differs from **every material author family** of the
 change: each family whose code the PR carries (commits, subagent or delegate output), not the
