@@ -145,7 +145,8 @@ REQUIRED = [
     ("ops", "## Escalate a decision", "ops-safe-default", r"If the default is safe .{0,80}continue with it .{0,60}Otherwise stop and wait for the reply"),
     # Standing worker rules folded from the retired fleet-tooling block (b953).
     ("wake", "## Rules", "b953-secrets", r"Never read, print or copy env, token or credential files, never print env vars"),
-    ("wake", "## Rules", "b953-dotfiles", r"never read real agent dotfiles \(`~/\.codex`, `~/\.claude`, `~/\.claude\.json`\)"),
+    ("wake", "## Rules", "b953-skill-roots", r"Reading skill files under an installed skill root \(rstack `install/sets\.json` `scan_dirs`, e\.g\. `~/\.codex/skills`, `~/\.claude/skills`, `~/\.agents/skills`\) is allowed\."),
+    ("wake", "## Rules", "b953-agent-data", r"Never read auth, config, session or history files in an agent home directory, nor `~/\.claude\.json`\."),
     ("wake", "## Rules", "b953-no-prod", r"No Postgres, production DB or broker API, and never pass an env-file path to anything"),
     ("wake", "## Rules", "b953-no-pattern-kill", r"No pattern kills \(`pkill`, `killall`, `pgrep -f`\); signal only pids you started"),
     ("wake", "## Rules", "b953-no-source", r"never `source` it into a `set -u` or traced shell"),
@@ -239,6 +240,7 @@ def check(d: dict, ref_texts: dict) -> None:
     check_refs(ref_texts)
     check_design_session(d["wake"])
     check_rows(d)
+    assert "never read real agent dotfiles" not in d["wake"], "wake: old agent dotfiles prohibition restored"
 
 
 check(docs, refs)
@@ -280,6 +282,7 @@ for doc, heading, row, pattern in REQUIRED:
     count += 1
 
 injections = [
+    ("wake-old-dotfiles", "wake", "## Rules\n", "## Rules\n\nnever read real agent " + "dotfiles\n"),
     ("wake-routes-to-spawn-worker", "wake", "## Brief rules\n", "## Brief rules\n\n- See `spawn-worker` §3.\n"),
     ("wake-routes-to-director", "wake", "## Authority\n", "## Authority\n\nThe director merges.\n"),
     ("wake-builder-skill", "wake", "## Delegated seat\n", "## Delegated seat\n\nRead the builder skill first.\n"),
