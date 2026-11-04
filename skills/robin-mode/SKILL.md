@@ -22,6 +22,8 @@ Each rule is stated once, in the home below; other documents point to it. Inside
 | Which profile, family and effort a role may use; where grade applies | hk `policy/model-routing`, applied by `panewire resolve` and `panewire spawn` |
 | Pool spending order, quota waits and hand-over | hk `policy/quota-stop` |
 
+hk:doc `policy/index` is the index of rule homes across the fleet, including tools and repos.
+
 ## Openers (every task)
 
 1. **Restate the goal** in one or two sentences: what the operator wants and why, and the smallest change that meets it. Put the same sentence at the top of every brief and PR body. If the evidence rules out the requested change, show it and stop (ESC).
