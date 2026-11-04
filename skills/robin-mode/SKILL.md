@@ -59,7 +59,7 @@ The default is **one session that goes deep**. Parallelism is for independent un
 
 Subagents share your quota and context budget, write no branches, and their output is input to your judgement.
 
-**The author verifies its own acceptance**, alone or through in-session subagents (or a delegate). That evidence is the author's and never replaces independent review (`fleet-review` §Independence). A separate verifier step is not a required path for every PR, and the tier sets risk and permissions, not which process runs the tests. Work that writes uses an isolated worktree or one clear writer.
+**The author verifies its own acceptance**, alone or through in-session subagents. That evidence is the author's and never replaces independent review (`fleet-review` §Independence). A separate verifier step is not a required path for every PR, and the tier sets risk and permissions, not which process runs the tests. Work that writes uses an isolated worktree or one clear writer.
 
 **Spawn a worker with `panewire spawn`** only when all of these hold:
 - the unit is independently mergeable (its own PR, its own acceptance contract);
