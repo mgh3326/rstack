@@ -212,8 +212,13 @@ def check_refs(ref_texts: dict) -> None:
             assert not m, f"references/{name}:{n}: routes to a retired skill {m.group(0)!r}"
 
 
+DIRECT_MERGE = re.compile(r"\n### Direct merge \(temporary relief\)\n.*?(?=\n## )", re.S)
+
+
 def check_design_session(wake: str) -> None:
-    m = WAKE_FORBIDDEN.search(wake)
+    # Operator 2026-11-04 (hk 2856): only the temporary §Direct merge section may name
+    # `gh pr merge`; hk 2857 removes the section and this carve-out together.
+    m = WAKE_FORBIDDEN.search(DIRECT_MERGE.sub("\n", wake, count=1))
     assert not m, f"wake: forbidden instruction {m.group(0)!r}"
     assert wake.count("\n## Settle before spawning\n") == 1, "wake: need exactly one ## Settle before spawning"
     assert wake.index("\n## Settle before spawning\n") < wake.index("\n## The loop\n"), (
