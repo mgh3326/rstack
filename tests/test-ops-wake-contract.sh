@@ -34,6 +34,7 @@ docs = {
     "ops": ops_path.read_text(encoding="utf-8"),
 }
 refs = {p.name: p.read_text(encoding="utf-8") for p in sorted(refs_dir.glob("*.md"))}
+docs["consult"] = refs["consult.md"]
 
 RETIRED = ("spawn-worker", "relay-handoff", "consult-advisor", "linear-archive",
            "node-ops", "planner", "architect", "checker", "director", "installer",
@@ -163,6 +164,16 @@ REQUIRED = [
     ("ops", "## Invariants (all references)", "delivery-claim", r"\*\*A delivery claim is not delivery evidence\.\*\*"),
     ("ops", "## Invariants (all references)", "one-launcher", r"\*\*One launcher per task\.\*\*"),
     ("ops", "## Invariants (all references)", "no-polling", r"\*\*No polling loops\.\*\*"),
+    # consult §1 (hk 2898): resolve has no --builder-family; the questioner checks the family by hand.
+    ("consult", "## 1. 자문처 결정", "consult-resolve-command", r"`panewire resolve --role consult`"),
+    ("consult", "## 1. 자문처 결정", "consult-family-check", r"질문자는 계열도 직접 확인한다"),
+    ("consult", "## 1. 자문처 결정", "consult-family-escalates", r"같은 계열이면 다른 프로필을 직접 고르지 말고 부모 레인에 결정을 올린다"),
+    ("consult", "## 1. 자문처 결정", "consult-family-not-enforced", r"panewire 는 이 계열 규칙을 아직 강제하지 않는다"),
+]
+
+# Rows that must be absent: panewire resolve refuses --builder-family with --role consult.
+FORBIDDEN = [
+    ("consult", None, "consult-no-builder-family", r"--builder-family"),
 ]
 
 # wake never tells a session to merge or to wait on CI before a merge, and never
@@ -230,6 +241,9 @@ def check_rows(d: dict) -> None:
     for doc, heading, row, pattern in REQUIRED:
         scope = flat(section(d[doc], heading) if heading else d[doc])
         assert re.search(pattern, scope), f"{doc}: row '{row}' missing or weakened"
+    for doc, heading, row, pattern in FORBIDDEN:
+        scope = flat(section(d[doc], heading) if heading else d[doc])
+        assert not re.search(pattern, scope), f"{doc}: forbidden row '{row}' present"
 
 
 def check(d: dict, ref_texts: dict) -> None:
@@ -284,6 +298,7 @@ injections = [
     ("wake-routes-to-director", "wake", "## Authority\n", "## Authority\n\nThe director merges.\n"),
     ("wake-builder-skill", "wake", "## Delegated seat\n", "## Delegated seat\n\nRead the builder skill first.\n"),
     ("ops-routes-to-relay-handoff", "ops", "## Routing table\n", "## Routing table\n\nSee relay-handoff §3.\n"),
+    ("consult-old-builder-family-line", "consult", "## 1. 자문처 결정\n", "## 1. 자문처 결정\n\n`panewire resolve --role consult --builder-family <질문자 계열>`\n"),
 ]
 for label, doc, anchor, new in injections:
     assert docs[doc].count(anchor) == 1, f"fixture: anchor {anchor!r} not unique in {doc}"

@@ -18,10 +18,11 @@
   절차**로 질의. 없으면 아래 경로로.
 - **프로필·계열·effort 는 hk `policy/model-routing` 이 정한다** — 이 문서에 모델명이나 자격표를
   적지 않는다. 고르는 방법:
-  `panewire resolve --role consult --builder-family <질문자 계열>` 의 마지막 줄 `profile=<이름>
-  effort=<rung>` 을 스폰의 `-m`·`--effort` 로 쓴다. resolve 가 거부하거나 고른 프로필이 질문자와
-  같은 계열이면 다른 프로필을 직접 고르지 말고 부모 레인에 결정을 올린다(`ops` §Escalate a
-  decision).
+  `panewire resolve --role consult` 의 마지막 줄 `profile=<이름> effort=<rung>` 을 스폰의
+  `-m`·`--effort` 로 쓴다. resolve 가 거부하면 다른 프로필을 직접 고르지 말고 부모 레인에 결정을
+  올린다(`ops` §Escalate a decision). 질문자는 계열도 직접 확인한다: `chosen` 줄의 `model=`·`pool=`
+  로 고른 프로필의 계열을 읽어 질문자와 같은 계열이면 다른 프로필을 직접 고르지 말고 부모 레인에
+  결정을 올린다(`ops` §Escalate a decision). panewire 는 이 계열 규칙을 아직 강제하지 않는다.
 - 운영자 명시 전용 프로필은 gate 가 거부 사유로 필요한 인자를 알려준다: `consult_only` →
   `--operator-request hk:doc/<승인-문서-키>`(또는 `hk:task/<정수>`), `--purpose` 를 요구하면 그
   값을 준다(`operator_request_not_applicable` 이면 요청 참조를 빼고 `--purpose` 를 쓴다). 필요·근거는
