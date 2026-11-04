@@ -81,7 +81,8 @@ Not for: deploys or infra changes (send to operator-desk; `ops` deploy), or deci
 because of quota** — if no pool can supply it, stop and report. Effort is an argument
 (`--effort`), not part of the profile name; count real use by `launch_profile`
 (`pacelever reps`), not by the normalised pool column. Grade is a worker axis; lead and consult
-admission and effort are hk `policy/model-routing`.
+admission and effort are hk `policy/model-routing`. A hard single PR raises the grade: it is an
+implementer with a higher grade, not a lead (`robin-mode` roles.md).
 
 ### T3 split — by invariant impact, not by file type
 

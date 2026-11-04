@@ -80,6 +80,10 @@ REQUIRED = [
     ("roles", "## Rules", "multi-turn", r"Leads and implementers must run on harnesses that keep going across turns"),
     ("roles", "## Rules", "one-turn-limit", r"One-turn profiles may take explorer and consult roles only"),
     ("roles", "## Rules", "lead-next-unit", r"A lead's every report carries a `next unit:` line"),
+    ("roles", "## Rules", "contract-writer", r"A design session \(with the operator\) or a lead \(delegated, without the operator\) writes the closed contract"),
+    ("roles", "## Rules", "higher-grade-not-lead", r"A hard single PR is an implementer with a higher grade, not a lead"),
+    ("roles", "## Rules", "resolve-only", r"Explorer, verifier and judge are resolve-only: they name an in-session subagent's `panewire resolve` role \(below\), never a spawned seat"),
+    ("roles", "## Rules", "seat-vocabulary", r"seat roles are lead, implementer, reviewer, consult and design"),
     ("roles", None, "one-turn-row", r"\| One-turn \(stops after its first turn\) \| \*\*Explorer\*\* and \*\*Consult\*\* only"),
     ("robin", "## Where each rule lives", "desk-home", r"\| `desk` \(rstack\) \|"),
 ]
