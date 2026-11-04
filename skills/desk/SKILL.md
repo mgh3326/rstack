@@ -137,6 +137,9 @@ handoffkeep tasks comment <id> --body '<the fact>'
 
 For a respawn, name the new task id on the old task and the old task id on the new one.
 
+§Before `tasks add` keeps a respawn on the same task; this covers one that already exists under a new task
+(for example hk 2900 respawned as hk 2905): do not open another task for it, only record it on both.
+
 **A brief the desk writes is put in hk at `brief/<date>/<job>` before the spawn**, as `wake` §The loop
 step 3 does for a design session:
 

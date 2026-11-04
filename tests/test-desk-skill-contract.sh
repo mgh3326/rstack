@@ -65,6 +65,7 @@ REQUIRED = [
     ("desk", "## Decisions", "review-at-resume", r"Open requests are reviewed at resume"),
     ("desk", "## Facts", "facts-same-turn", r"a fix applied, a workaround, a respawn under a new task — it comments the fact on every affected task in the same turn"),
     ("desk", "## Facts", "respawn-names-id", r"For a respawn, name the new task id on the old task"),
+    ("desk", "## Facts", "respawn-same-task-default", r"keeps a respawn on the same task; this covers one that already exists under a new task"),
     ("desk", "## Facts", "brief-key", r"A brief the desk writes is put in hk at `brief/<date>/<job>` before the spawn"),
     ("desk", "## Facts", "brief-doc-put", r"handoffkeep doc put --key brief/<date>/<job> --kind note --file <brief>"),
     ("desk", "## Task record", "stage-waiting-on", r"Every open task has one stage and one waiting-on"),
