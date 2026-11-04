@@ -14,6 +14,8 @@ anything here. Unset or missing is normal — the abstract rules below apply alo
 
 ## Invariants (all references)
 
+- Record and check operational stopgaps as specified in `desk` §Containment.
+
 - **A delivery claim is not delivery evidence.** A normal reply from an injection or
   `panewire emit` (rc 0) proves nothing; check the receiving pane (`relay.md` §3).
   This check belongs to the **sender of instructions** (a parent lane or the desk
