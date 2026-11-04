@@ -53,4 +53,5 @@ never auto-updated. Excluded skills remain readable as upstream reference files.
 
 Run the changed installer checks with `python3 tests/test-install.py` and
 `python3 tests/test-adapter.py`. CI runs the moved contracts and retained tool tests
-on Linux and macOS; the required aggregate check is `ci-ok`.
+on Linux and macOS. The macOS job is advisory; the required `ci-ok` check
+aggregates the Linux job.
