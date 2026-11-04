@@ -39,7 +39,7 @@ jobs:
           python3 tests/test-fleet-install-concurrent.py
           for test in tests/test-*.sh; do bash "$test"; done
   ci-ok:
-    if: always()
+    if: ${{ always() && (contains(needs.*.result, 'failure') || !contains(needs.*.result, 'cancelled')) }}
     needs: contracts
     runs-on: ubuntu-latest
     steps:
