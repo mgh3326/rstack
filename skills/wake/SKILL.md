@@ -539,8 +539,10 @@ contract. Do not widen scope to answer a finding.
   §READY, Preservation evidence) in the report and PR body before the first READY, and rerun it
   after every fix.
 - Do not wait for CI. Done = pushed + review handled (or skipped, said so) + report + one READY.
-- Never read, print or copy env, token or credential files, never print env vars, and never read
-  real agent dotfiles (`~/.codex`, `~/.claude`, `~/.claude.json`).
+- Never read, print or copy env, token or credential files, never print env vars. Reading skill files under
+  an installed skill root (rstack `install/sets.json` `scan_dirs`, e.g. `~/.codex/skills`, `~/.claude/skills`,
+  `~/.agents/skills`) is allowed. Never read auth, config, session or history files in an agent home directory,
+  nor `~/.claude.json`.
 - No Postgres, production DB or broker API, and never pass an env-file path to anything.
   Read-only hk CLI is allowed (`handoffkeep tasks show`, `doc get`, `doc list`).
 - No pattern kills (`pkill`, `killall`, `pgrep -f`); signal only pids you started.
