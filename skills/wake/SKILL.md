@@ -247,8 +247,9 @@ All must hold for head `$H`:
   closed by a dismissal with evidence is the desk's call to accept, not a reason for a new
   head. Every review thread is fixed, dismissed with a reason, or deferred to a task, and
   replied to; medium/low never block on their own.
-- **Public repo leak scan** of the diff: no secrets, internal hostnames or addresses, real
-  pane ids, lane-private names, account ids, trading wording; no build output committed.
+- **Public repo leak scan:** not enforced by mergewake (hk 2793). The author keeps the diff free
+  of secrets, internal hostnames or addresses, real pane ids, lane-private names, account ids,
+  trading wording and committed build output.
 - Commits after the reviewed head only answer its findings.
 - A change to a hash-pinned file re-hashes its pin in the same PR.
 - Every RISKS item is either measured harmless on the target environment or queued as a
@@ -486,8 +487,12 @@ contract. Do not widen scope to answer a finding.
 
 ## Rules
 - Small PR. No direct merge. Run only the tests for what you changed; full suites belong to CI.
-- A pushed branch catches up with `git merge origin/main`; never rebase or force-push it.
-- Commit and PR body end with these trailers:
+- Catch up with main by rebase before the first push. A pushed branch catches up with
+  `git merge origin/main`; never rebase or force-push it.
+- The PR body (required) ends with these trailers, each on its own line, exactly once;
+  repeating them in commits is optional. mergewake reads the PR body first and then only the
+  head commit (mergewake `prTask`, `internal/pipeline/deliver.go`), so a merge commit on the
+  head is still covered by the PR body.
   Mergewake-Author-Family: <anthropic|openai|google|…>
   Mergewake-Author-Profile: <launch profile>
   Mergewake-Task: <id>

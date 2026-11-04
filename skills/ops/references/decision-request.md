@@ -43,6 +43,8 @@ pane 메시지는 그 알림이다. 콘솔(큐 drawer · Decisions)은 이 기�
 
 1. **질문 하나에 기록 하나.** 운영자에게는 `tasks decision-request` 로만 묻는다. lane event 나 채팅
    질문은 request_id 를 실은 알림일 뿐 기록이 아니다.
+   한 질문의 선택지는 `tasks decision-request` 하나의 `--option` 값들이다. 선택지마다 `kind=decide`
+   태스크를 따로 만들지 않는다.
 2. **다시 물을 때는 같은 요청을 쓴다.** 같은 명령을 재실행하면 `duplicate` 가 돌아온다. 새 요청을 만들지
    않는다.
 3. **채팅으로 받은 답은 같은 턴에 hk 에서 닫는다.** 그 답대로 움직이기 전에 닫는다. `--text` 에 운영자의
@@ -53,6 +55,8 @@ pane 메시지는 그 알림이다. 콘솔(큐 drawer · Decisions)은 이 기�
 
 4. **진행은 해결이 아니다.** 일이 다른 길로 넘어갔으면 요청을 명시적으로 닫는다(`answered`,
    `withdrawn --text <이유>`, `default_applied --receipt <증거>`).
+   결정이 채팅이나 다른 세션에서 났거나 그쪽으로 넘어갔으면, 물은 세션이 같은 턴에 그 `kind=decide`
+   태스크를 닫거나 kind 를 바꾼다.
 5. **resume 마다 열린 요청을 검토한다**(`desk` §Resume 3번). `--due` 가 지났거나, `--due` 가 없고 48시간이
    지난 요청마다 처분을 하나 정한다: 닫기, 철회, 또는 새 기한으로 한 번 다시 묻기. request_id 없는 decision
    lane event 는 `decision-request` 로 기록하거나, 낡은 것이면 `panewire inbox ack <id>` 로 치운다.
