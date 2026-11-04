@@ -123,6 +123,33 @@ The loop is `ops` decision-request §데스크 결정 루프. At the desk it com
 **Prevents:** about 120 decision requests piled up, because questions went out as free text and
 answers given in chat were never written back.
 
+## Facts
+
+Design sessions read only hk (`wake` §Settle before spawning), so a fact that is not in hk does not
+exist for them.
+
+**When the desk learns a fact that changes an hk task — a fix applied, a workaround, a respawn under a
+new task — it comments the fact on every affected task in the same turn:**
+
+```sh
+handoffkeep tasks comment <id> --body '<the fact>'
+```
+
+For a respawn, name the new task id on the old task and the old task id on the new one.
+
+§Before `tasks add` keeps a respawn on the same task; this covers one that already exists under a new task
+(for example hk 2900 respawned as hk 2905): do not open another task for it, only record it on both.
+
+**A brief the desk writes is put in hk at `brief/<date>/<job>` before the spawn**, as `wake` §The loop
+step 3 does for a design session:
+
+```sh
+handoffkeep doc put --key brief/<date>/<job> --kind note --file <brief>
+```
+
+**Prevents:** design sessions read only hk, so a fix, workaround or respawn the desk knew of but did
+not record was invisible to them.
+
 ## Task record
 
 **Every open task has one stage and one waiting-on.** Until hk has the fields (hk 2771), they live in
