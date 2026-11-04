@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # hk 2780: the desk method lives in skills/desk plus ops and roles.md.
-#   1. skills/desk/SKILL.md has its eight sections; each cites the failure it prevents.
+#   1. skills/desk/SKILL.md has its nine sections; each cites the failure it prevents.
 #   2. The resume read order is fixed, and the skill stays harness-neutral.
 #   3. The required lines stay in the desk skill, ops references and roles.md, and
 #      install/sets.json gives desk to the full set only.
@@ -27,7 +27,7 @@ PATHS = {
 docs = {name: (root / rel).read_text(encoding="utf-8") for name, rel in PATHS.items()}
 
 SECTIONS = ("## Commitments", "## Resume", "## Before `tasks add`", "## Delegation threshold",
-            "## Spawn failure", "## Decisions", "## Task record", "## Time")
+            "## Spawn failure", "## Decisions", "## Facts", "## Task record", "## Time")
 RESUME_ORDER = ("`date ", "hk tasks with a next action", "Open decisions", "Inbox READY/ESC",
                 "Live jobs", "PRs awaiting gate")
 NOT_NEUTRAL = re.compile(r"claude|codex|AskUserQuestion|spawn_agent|\.agents/", re.IGNORECASE)
@@ -63,6 +63,10 @@ REQUIRED = [
     ("desk", "## Decisions", "resolve-same-turn", r"An answer given in chat is resolved in hk in the same turn"),
     ("desk", "## Decisions", "reuse-request", r"Asking again reuses the same request"),
     ("desk", "## Decisions", "review-at-resume", r"Open requests are reviewed at resume"),
+    ("desk", "## Facts", "facts-same-turn", r"a fix applied, a workaround, a respawn under a new task — it comments the fact on every affected task in the same turn"),
+    ("desk", "## Facts", "respawn-names-id", r"For a respawn, name the new task id on the old task"),
+    ("desk", "## Facts", "brief-key", r"A brief the desk writes is put in hk at `brief/<date>/<job>` before the spawn"),
+    ("desk", "## Facts", "brief-doc-put", r"handoffkeep doc put --key brief/<date>/<job> --kind note --file <brief>"),
     ("desk", "## Task record", "stage-waiting-on", r"Every open task has one stage and one waiting-on"),
     ("desk", "## Time", "clock-source", r"Clock times in records come only from `date` or the server"),
     ("reap", "### 6-2.", "never-close-lead", r"마지막 보고의 `next unit:` 줄이 단위를 가리키는 리드는 닫지 않는다"),
