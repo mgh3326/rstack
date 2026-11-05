@@ -11,7 +11,7 @@ the record.
 
 These rules are method, not enforcement: you apply them at fixed points (the end of a reply,
 resume, before `tasks add`, a spawn failure, an operator answer), and no hook applies them for you.
-Each section names the failure it prevents, all from one day of desk work on 2026-11-03.
+Each section names the failure it prevents.
 `<desk lane>` below is the lane this session runs as.
 
 ## Commitments
@@ -174,6 +174,26 @@ stage.
 §Invariants. If you do not have the time from one of those two sources, write `time unknown`.
 
 **Prevents:** estimated clock times were written into records and later read as fact.
+
+## Containment
+
+A containment is an operational stopgap, such as disabling host acceptance, excluding a model or
+profile, blocking a lane, forbidding a retry, or requiring a manual repeat step. Before applying it,
+record its action and scope, a root-cause hk task id (an investigation task if the cause is unknown),
+and a release condition in hk. A containment agreed only in chat is void. Whoever releases it records
+the release on the same task.
+
+Keep one row per containment in the fixed hk doc key `ops/workaround-ledger`:
+
+```text
+- <action and scope> | root: hk <id> | release: <condition> | status: active|released | record: hk <ids>
+```
+
+Run `bin/containment-check` before applying and before releasing, piping the body from
+`handoffkeep doc get ops/workaround-ledger` into it. Correct any reported rows first.
+
+**Prevents:** a model-profile exclusion from a grade on 2026-11-05 had no decision record or
+root-cause task.
 
 ## Related rules
 
