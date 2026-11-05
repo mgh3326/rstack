@@ -11,6 +11,7 @@ FIXTURES = {
     "wake": ["wake method", "repo-session spawn", "design session", "워커 띄워", "스폰해", "진행시켜", "넘겨", "티켓 만들어"],
     "tdd": ["bug fixes", "regression test"],
     "desk": ["desk", "commitment", "resume", "compaction", "tasks add", "spawn failed"],
+    "lead": ["lead", "hotfix", "핫픽스", "장애"],
 }
 CAP = 1000  # Keeps descriptions comfortably scannable across harness skill routers.
 
