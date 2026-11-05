@@ -1,0 +1,43 @@
+#!/usr/bin/env python3
+"""Check containment ledger rows without modifying the ledger."""
+
+import argparse
+from pathlib import Path
+import re
+import sys
+
+ROW_FORMAT = '- <action and scope> | root: hk <id> | release: <condition> | status: active|released | record: hk <ids>'
+
+
+def main():
+    parser = argparse.ArgumentParser(description='Check containment ledger rows. Format: ' + ROW_FORMAT)
+    parser.add_argument('file', nargs='?', help='ledger file (default: stdin)')
+    args = parser.parse_args()
+    lines = Path(args.file).read_text().splitlines() if args.file else sys.stdin.read().splitlines()
+    invalid = False
+    for number, row in enumerate(lines, 1):
+        if not row.startswith('- '):
+            continue
+        fields = {}
+        for part in row.split('|')[1:]:
+            key, separator, value = part.strip().partition(':')
+            if separator:
+                fields[key.strip()] = value.strip()
+        status = fields.get('status', '')
+        missing = []
+        if status not in ('active', 'released'):
+            missing.append('status')
+        if status == 'active':
+            root_valid = re.fullmatch(r'hk [0-9]+', fields.get('root', '')) is not None
+            if not root_valid:
+                missing.append('root')
+            if not fields.get('release', ''):
+                missing.append('release')
+        for field in missing:
+            print(f'line {number}: missing or invalid {field}: {row}')
+            invalid = True
+    return int(invalid)
+
+
+if __name__ == '__main__':
+    sys.exit(main())

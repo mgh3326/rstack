@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # hk 2780: the desk method lives in skills/desk plus ops and roles.md.
-#   1. skills/desk/SKILL.md has its nine sections; each cites the failure it prevents.
+#   1. skills/desk/SKILL.md has its required sections; each cites the failure it prevents.
 #   2. The resume read order is fixed, and the skill stays harness-neutral.
 #   3. The required lines stay in the desk skill, ops references and roles.md, and
 #      install/sets.json gives desk to the full set only.
@@ -27,7 +27,7 @@ PATHS = {
 docs = {name: (root / rel).read_text(encoding="utf-8") for name, rel in PATHS.items()}
 
 SECTIONS = ("## Commitments", "## Resume", "## Before `tasks add`", "## Delegation threshold",
-            "## Spawn failure", "## Decisions", "## Facts", "## Task record", "## Time")
+            "## Spawn failure", "## Decisions", "## Facts", "## Task record", "## Time", "## Containment")
 RESUME_ORDER = ("`date ", "hk tasks with a next action", "Open decisions", "Inbox READY/ESC",
                 "Live jobs", "PRs awaiting gate")
 NOT_NEUTRAL = re.compile(r"claude|codex|AskUserQuestion|spawn_agent|\.agents/", re.IGNORECASE)
@@ -48,6 +48,7 @@ def section(text, heading):
 
 # (doc, section heading or None, row name, pattern on the flattened scope)
 REQUIRED = [
+    ("desk", "## Containment", "ledger-key", r"`ops/workaround-ledger`"),
     ("desk", "## Commitments", "record-first", r"Before you say \"I will X\", record it in hk"),
     ("desk", "## Commitments", "subtask-then-comment", r"sub-task of the task it belongs to once hk sub-tasks exist\. Until then, use a task comment on the parent"),
     ("desk", "## Commitments", "id-in-sentence", r"Put the hk id in the sentence"),
