@@ -76,6 +76,9 @@ Not for: deploys or infra changes (send to operator-desk; `ops` deploy), or deci
   spawning it. The deploy or live mutation itself is never a worker's job.
 - **Unclassifiable → do not run it at a lower T.** Return `NEEDS_CLASSIFICATION`.
 - State the T in the brief; without it the receiver assumes the heaviest reading.
+- **A PR opened without a worker job** (T0, or a PR the desk opens) ends with the §Worker brief
+  trailers and also `Mergewake-Notify-Lane: <the opening session's lane>`. Without it mergewake
+  has no job to route by and sends its findings to the desk as an unknown author.
 
 **Grade** (S+..C) is the reasoning difficulty, a separate axis. **Do not lower a grade
 because of quota** — if no pool can supply it, stop and report. Effort is an argument
