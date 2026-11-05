@@ -76,6 +76,9 @@ Not for: deploys or infra changes (send to operator-desk; `ops` deploy), or deci
   spawning it. The deploy or live mutation itself is never a worker's job.
 - **Unclassifiable → do not run it at a lower T.** Return `NEEDS_CLASSIFICATION`.
 - State the T in the brief; without it the receiver assumes the heaviest reading.
+- **A PR opened without a worker job** (T0, or a PR the desk opens) ends with the §Worker brief
+  trailers and also `Mergewake-Notify-Lane: <the opening session's lane>`. Without it mergewake
+  has no job to route by and sends its findings to the desk as an unknown author.
 
 **Grade** (S+..C) is the reasoning difficulty, a separate axis. **Do not lower a grade
 because of quota** — if no pool can supply it, stop and report. Effort is an argument
@@ -253,7 +256,8 @@ All must hold for head `$H`:
   replied to; medium/low never block on their own.
 - **Public repo leak scan:** not enforced by mergewake (hk 2793). The author keeps the diff free
   of secrets, internal hostnames or addresses, real pane ids, lane-private names, account ids,
-  trading wording and committed build output.
+  trading wording and committed build output. One lane name is allowed: the opening session's own
+  lane in a `Mergewake-Notify-Lane` trailer (operator 2026-11-05).
 - Commits after the reviewed head only answer its findings.
 - A change to a hash-pinned file re-hashes its pin in the same PR.
 - Every RISKS item is either measured harmless on the target environment or queued as a

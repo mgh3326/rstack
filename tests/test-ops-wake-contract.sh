@@ -52,6 +52,7 @@ REQUIRED = [
     ("wake", "## Tier — by revert cost", "floor-no-downgrade", r"sets a minimum T and nobody lowers it"),
     ("wake", "## Tier — by revert cost", "t3-unblocked-escalates", r"not covered by a `blocking\[\]\.paths` entry .{0,80}escalate to the operator before spawning it"),
     ("wake", "## Tier — by revert cost", "needs-classification", r"Unclassifiable → do not run it at a lower T\.\*\* Return `NEEDS_CLASSIFICATION`"),
+    ("wake", "## Tier — by revert cost", "no-job-pr-notify-lane", r"\*\*A PR opened without a worker job\*\* .{0,80}also `Mergewake-Notify-Lane: <the opening session's lane>`"),
     ("wake", "## Tier — by revert cost", "grade-not-lowered", r"Do not lower a grade because of quota"),
     # T3 split.
     ("wake", "### T3 split — by invariant impact, not by file type", "table-first", r"writes the invariant table \*\*first\*\*.{0,200}No table, no split"),
@@ -72,6 +73,7 @@ REQUIRED = [
     ("wake", "## Merge gate", "base-freshness", r"\*\*Base freshness:\*\* `git merge-base --is-ancestor origin/<base> \"\$H\"`"),
     ("wake", "## Merge gate", "merge-not-rebase", r"never rebase or force-push a pushed branch"),
     ("wake", "## Merge gate", "leak-scan-not-enforced", r"\*\*Public repo leak scan:\*\* not enforced by mergewake \(hk 2793\)"),
+    ("wake", "## Merge gate", "leak-scan-notify-lane-only", r"One lane name is allowed: the opening session's own lane in a `Mergewake-Notify-Lane` trailer"),
     ("wake", None, "trailer-in-pr-body", r"The PR body \(required\) ends with these trailers, each on its own line, exactly once"),
     ("wake", None, "trailer-grade", r"Mergewake-Grade: <G from the hk task title marker \(grade G, Tn\)>"),
     ("wake", None, "trailer-tier", r"Mergewake-Tier: <Tn from the same marker>"),
