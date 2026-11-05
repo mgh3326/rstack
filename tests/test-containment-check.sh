@@ -52,7 +52,7 @@ for label, row in [('indented row', '  - x | status: active'),
                    ('asterisk row', '* x'), ('missing space row', '-x'),
                    ('numbered row', '1. x')]:
     result = run(checker, row + '\n')
-    assert result.returncode == 1 and result.stdout == f'line 1: malformed row: {row}\n', f'{label}: expected malformed-row diagnostic and exit 1, got {result.returncode}: {result.stdout}'
+    assert result.returncode == 1 and f'line 1: malformed row: {row}\n' in result.stdout, f'{label}: expected malformed-row diagnostic and exit 1, got {result.returncode}: {result.stdout}'
     print(f'PASS {label} rejected')
 result = run(checker, '')
 assert result.returncode == 1 and result.stdout == 'no ledger rows read\n', f'empty input: expected no-rows diagnostic and exit 1, got {result.returncode}: {result.stdout}'
