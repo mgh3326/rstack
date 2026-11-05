@@ -60,7 +60,7 @@ for doc in ("consult", "questions"):
     ]
 
 ONCE = {
-    "emit": "panewire emit --kind lane.event --lane <요청자 레인> --event-id <고유id> --text '[consult-done]",
+    "emit": "panewire emit --kind lane.event --lane <요청자 레인> --type ready --event-id <고유id> --text '[consult-done]",
     "prompt": "herdr agent prompt <pane> '[consult-done]",
 }
 

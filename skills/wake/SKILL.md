@@ -411,7 +411,7 @@ holds once that is fixed.
 - **Loop.** It runs steps 2–6 as a design session would, but does not close at landing: no PR exists
   yet. It waits for its worker's READY, verifies the head with `git ls-remote` and that the report
   exists. Only then does it report READY to the parent exactly like a worker
-  (`panewire emit --kind lane.event … READY`) with the PR, head and report path. **It never merges** —
+  (`panewire emit --kind lane.event --type ready … READY`) with the PR, head and report path. **It never merges** —
   mergewake does.
 - **Its workers.** Unlike a design session, a seat stays open for its worker's READY, so it owns them:
   `--owner <seat-lane>` in step 5, and `<seat-lane>` as the brief's `<parent-lane>`. With
