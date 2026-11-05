@@ -245,14 +245,15 @@ def check_rows(d: dict) -> None:
 
 
 # Operator 2026-11-05: every emit command line names its --type (inbox vs interrupt).
-EMIT_CMD = re.compile(r"panewire emit --kind [^\n`']*--text")
+# A command is a backticked span or a code line that starts with `panewire emit --kind`.
+EMIT_CMD = re.compile(r"`panewire emit --kind[^`]*`|^\s*panewire emit --kind.*$", re.M)
 
 
 def check_emit_types(texts: dict) -> None:
     for name, text in texts.items():
-        for n, line in enumerate(text.splitlines(), 1):
-            if EMIT_CMD.search(line) or ("panewire emit --kind" in line and "…" in line):
-                assert "--type " in line, f"{name}:{n}: panewire emit without --type: {line.strip()}"
+        for m in EMIT_CMD.finditer(text):
+            n = text.count("\n", 0, m.start()) + 1
+            assert "--type " in m.group(0), f"{name}:{n}: panewire emit without --type: {m.group(0).strip()}"
 
 
 def check(d: dict, ref_texts: dict) -> None:
@@ -288,6 +289,7 @@ injections = [
     ("wake-routes-to-director", "wake", "## Authority\n", "## Authority\n\nThe director merges.\n"),
     ("wake-builder-skill", "wake", "## Delegated seat\n", "## Delegated seat\n\nRead the builder skill first.\n"),
     ("ops-routes-to-relay-handoff", "ops", "## Routing table\n", "## Routing table\n\nSee relay-handoff §3.\n"),
+    ("ops-emit-prefix-untyped", "ops", "## Invariants (all references)\n", "## Invariants (all references)\n\n- Notify with `panewire emit --kind lane.event --lane operator-desk`.\n"),
     ("wake-emit-untyped", "wake", "## Brief rules\n", "## Brief rules\n\n- Notify with `panewire emit --kind lane.event --lane <parent-lane> --event-id x --text '[x] note'`.\n"),
     ("consult-old-builder-family-line", "consult", "## 1. 자문처 결정\n", "## 1. 자문처 결정\n\n`panewire resolve --role consult --builder-family <질문자 계열>`\n"),
 ]
