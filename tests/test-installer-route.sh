@@ -13,6 +13,8 @@ import re
 import sys
 
 root = Path(sys.argv[1])
+sys.path.insert(0, str(root / "tests/lib"))
+from contract import expect_red, section  # noqa: E402
 installer_path = Path(
     os.environ.get("INSTALLER_SKILL", root / "skills/ops/references/deploy.md")
 )
@@ -26,15 +28,6 @@ checklist_text = checklist_path.read_text(encoding="utf-8")
 ops_text = ops_path.read_text(encoding="utf-8")
 
 RECIPIENT = "operator-desk"
-
-
-def section(text: str, heading: str) -> str:
-    """Body of a ##/### section up to the next heading of same-or-higher level."""
-    assert heading in text, f"missing heading: {heading}"
-    body = text.split(heading, 1)[1]
-    level = len(heading) - len(heading.lstrip("#"))
-    m = re.search(rf"(?m)^#{{1,{level}}} ", body)
-    return body[: m.start()] if m else body
 
 
 # Every place the installer names where it takes orders from or reports to.
@@ -129,18 +122,6 @@ check_ops(ops_text)
 print(f"PASS ops deploy-row slots={len(OPS_SLOTS)}/{len(OPS_SLOTS)}")
 
 
-def expect_assertion(label, callback):
-    try:
-        callback()
-    except AssertionError:
-        return
-    except Exception as exc:
-        raise AssertionError(
-            f"{label} mutant errored instead of assertion RED: {exc}"
-        ) from exc
-    raise AssertionError(f"{label} mutant did not go RED")
-
-
 def mutate(text: str, old: str, new: str) -> str:
     assert text.count(old) == 1, f"fixture: mutation anchor not unique: {old}"
     return text.replace(old, new, 1)
@@ -186,11 +167,11 @@ ops_mutants = [
 ]
 
 for label, text in installer_mutants:
-    expect_assertion(label, lambda text=text: check_installer(text))
+    expect_red(label, lambda text=text: check_installer(text))
 for label, text in checklist_mutants:
-    expect_assertion(label, lambda text=text: check_checklist(text))
+    expect_red(label, lambda text=text: check_checklist(text))
 for label, text in ops_mutants:
-    expect_assertion(label, lambda text=text: check_ops(text))
+    expect_red(label, lambda text=text: check_ops(text))
 total = len(installer_mutants) + len(checklist_mutants) + len(ops_mutants)
 print(f"PASS mutants assertion-red={total}/{total}")
 PY

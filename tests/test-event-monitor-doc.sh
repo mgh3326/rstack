@@ -26,6 +26,8 @@ import sys
 from pathlib import Path
 
 root = Path(sys.argv[1])
+sys.path.insert(0, str(root / "tests/lib"))
+from contract import expect_red, flat, section  # noqa: E402
 policy_path = Path(os.environ.get("WATCHING_DOC", root / "skills/ops/references/watching.md"))
 wait_path = policy_path
 events_path = Path(os.environ.get("EVENTS_DOC", root / "skills/ops/references/panewire-events.md"))
@@ -33,19 +35,6 @@ events_path = Path(os.environ.get("EVENTS_DOC", root / "skills/ops/references/pa
 policy_text = policy_path.read_text(encoding="utf-8")
 wait_text = wait_path.read_text(encoding="utf-8")
 events_text = events_path.read_text(encoding="utf-8")
-
-
-def flat(text: str) -> str:
-    return re.sub(r"\s+", " ", text)
-
-
-def section(text: str, heading: str) -> str:
-    """Body of a ##/### section up to the next heading of same-or-higher level."""
-    assert heading in text, f"missing heading: {heading}"
-    body = text.split(heading, 1)[1]
-    level = len(heading) - len(heading.lstrip("#"))
-    m = re.search(rf"(?m)^#{{1,{level}}} ", body)
-    return body[: m.start()] if m else body
 
 
 def check_policy(text: str) -> None:
@@ -172,18 +161,6 @@ print("PASS watching.md spawn-wait idle-wait=1 no-per-turn-recheck=1 blocking-wa
 
 check_events_doc(events_text)
 print("PASS events-doc categories=4/4 pins=2 deployed/source-split=1 ci-conclusion=1")
-
-
-def expect_assertion(label, callback):
-    try:
-        callback()
-    except AssertionError:
-        return
-    except Exception as exc:
-        raise AssertionError(
-            f"{label} mutant errored instead of assertion RED: {exc}"
-        ) from exc
-    raise AssertionError(f"{label} mutant did not go RED")
 
 
 policy_section_removed = re.sub(
@@ -401,6 +378,6 @@ mutants = [
     ),
 ]
 for label, callback in mutants:
-    expect_assertion(label, callback)
+    expect_red(label, callback)
 print(f"PASS mutants assertion-red={len(mutants)}/{len(mutants)}")
 PY

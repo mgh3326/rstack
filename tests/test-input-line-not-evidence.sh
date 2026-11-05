@@ -16,6 +16,8 @@ import re
 import sys
 
 root = Path(sys.argv[1])
+sys.path.insert(0, str(root / "tests/lib"))
+from contract import expect_red, flat, section as section_of  # noqa: E402
 relay_path = Path(os.environ.get("RELAY_DOC", root / "skills/ops/references/relay.md"))
 text = relay_path.read_text(encoding="utf-8")
 
@@ -23,10 +25,7 @@ HEADING = "### 3-3. 후속 라운드·보충 지시의 주입"
 
 
 def section(doc: str) -> str:
-    assert HEADING in doc, f"missing heading: {HEADING}"
-    body = doc.split(HEADING, 1)[1]
-    m = re.search(r"(?m)^##? ", body)
-    return re.sub(r"\s+", " ", body[: m.start()] if m else body)
+    return flat(section_of(doc, HEADING))
 
 
 def check(doc: str) -> None:
@@ -67,11 +66,7 @@ mutants = {
 }
 for name, doc in mutants.items():
     assert doc != text, f"fixture: mutant {name} did not change the text"
-    try:
-        check(doc)
-    except AssertionError:
-        print(f"RED {name}")
-        continue
-    raise SystemExit(f"mutant {name} did not go RED")
+    expect_red(name, check, doc)
+    print(f"RED {name}")
 print(f"PASS input-line-not-evidence ({len(mutants)} mutants RED)")
 PY

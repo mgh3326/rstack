@@ -751,8 +751,13 @@ run_fleet --only local
 printf '[hosts.a]\nssh = "x"\n' >"$TMP/no-read.toml"
 chmod 000 "$TMP/no-read.toml"
 export FLEET_HOSTS_CONFIG="$TMP/no-read.toml"
-run_fleet --only local
-[[ $RC -eq 2 ]] || fail "AC14 unreadable explicit config rc: want 2 got $RC :: $OUT"
+if [[ -r "$TMP/no-read.toml" ]]; then
+  # root (e.g. a container) reads mode-000 files, so no unreadable fixture exists.
+  echo "SKIP AC14 unreadable explicit config: running as uid $(id -u), file stays readable"
+else
+  run_fleet --only local
+  [[ $RC -eq 2 ]] || fail "AC14 unreadable explicit config rc: want 2 got $RC :: $OUT"
+fi
 chmod 644 "$TMP/no-read.toml"
 export FLEET_HOSTS_CONFIG="$TMP/hosts.toml"
 

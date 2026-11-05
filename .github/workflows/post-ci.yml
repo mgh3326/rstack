@@ -18,13 +18,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install tests and moved contracts
-        run: |
-          python3 tests/test-install.py
-          python3 tests/test-adapter.py
-          python3 tests/test-skill-triggers.py
-          python3 tests/test-fleet-install-review.py
-          python3 tests/test-fleet-install-concurrent.py
-          for test in tests/test-*.sh; do bash "$test"; done
+        run: bash tests/run-all.sh
   contracts-macos:
     if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.PANEWIRE_POST_MAC_RUNNER) || 'macos-latest' }}
@@ -34,13 +28,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install tests and moved contracts
-        run: |
-          python3 tests/test-install.py
-          python3 tests/test-adapter.py
-          python3 tests/test-skill-triggers.py
-          python3 tests/test-fleet-install-review.py
-          python3 tests/test-fleet-install-concurrent.py
-          for test in tests/test-*.sh; do bash "$test"; done
+        run: bash tests/run-all.sh
   post-ok:
     if: ${{ github.ref == 'refs/heads/main' && always() && (contains(needs.*.result, 'failure') || !contains(needs.*.result, 'cancelled')) }}
     needs: [contracts, contracts-macos]

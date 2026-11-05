@@ -17,21 +17,10 @@ import re
 import sys
 
 root = Path(sys.argv[1])
+sys.path.insert(0, str(root / "tests/lib"))
+from contract import expect_red, flat, section  # noqa: E402
 wake_path = Path(os.environ.get("WAKE_SKILL", root / "skills/wake/SKILL.md"))
 wake_text = wake_path.read_text(encoding="utf-8")
-
-
-def flat(text: str) -> str:
-    return re.sub(r"\s+", " ", text)
-
-
-def section(text: str, heading: str) -> str:
-    """Body of a ##/### section up to the next heading of same-or-higher level."""
-    assert heading in text, f"missing heading: {heading}"
-    body = text.split(heading, 1)[1]
-    level = len(heading) - len(heading.lstrip("#"))
-    m = re.search(rf"(?m)^#{{1,{level}}} ", body)
-    return body[: m.start()] if m else body
 
 
 DELETE_PERMIT = r"(?i)(may|can|should) (be )?delete|delete it when|clean it up"
@@ -115,11 +104,7 @@ mutants = {
         "close the hk task, check the report exists at its path outside the worktree"),
 }
 for name, doc in mutants.items():
-    try:
-        check(doc)
-    except AssertionError:
-        print(f"RED {name}")
-        continue
-    raise SystemExit(f"mutant {name} did not go RED")
+    expect_red(name, check, doc)
+    print(f"RED {name}")
 print(f"PASS mutants assertion-red={len(mutants)}/{len(mutants)}")
 PY

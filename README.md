@@ -52,6 +52,9 @@ NOTICE.md, NOTICE-skills.md and LICENSE* there. It is copied from a pinned commi
 never auto-updated. Excluded skills remain readable as upstream reference files.
 
 Run the changed installer checks with `python3 tests/test-install.py` and
-`python3 tests/test-adapter.py`. On pull requests, CI runs the moved contracts and retained tool tests on hosted
+`python3 tests/test-adapter.py`. `tests/run-all.sh` is the one suite entry point; both
+workflows call it, so a new `tests/test-*.py` or `tests/test-*.sh` needs no CI edit.
+Contract tests share `tests/lib/contract.py` (section scoping, row deletion and
+mutant checks). On pull requests, CI runs the moved contracts and retained tool tests on hosted
 Linux, with `ci-ok` gating merge. After pushes to main, the full suite runs on
 Linux and macOS, with `post-ok` watched for failures.

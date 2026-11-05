@@ -202,7 +202,7 @@ escalate로 멈췄으면 `failed` — 단, 사이트 정본이 그 서비스의 
 
 ## 발주자 측 — operator-desk
 
-배포를 발주하고 판정하는 쪽은 **operator-desk** 다. 디자인 세션은 머지도 배포도 하지 않는다 — 머지는 mergewake, 배포는 desk 다.
+배포를 발주하고 판정하는 쪽은 **operator-desk** 다. 디자인 세션은 배포하지 않는다 — 배포는 desk 다. 머지는 mergewake 이고, 디자인 세션의 머지는 `wake` §Direct merge(임시 완화)뿐이다.
 
 - desk 는 installer 를 스폰해 발주하고, 그 JOIN/ESC 를 중간 경유 레인 없이 직접 받아 판정한다.
 - installer 의 JOIN/ESC 를 받아도 그 보고서의 배포 기록 키(`deploy/<service>/<UTC 시각>`)로 기록 1건이

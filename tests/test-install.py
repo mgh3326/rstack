@@ -8,6 +8,30 @@ import unittest
 ROOT = Path(__file__).resolve().parent.parent
 M = json.loads((ROOT / 'install/sets.json').read_text())
 
+def install_list():
+    return [n for n in (ROOT / 'third_party/pstack/INSTALL').read_text().splitlines()
+            if n and not n.startswith('#')]
+
+
+class Manifest(unittest.TestCase):
+    """INSTALL is the pstack allowlist; sets.json must not drift from it."""
+
+    def test_full_set_is_core_plus_install(self):
+        core = sorted(p.name for p in (ROOT / 'skills').iterdir() if (p / 'SKILL.md').is_file())
+        full = M['sets']['full']
+        self.assertEqual(len(full), len(set(full)), 'duplicate names in the full set')
+        self.assertEqual(set(full), set(core) | set(install_list()))
+
+    def test_worker_set_is_a_subset_of_full(self):
+        worker = M['sets']['worker']
+        self.assertEqual(len(worker), len(set(worker)), 'duplicate names in the worker set')
+        self.assertLessEqual(set(worker), set(M['sets']['full']))
+
+    def test_every_harness_names_a_known_set(self):
+        for name, harness in M['harnesses'].items():
+            self.assertIn(harness['set'], M['sets'], name)
+
+
 class Install(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
