@@ -11,7 +11,7 @@ concurrency:
 jobs:
   contracts:
     if: ${{ github.ref == 'refs/heads/main' }}
-    runs-on: ${{ vars.PANEWIRE_POST_LINUX_RUNNER || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.PANEWIRE_POST_LINUX_RUNNER) || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -27,7 +27,7 @@ jobs:
           for test in tests/test-*.sh; do bash "$test"; done
   contracts-macos:
     if: ${{ github.ref == 'refs/heads/main' }}
-    runs-on: ${{ vars.PANEWIRE_POST_MAC_RUNNER || 'macos-latest' }}
+    runs-on: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.PANEWIRE_POST_MAC_RUNNER) || 'macos-latest' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
