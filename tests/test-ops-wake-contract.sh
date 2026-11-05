@@ -75,6 +75,7 @@ REQUIRED = [
     ("wake", "## Merge gate", "leak-scan-not-enforced", r"\*\*Public repo leak scan:\*\* not enforced by mergewake \(hk 2793\)"),
     ("wake", "## Merge gate", "leak-scan-notify-lane-only", r"One lane name is allowed: the opening session's own lane in a `Mergewake-Notify-Lane` trailer"),
     ("wake", None, "trailer-in-pr-body", r"The PR body \(required\) ends with these trailers, each on its own line, exactly once"),
+    ("wake", "## Rules", "trailer-paste-preamble", r"If the spawn preamble has a `Mergewake trailers \(paste at the end of the PR body\):` block, paste its lines verbatim and add by hand only a line it omits"),
     ("wake", None, "trailer-grade", r"Mergewake-Grade: <G from the hk task title marker \(grade G, Tn\)>"),
     ("wake", None, "trailer-tier", r"Mergewake-Tier: <Tn from the same marker>"),
     ("wake", None, "trailer-experiment", r"Mergewake-Experiment: <id>/<arm> \(only when the spawn preamble assigns an arm"),
