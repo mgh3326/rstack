@@ -201,7 +201,7 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    | Exit | Meaning | Do |
    |---|---|---|
    | `85` (`wait timeout for job`) | Landed: the spawn state was `succeeded` and the job is running | Comment the request id on the task, go to step 7 |
-   | `0`, `83`, `84` | Landed, then the job completed, escalated or was lost | Comment the request id; handle READY, ESC or the loss |
+   | `0`, `83`, `84` | Landed, then the job completed, escalated or was lost (`83` escalated means `panewire escalate`; an ESC alone no longer ends the job) | Comment the request id; handle READY, ESC or the loss |
    | Any other, with `spawn refused: <reason> (operation <id>)` | `failed` or `retryable`: not landed | §On spawn failure; never replay |
    | Any other, with `spawn ownership is unresolved` | `reconciling` or `deadline_exceeded`: the hub keeps ownership | Never launch; §On spawn failure |
 
@@ -365,6 +365,12 @@ original guards. A temporary observation uses `panewire wait --agent NAME --stat
   silently. On a decision, emit ESC to the parent lane with `--type decision` (question,
   options, default) and continue with the default only if it is safe; otherwise stop and wait
   for the reply (`ops` §Escalate a decision).
+- **ESC is a question; the job stays open.** The lane event records `job.waiting_decision`. The answer
+  resumes the job when it arrives by `panewire prompt --uptake status-transition` or a relay to the pane's
+  lane. An unanswered decision becomes `lost` (`decision_unanswered`) after the decision timeout
+  (`PANEWIRE_DECISION_TIMEOUT_S`, six hours by default) unless a later lane event from the pane resumes the job
+  first. Only READY or DONE, with a stable report, completes a job. To give up, run
+  `panewire escalate <job> --question '<why>'`. Source: panewire `docs/r21-lane-event.md` (panewire@e1f9f39, lines 100-119).
 - Deploys and infra go to operator-desk. The design session does not deploy.
 - A worker's READY/ESC reach its parent lane, `operator-desk` for a design session's worker. Inbox-capable CLIs may block on
   `panewire inbox wait` once shipped; otherwise the message arrives as pane text.
@@ -513,6 +519,8 @@ contract. Do not widen scope to answer a finding.
   then continue with the default only if it is safe; otherwise stop and wait for the reply.
 - Difficulty, size or time is never a blocker; ESC only for a concrete blocker with evidence or a
   decision you cannot default.
+- After an ESC, stay in the pane and wait for the answer; the job is not over. To give up, run
+  `panewire escalate <job> --question '<why>'`.
 
 ## Done
 Write ~/work/herdr-inbox/jobs/<job>/report.md — outside the worktree, so it does not affect
