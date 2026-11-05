@@ -53,6 +53,7 @@ REQUIRED = [
     ("wake", "## Tier — by revert cost", "t3-unblocked-escalates", r"not covered by a `blocking\[\]\.paths` entry .{0,80}escalate to the operator before spawning it"),
     ("wake", "## Tier — by revert cost", "needs-classification", r"Unclassifiable → do not run it at a lower T\.\*\* Return `NEEDS_CLASSIFICATION`"),
     ("wake", "## Tier — by revert cost", "no-job-pr-notify-lane", r"\*\*A PR opened without a worker job\*\* .{0,80}also `Mergewake-Notify-Lane: <the opening session's lane>`"),
+    ("wake", "## Tier — by revert cost", "no-job-pr-trailers-script", r"Print the block with `bin/pr-trailers --task <id> --family <family> --profile <launch profile>` from an rstack checkout and append it to the PR body"),
     ("wake", "## Tier — by revert cost", "grade-not-lowered", r"Do not lower a grade because of quota"),
     # T3 split.
     ("wake", "### T3 split — by invariant impact, not by file type", "table-first", r"writes the invariant table \*\*first\*\*.{0,200}No table, no split"),
