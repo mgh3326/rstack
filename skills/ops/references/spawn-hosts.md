@@ -45,6 +45,22 @@
   `operator_token_env` → `hub_token_env`. panewire 는 자격 값을 출력하지 않는다.
 - `panewire lanes-missing` 이 레인이나 parent 가 허브에 없는 열린 잡을 읽기 전용으로 나열한다.
 
+## 호스트 준비·업그레이드 — Codex hook 승인
+
+herdr Codex 연동을 설치하거나 herdr·Codex 를 업그레이드하면 `CODEX_HOME` 의 hook 이 새로 생기거나
+바뀐다. 그러면 Codex 는 첫 실행에서 `Hooks need review` 화면을 띄우고 멈춘다. panewire 는 이 화면에
+답하지 않으므로, 그 호스트의 Codex 스폰은 사람이 승인할 때까지 진행되지 않는다(운영자 결정
+2026-11-05).
+
+설치·업그레이드의 마지막 단계로, Codex 가 설치된 호스트마다 사람이 한 번 한다:
+
+1. 그 호스트의 터미널에서 `codex` 를 한 번 실행한다.
+2. `Hooks need review` 가 뜨면 `2. Trust all and continue` 를 고른 뒤 종료한다. 뜨지 않으면 이미
+   승인된 상태다.
+
+확인은 사람이 한다: `~/.codex/config.toml` 에 `[hooks.state."<CODEX_HOME>/hooks.json:…"]` 항목이 있으면
+승인된 것이다. 세션과 워커는 이 파일을 읽지 않는다(에이전트 홈의 설정 파일 금지).
+
 ## 제거된 명령
 
 `panewire heavy`는 호스트 lock을 되살리지 않는다. 부하 기반 배치 조회에는 `panewire place`를 쓴다.
