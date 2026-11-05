@@ -73,6 +73,7 @@ REQUIRED = [
     ("wake", "## Merge gate", "base-freshness", r"\*\*Base freshness:\*\* `git merge-base --is-ancestor origin/<base> \"\$H\"`"),
     ("wake", "## Merge gate", "merge-not-rebase", r"never rebase or force-push a pushed branch"),
     ("wake", "## Merge gate", "leak-scan-not-enforced", r"\*\*Public repo leak scan:\*\* not enforced by mergewake \(hk 2793\)"),
+    ("wake", "## Merge gate", "leak-scan-notify-lane-only", r"One lane name is allowed: the opening session's own lane in a `Mergewake-Notify-Lane` trailer"),
     ("wake", None, "trailer-in-pr-body", r"The PR body \(required\) ends with these trailers, each on its own line, exactly once"),
     ("wake", None, "trailer-grade", r"Mergewake-Grade: <G from the hk task title marker \(grade G, Tn\)>"),
     ("wake", None, "trailer-tier", r"Mergewake-Tier: <Tn from the same marker>"),

@@ -256,7 +256,8 @@ All must hold for head `$H`:
   replied to; medium/low never block on their own.
 - **Public repo leak scan:** not enforced by mergewake (hk 2793). The author keeps the diff free
   of secrets, internal hostnames or addresses, real pane ids, lane-private names, account ids,
-  trading wording and committed build output.
+  trading wording and committed build output. One lane name is allowed: the opening session's own
+  lane in a `Mergewake-Notify-Lane` trailer (operator 2026-11-05).
 - Commits after the reviewed head only answer its findings.
 - A change to a hash-pinned file re-hashes its pin in the same PR.
 - Every RISKS item is either measured harmless on the target environment or queued as a
