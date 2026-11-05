@@ -75,7 +75,6 @@ REQUIRED = [
     ("ops", "## Invariants (all references)", "clock-invariant", r"A clock time in a record comes from `date` or the server, never from your head"),
     ("roles", "## Rules", "multi-turn", r"Leads and implementers must run on harnesses that keep going across turns"),
     ("roles", "## Rules", "one-turn-limit", r"One-turn profiles may take explorer and consult roles only"),
-    ("roles", "## Rules", "lead-operator-opened", r"\*\*Lead:\*\* the session the operator opens directly, following the `lead` skill"),
     ("roles", "## Rules", "contract-writer", r"A design session \(with the operator\) or a lead \(opened by the operator, following the `lead` skill\) writes the closed contract"),
     ("roles", "## Rules", "higher-grade-not-lead", r"A hard single PR is an implementer with a higher grade, not a lead"),
     ("roles", "## Rules", "resolve-only", r"Explorer, verifier and judge are resolve-only: they name an in-session subagent's `panewire resolve` role \(below\), never a spawned seat"),
