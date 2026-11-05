@@ -78,7 +78,10 @@ Not for: deploys or infra changes (send to operator-desk; `ops` deploy), or deci
 - State the T in the brief; without it the receiver assumes the heaviest reading.
 - **A PR opened without a worker job** (T0, or a PR the desk opens) ends with the §Worker brief
   trailers and also `Mergewake-Notify-Lane: <the opening session's lane>`. Without it mergewake
-  has no job to route by and sends its findings to the desk as an unknown author.
+  has no job to route by and sends its findings to the desk as an unknown author. Print the
+  block with `bin/pr-trailers --task <id> --family <family> --profile <launch profile>` from an
+  rstack checkout and append it to the PR body; it reads the grade and tier from the hk task
+  title and the lane from `--lane` or `PANEWIRE_LANE`.
 
 **Grade** (S+..C) is the reasoning difficulty, a separate axis. **Do not lower a grade
 because of quota** — if no pool can supply it, stop and report. Effort is an argument
