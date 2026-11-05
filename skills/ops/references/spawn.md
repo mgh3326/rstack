@@ -69,7 +69,8 @@ mergewake reap 이 한다.
   조회 키(`reap.md`)이자 worker 레인의 parent 가 된다. 빠뜨리면 `default` 로 들어가 네 워커를
   다시 찾을 수 없고 완료 push 도 오지 않는다 — 2026-08-02 에 기록 22건이 전부 `default` 라 잔여
   세션 11개를 손으로 걷어냈다. `-L live|mock` 은 **실행 레인**이고 `--owner` 는 **스폰 주체**다.
-- 🔴 **`--role builder`(위임 좌석)는 `--lane`+`--parent`+`--task` 가 필수이고 `--owner` 를
+- 🔴 **`--role builder`(위임 좌석)** 스폰은 hk 2741 이 고쳐질 때까지 실패한다(`wake` §Delegated seat).
+  **`--role builder` 는 `--lane`+`--parent`+`--task` 가 필수이고 `--owner` 를
   거부한다**(rc 2). ESC·완료는 `--parent` 로 간다 — `--parent` 가 틀린 좌석은 PR 을 올려도 부모가
   모른다(2026-09-16 사고: push 후 2시간 동안 아무도 몰랐다).
 - **effort 는 인자로 준다** — 같은 모델도 effort 로 급이 바뀐다(실측: Luna Light 42 → Ultra 75).

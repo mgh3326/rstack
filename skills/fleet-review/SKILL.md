@@ -115,7 +115,7 @@ PRs merged on a same-family pass can be listed later. The rule below is suspende
 
 Wherever independent review is required — the `wake` merge gate requires it for every PR — a pass
 counts only when its reviewer's family differs from **every material author family** of the
-change: each family whose code the PR carries (commits, subagent or delegate output), not the
+change: each family whose code the PR carries (commits, subagent or delegated-seat output), not the
 family of whoever started the review. **A same-family pass is reference evidence only and does
 not satisfy the gate**; the PR still needs a qualifying pass. A fallback path (pane → headless)
 keeps the same qualification and evidence; if no qualifying reviewer runs, the result is

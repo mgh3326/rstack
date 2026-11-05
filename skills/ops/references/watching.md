@@ -58,8 +58,8 @@ claude 레인은 push로 깨어나며, 명시적 대기가 필요하면 한 번�
 대상과 일치하는지 확인한다. 다른 unread 항목이나 timeout이면
 `panewire inbox list --lane <owner-lane> --unread --json`을 한 번 조회한다.
 그래도 대상 결과가 없으면 누락 신호를 parent에 보고하며 새 key/job을 만들지 않는다.
-`SPAWN_FAILED`는 rc/stage/reason을 parent에 보고한다. 확정 실패는 담당 단위를
-직접 수행하거나 parent의 지시를 따르고, timeout·단절로 소유권이 미확인이면 기존
+`SPAWN_FAILED`는 rc/stage/reason을 parent에 보고한다. 확정 실패는 `wake` §On spawn failure
+(데스크는 `desk` §Spawn failure)를 따르고, timeout·단절로 소유권이 미확인이면 기존
 attempt를 먼저 대조한다. 새 워커 재시도 루프를 만들지 않는다.
 
 워커를 스폰하고 착지를 확인한 뒤 스폰한 세션은 **유휴로 대기하고, 완료

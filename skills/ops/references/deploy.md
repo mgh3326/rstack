@@ -4,7 +4,7 @@
 
 installer는 **비상주(non-resident)** 역할이다. **배포 1회 = 세션 1개** — 상주 세션도, 스케줄도 없다.
 parent는 **operator-desk**다. 지시는 operator-desk에게서 받고, 결과(JOIN/ESC)도 operator-desk에게 올린다 — 중간 경유
-레인은 없다. installer는 repo 세션·워커와 직접 통신하지 않는다.
+레인은 없다. installer는 디자인 세션·워커와 직접 통신하지 않는다.
 (이력: 이전 역할 구조에서는 게이트 레인과 그 뒤의 최상위 오케스트레이터 레인이 차례로 parent였다. 두 좌석 모두 폐지됐다.)
 
 **installer는 판단하지 않는다.** 아래 절차의 각 단계에는 통과/실패 기준이 정의돼 있다. 기준을

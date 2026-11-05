@@ -14,15 +14,27 @@ Each rule is stated once, in the home below; other documents point to it. Inside
 | Decision | Home |
 |---|---|
 | Goal, data shape, playbook, self-verification, subagent versus worker, work boundary, the pstack adapter | this skill |
-| PR, author and merge ownership, tier (T), hand-off, READY and what it carries, deploy authority | `wake` (rstack) |
+| PR, author and merge ownership, tier (T), hand-off, READY and what it carries | `wake` (rstack) |
+| Authority: who may approve a mutation, merge or deploy, credentials, which instructions count | `wake` §Authority |
 | Finding scope, severity, disposition, review rounds, review evidence reuse, reviewer independence | `fleet-review` (rstack); mergewake enforces it |
 | Spawn, relay, consult, wait, reap and deploy mechanics | `ops` (rstack) |
-| Desk coordination: commitments, resume order, task intake, delegation threshold, task record | `desk` (rstack) |
-| Design session: settling decisions, slicing tickets, spawning workers, landing proof | `wake` (rstack) |
+| Escalation: ESC events, questions from a pane, decision requests | `ops` §Escalate a decision |
+| Clock times in records | `ops` §Invariants (all references) |
+| Desk coordination: commitments, resume order, task intake, delegation threshold, task record, the desk's spawn-failure fix, deploy orders and judgement, containment | `desk` (rstack) |
+| Design session: settling decisions, slicing tickets, spawning workers, landing proof, spawn failure | `wake` (rstack) |
+| Role names and how each maps to a `panewire spawn --role` flag | `roles.md` (this skill) |
 | Which profile, family and effort a role may use; where grade applies | hk `policy/model-routing`, applied by `panewire resolve` and `panewire spawn` |
 | Pool spending order, quota waits and hand-over | hk `policy/quota-stop` |
 
 hk:doc `policy/index` is the index of rule homes across the fleet, including tools and repos.
+
+**Terms.** *Design session* is the operator-run session that owns one repo's work (`repo session` in older
+text). *Desk* is the coordinating session; its lane is `operator-desk`. *Worker* is a spawned implementer;
+a *delegated seat* is a spawned lead for one PR. Use these names in new text.
+
+**Temporary rules.** A rule that suspends or relaxes another opens with one marker,
+`Temporary relief (<who> <date>, hk <id>; hk <id> restores the rule)`, in its home section. Every other
+mention points to that section and repeats no date or condition, so one PR removes the relief.
 
 ## Openers (every task)
 

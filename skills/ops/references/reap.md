@@ -6,7 +6,7 @@
 
 mergewake 데몬(`reap` 역할)이 머지 직후 그 PR 의 워커 pane 을 닫고(마지막 화면은
 `<jobs>/<pane 이름>/pane-screen.txt` 에 남는다), `worktree_after`(기본 168h) 동안 revert 가 없으면
-worktree 와 branch 를 지운다. **repo 세션은 머지 후 pane 을 손으로 닫지 않는다.**
+worktree 와 branch 를 지운다. **디자인 세션은 머지 후 pane 을 손으로 닫지 않는다.**
 
 - 매칭은 이름이 아니라 위치다: pane cwd 가 linked worktree 이고, 현재 branch 가 PR head branch,
   checkout commit 이 PR head SHA, origin 이 그 repo 여야 한다. 그래서 워커는 PR worktree 를 `-c` 로,

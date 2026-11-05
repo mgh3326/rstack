@@ -97,7 +97,8 @@ else it owed waited.
 
 ## Spawn failure
 
-On `SPAWN_FAILED`, a non-zero exit, or no landing evidence (`ops` spawn §4-2):
+On `SPAWN_FAILED`, a non-zero exit, or no landing evidence (`ops` spawn §4-2). A design session or seat
+does not attempt the fix; it ESCs the failure here (`wake` §On spawn failure). The desk:
 
 1. Read the exit code, stage, reason and saved pane screen in the job directory once.
 2. Make **one fix attempt on the same task**, and only for a cause you can name.

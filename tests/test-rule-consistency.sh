@@ -5,7 +5,13 @@
 #   3. the tracker is hk, never Linear (relay packet);
 #   4. emit delivery and the non-claude exception live only in relay.md §3-1;
 #      consult.md and session-questions.md point there and carry each
-#      [consult-done] command once.
+#      [consult-done] command once;
+#   5. spawn failure: the design session and seat ESC with no fix attempt,
+#      the desk makes the one fix attempt; each side points at the other;
+#   6. role names map to panewire --role flags in roles.md §Spawn flags;
+#   7. terms: "design session", never "repo session" outside the one alias note;
+#   8. a temporary relief carries one marker in its home section, and no other
+#      text repeats its date.
 # Every required row has a deletion mutant and every forbidden row an
 # injection mutant; each must go RED by assertion.
 set -euo pipefail
@@ -28,8 +34,16 @@ PATHS = {
     "relay": REFS / "relay.md",
     "consult": REFS / "consult.md",
     "questions": REFS / "session-questions.md",
+    "watching": REFS / "watching.md",
+    "wake": root / "skills/wake/SKILL.md",
+    "desk": root / "skills/desk/SKILL.md",
+    "roles": root / "skills/robin-mode/roles.md",
 }
 docs = {name: path.read_text(encoding="utf-8") for name, path in PATHS.items()}
+# Every other skill file, for the repo-wide term and marker checks.
+for path in sorted((root / "skills").rglob("*.md")):
+    if path not in PATHS.values():
+        docs[str(path.relative_to(root))] = path.read_text(encoding="utf-8")
 
 # (doc, section heading or None, row name, pattern on the flattened scope)
 REQUIRED = [
@@ -44,6 +58,19 @@ REQUIRED = [
      r"\*\*지시를 보낸 쪽\*\*은 `herdr agent read <pane>`로 도착을 확인한다"),
     ("consult", None, "relay-pointer", r"\*\*`relay\.md` §3-1 정본\*\*만 따른다"),
     ("questions", None, "relay-pointer", r"\*\*`relay\.md` §3-1 정본\*\*만 따른다"),
+    ("wake", "## On spawn failure", "no-fix-attempt",
+     r"This is the design session's and a delegated seat's rule: no fix attempt here"),
+    ("wake", "## On spawn failure", "desk-pointer", r"makes the one named fix attempt \(`desk` §Spawn failure\)"),
+    ("desk", "## Spawn failure", "wake-pointer",
+     r"A design session or seat does not attempt the fix; it ESCs the failure here \(`wake` §On spawn failure\)"),
+    ("watching", None, "spawn-failure-pointer", r"확정 실패는 `wake` §On spawn failure \(데스크는 `desk` §Spawn failure\)를 따르고"),
+    ("roles", "## Spawn flags", "worker-flag", r"\| Implementer \(worker\) \| `--role worker --owner <parent lane>` \|"),
+    ("roles", "## Spawn flags", "builder-flag", r"\| Lead delegated for one PR \(delegated seat\) \| `--role builder"),
+    ("roles", "## Spawn flags", "counsel-flag", r"\| Consult \| `--role counsel --routing-role consult` \|"),
+    ("roles", "## Rules", "flags-not-roles", r"`worker`, `builder` and `counsel` are `panewire spawn --role` flag values, not seat roles"),
+    ("robin", "## Where each rule lives", "terms", r"\*Design session\* is the operator-run session that owns one repo's work"),
+    ("robin", "## Where each rule lives", "relief-marker",
+     r"`Temporary relief \(<who> <date>, hk <id>; hk <id> restores the rule\)`"),
 ]
 
 # (doc, row name, pattern on the flattened doc, text a mutant appends)
@@ -59,6 +86,15 @@ for doc in ("consult", "questions"):
         (doc, "copied-removal-condition", r"#252 가 수리되면", "\n- #252 가 수리되면 이 예외를 삭제한다.\n"),
     ]
 
+# Repo-wide: (row name, pattern on each flattened skill file, file a mutant injects into, text)
+EVERYWHERE = [
+    ("repo-session-ko", r"repo 세션", "relay", "\n- repo 세션이 서명한다.\n"),
+    ("repo-session-en", r"(?<!`)repo session|repo session(?!` in older text)", "wake", "\nThe repo session signs.\n"),
+    ("dated-relief-pointer", r"during the \d{4}-\d{2}-\d{2} relief", "wake", "\nexcept during the 2026-11-04 relief.\n"),
+    ("unmarked-relief", r"Temporary relief(?! \(<who>)(?! \((?:operator|desk) \d{4}-\d{2}-\d{2}, hk \d+; hk \d+ restores the rule\))",
+     "wake", "\nTemporary relief (operator 2026-11-05): skip review.\n"),
+]
+
 ONCE = {
     "emit": "panewire emit --kind lane.event --lane <요청자 레인> --event-id <고유id> --text '[consult-done]",
     "prompt": "herdr agent prompt <pane> '[consult-done]",
@@ -71,6 +107,10 @@ def check(d):
         assert re.search(pattern, scope), f"{doc}: row '{row}' missing or weakened"
     for doc, row, pattern, _ in FORBIDDEN:
         assert not re.search(pattern, flat(d[doc])), f"{doc}: forbidden row '{row}' present"
+    for row, pattern, _, _ in EVERYWHERE:
+        for name, text in d.items():
+            m = re.search(pattern, flat(text))
+            assert not m, f"{name}: forbidden row '{row}' present: {m.group(0)!r}"
     for doc in ("consult", "questions"):
         for kind, command in ONCE.items():
             n = d[doc].count(command)
@@ -78,13 +118,17 @@ def check(d):
 
 
 check(docs)
-print(f"PASS rule-consistency required={len(REQUIRED)} forbidden={len(FORBIDDEN)} once={2 * len(ONCE)}")
+print(f"PASS rule-consistency files={len(docs)} required={len(REQUIRED)} forbidden={len(FORBIDDEN)}"
+      f" everywhere={len(EVERYWHERE)} once={2 * len(ONCE)}")
 
 count = 0
 for doc, heading, row, pattern in REQUIRED:
     expect_red(f"{doc}-{row}-deleted", check, {**docs, doc: delete_row(docs[doc], heading, pattern, row)})
     count += 1
 for doc, row, pattern, injected in FORBIDDEN:
+    expect_red(f"{doc}-{row}-injected", check, {**docs, doc: docs[doc] + injected})
+    count += 1
+for row, _, doc, injected in EVERYWHERE:
     expect_red(f"{doc}-{row}-injected", check, {**docs, doc: docs[doc] + injected})
     count += 1
 for doc in ("consult", "questions"):
