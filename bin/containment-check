@@ -15,17 +15,26 @@ def main():
     args = parser.parse_args()
     lines = Path(args.file).read_text().splitlines() if args.file else sys.stdin.read().splitlines()
     invalid = False
+    row_count = 0
     for number, row in enumerate(lines, 1):
         if not row.startswith('- '):
+            if re.match(r'(?:[-*+]|[0-9]+[.)])', row.lstrip()):
+                print(f'line {number}: malformed row: {row}')
+                invalid = True
             continue
+        row_count += 1
         fields = {}
+        duplicate_status = False
         for part in row.split('|')[1:]:
             key, separator, value = part.strip().partition(':')
             if separator:
-                fields[key.strip()] = value.strip()
+                key = key.strip()
+                if key == 'status' and key in fields:
+                    duplicate_status = True
+                fields[key] = value.strip()
         status = fields.get('status', '')
         missing = []
-        if status not in ('active', 'released'):
+        if duplicate_status or status not in ('active', 'released'):
             missing.append('status')
         if status == 'active':
             root_valid = re.fullmatch(r'hk [0-9]+', fields.get('root', '')) is not None
@@ -33,9 +42,14 @@ def main():
                 missing.append('root')
             if not fields.get('release', ''):
                 missing.append('release')
+            if not re.match(r'hk [0-9]+', fields.get('record', '')):
+                missing.append('record')
         for field in missing:
             print(f'line {number}: missing or invalid {field}: {row}')
             invalid = True
+    if row_count == 0:
+        print('no ledger rows read')
+        invalid = True
     return int(invalid)
 
 
