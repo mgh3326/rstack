@@ -527,7 +527,9 @@ contract. Do not widen scope to answer a finding.
 - The PR body (required) ends with these trailers, each on its own line, exactly once;
   repeating them in commits is optional. mergewake reads the PR body first and then only the
   head commit (mergewake `prTask`, `internal/pipeline/deliver.go`), so a merge commit on the
-  head is still covered by the PR body.
+  head is still covered by the PR body. If the spawn preamble has a
+  `Mergewake trailers (paste at the end of the PR body):` block, paste its lines verbatim and add by
+  hand only a line it omits; otherwise fill in the lines below.
   Mergewake-Author-Family: <anthropic|openai|google|…>
   Mergewake-Author-Profile: <launch profile>
   Mergewake-Task: <id>
