@@ -16,7 +16,7 @@ def check_red(script, label, row, fields):
     result = run(script, row + '\n')
     assert result.returncode == 1, f'{label}: expected exit 1, got {result.returncode}: {result.stderr}'
     for field in fields:
-        assert field in result.stdout and '1' in result.stdout, f'{label}: missing diagnostic for {field}: {result.stdout}'
+        assert f'line 1: missing or invalid {field}:' in result.stdout, f'{label}: missing diagnostic for {field}: {result.stdout}'
     print(f'PASS {label} rejected')
 
 green = '''Ledger
@@ -36,6 +36,7 @@ rows = [
     ('missing root', '- action | release: fixed | status: active | record: hk 1', ('root',)),
     ('empty release', '- action | root: hk 1 | release:  | status: active | record: hk 1', ('release',)),
     ('bad status', '- action | root: hk 1 | release: fixed | status: pending | record: hk 1', ('status',)),
+    ('duplicate status', '- action | status: active | status: released', ('status',)),
 ]
 for label, row, fields in rows:
     check_red(checker, label, row, fields)

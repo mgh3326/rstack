@@ -19,13 +19,17 @@ def main():
         if not row.startswith('- '):
             continue
         fields = {}
+        duplicate_status = False
         for part in row.split('|')[1:]:
             key, separator, value = part.strip().partition(':')
             if separator:
-                fields[key.strip()] = value.strip()
+                key = key.strip()
+                if key == 'status' and key in fields:
+                    duplicate_status = True
+                fields[key] = value.strip()
         status = fields.get('status', '')
         missing = []
-        if status not in ('active', 'released'):
+        if duplicate_status or status not in ('active', 'released'):
             missing.append('status')
         if status == 'active':
             root_valid = re.fullmatch(r'hk [0-9]+', fields.get('root', '')) is not None
