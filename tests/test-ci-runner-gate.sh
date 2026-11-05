@@ -31,7 +31,9 @@ fixture="$tmp/.github/workflows/fixture.yml"
 for value in \
   "\${{ vars.PANEWIRE_POST_LINUX_RUNNER || 'ubuntu-latest' }}" \
   'self-hosted' \
-  "\${{ (github.ref == 'refs/heads/main' && vars.PANEWIRE_POST_LINUX_RUNNER) || 'ubuntu-latest' }}"; do
+  "\${{ (github.ref == 'refs/heads/main' && vars.PANEWIRE_POST_LINUX_RUNNER) || 'ubuntu-latest' }}" \
+  "\${{ (github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.A) || vars.B }}" \
+  "\${{ (github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.A) || (github.ref == 'refs/heads/main' && vars.B) }}"; do
   printf 'runs-on: %s\n' "$value" > "$fixture"
   if check_workflows "$tmp"; then
     printf 'RED fixture unexpectedly passed: %s\n' "$value" >&2
