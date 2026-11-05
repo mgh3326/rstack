@@ -71,7 +71,6 @@ with tempfile.TemporaryDirectory() as tmp:
         print('PASS root mutant caught')
     else:
         raise AssertionError('root mutant escaped')
-PY
 
 needle = "if not re.match(r'hk [0-9]+', fields.get('record', '')):"
 assert needle in source, 'record guard changed; update mutation probe'
@@ -85,3 +84,4 @@ with tempfile.TemporaryDirectory() as tmp:
         print('PASS record mutant caught')
     else:
         raise AssertionError('record mutant escaped')
+PY
