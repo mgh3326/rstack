@@ -12,6 +12,8 @@ import re
 import sys
 
 root = Path(sys.argv[1])
+sys.path.insert(0, str(root / "tests/lib"))
+from contract import expect_red, flat, section  # noqa: E402
 spawn_worker_path = Path(
     os.environ.get("SPAWN_DOC", root / "skills/ops/references/spawn.md")
 )
@@ -21,19 +23,6 @@ spawn_text = spawn_worker_path.read_text(encoding="utf-8")
 relay_text = relay_path.read_text(encoding="utf-8")
 # The injection section lives inside relay.md as §3-3.
 injection_text = relay_text
-
-
-def flat(text: str) -> str:
-    return re.sub(r"\s+", " ", text)
-
-
-def section(text: str, heading: str) -> str:
-    """Body of a ##/### section up to the next heading of same-or-higher level."""
-    assert heading in text, f"missing heading: {heading}"
-    body = text.split(heading, 1)[1]
-    level = len(heading) - len(heading.lstrip("#"))
-    m = re.search(rf"(?m)^#{{1,{level}}} ", body)
-    return body[: m.start()] if m else body
 
 
 INJECTION_HEADING = "### 3-3. 후속 라운드·보충 지시의 주입"
@@ -171,18 +160,6 @@ for name, text in (
 ):
     assert TOOL in flat(text), f"{name}: does not name '{TOOL}'"
 print("PASS cross-file same-tool=2/2")
-
-
-def expect_assertion(label, callback):
-    try:
-        callback()
-    except AssertionError:
-        return
-    except Exception as exc:
-        raise AssertionError(
-            f"{label} mutant errored instead of assertion RED: {exc}"
-        ) from exc
-    raise AssertionError(f"{label} mutant did not go RED")
 
 
 injection_section_removed = re.sub(
@@ -323,7 +300,7 @@ assertion_red_mutants = [
     ),
 ]
 for label, callback in assertion_red_mutants:
-    expect_assertion(label, callback)
+    expect_red(label, callback)
 print(
     "PASS mutants assertion-red="
     f"{len(assertion_red_mutants)}/{len(assertion_red_mutants)}"

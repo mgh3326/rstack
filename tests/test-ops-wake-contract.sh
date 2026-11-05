@@ -25,6 +25,9 @@ import re
 import sys
 
 root = Path(sys.argv[1])
+sys.path.insert(0, str(root / "tests/lib"))
+from contract import delete_row, expect_red as _expect_red, flat, section  # noqa: E402
+
 wake_path = Path(os.environ.get("WAKE_SKILL", root / "skills/wake/SKILL.md"))
 ops_path = Path(os.environ.get("OPS_SKILL", root / "skills/ops/SKILL.md"))
 refs_dir = Path(os.environ.get("OPS_REFERENCES", root / "skills/ops/references"))
@@ -39,19 +42,6 @@ docs["consult"] = refs["consult.md"]
 RETIRED = ("spawn-worker", "relay-handoff", "consult-advisor", "linear-archive",
            "node-ops", "planner", "architect", "checker", "director", "installer",
            "builder")
-
-
-def flat(text: str) -> str:
-    return re.sub(r"\s+", " ", text)
-
-
-def section(text: str, heading: str) -> str:
-    """Body of a ##/### section up to the next heading of same-or-higher level."""
-    assert heading in text, f"missing heading: {heading}"
-    body = text.split(heading, 1)[1]
-    level = len(heading) - len(heading.lstrip("#"))
-    m = re.search(rf"(?m)^#{{1,{level}}} ", body)
-    return body[: m.start()] if m else body
 
 
 # (doc, section heading or None, row name, pattern on the flattened scope)
@@ -265,37 +255,15 @@ print(f"PASS ops-wake-contract refs={len(refs)} linked rows={len(REQUIRED)} reti
 
 
 def expect_red(label: str, d: dict, ref_texts: dict) -> None:
-    try:
-        check(d, ref_texts)
-    except AssertionError:
-        return
-    except Exception as exc:
-        raise AssertionError(f"{label} errored instead of assertion RED: {exc}") from exc
-    raise AssertionError(f"mutant {label} did not go RED")
+    _expect_red(label, check, d, ref_texts)
 
 
 count = 0
-def section_span(text: str, heading: str) -> tuple:
-    """(start, end) offsets of section() inside text."""
-    if not heading:
-        return 0, len(text)
-    start = text.index(heading) + len(heading)
-    return start, start + len(section(text, heading))
-
-
 # One deletion mutant per required row: remove the matched text (any wrapping)
 # inside that row's own section, so the mutant proves this row is guarded and
 # not a copy of the same sentence elsewhere.
 for doc, heading, row, pattern in REQUIRED:
-    text = docs[doc]
-    start, end = section_span(text, heading)
-    m = re.search(pattern, flat(text[start:end]))
-    words = m.group(0).split()
-    raw = re.compile(r"\s+".join(re.escape(w) for w in words)).search(text, start, end)
-    assert raw, f"fixture: row {row} not found unflattened in its section"
-    mutated = dict(docs)
-    mutated[doc] = text[: raw.start()] + text[raw.end():]
-    expect_red(f"row-{row}-deleted", mutated, refs)
+    expect_red(f"row-{row}-deleted", {**docs, doc: delete_row(docs[doc], heading, pattern, row)}, refs)
     count += 1
 
 injections = [

@@ -12,25 +12,14 @@ import re
 import sys
 
 root = Path(sys.argv[1])
+sys.path.insert(0, str(root / "tests/lib"))
+from contract import expect_red, flat, section  # noqa: E402
 installer_text = Path(
     os.environ.get("INSTALLER_SKILL", root / "skills/ops/references/deploy.md")
 ).read_text(encoding="utf-8")
 checklist_text = Path(
     os.environ.get("INSTALLER_CHECKLIST", root / "skills/ops/references/deploy-checklist.md")
 ).read_text(encoding="utf-8")
-
-
-def flat(text: str) -> str:
-    return re.sub(r"\s+", " ", text)
-
-
-def section(text: str, heading: str) -> str:
-    """Body of a ##/### section up to the next heading of same-or-higher level."""
-    assert heading in text, f"missing heading: {heading}"
-    body = text.split(heading, 1)[1]
-    level = len(heading) - len(heading.lstrip("#"))
-    m = re.search(rf"(?m)^#{{1,{level}}} ", body)
-    return body[: m.start()] if m else body
 
 
 R3 = "## R3. 고정 절차 (9단계, 순서 불변)"
@@ -180,18 +169,6 @@ check_orderer(installer_text)
 print("PASS orderer reap-after-record")
 
 
-def expect_assertion(label, callback):
-    try:
-        callback()
-    except AssertionError:
-        return
-    except Exception as exc:
-        raise AssertionError(
-            f"{label} mutant errored instead of assertion RED: {exc}"
-        ) from exc
-    raise AssertionError(f"{label} mutant did not go RED")
-
-
 def mutate(text: str, old: str, new: str) -> str:
     assert text.count(old) == 1, f"fixture: mutation anchor not unique: {old}"
     return text.replace(old, new, 1)
@@ -257,12 +234,12 @@ orderer_mutants = [
 
 for label, text in installer_mutants:
     assert text != installer_text, f"fixture: {label} did not change the text"
-    expect_assertion(label, lambda text=text: check_installer(text))
+    expect_red(label, lambda text=text: check_installer(text))
 for label, text in checklist_mutants:
     assert text != checklist_text, f"fixture: {label} did not change the text"
-    expect_assertion(label, lambda text=text: check_checklist(text))
+    expect_red(label, lambda text=text: check_checklist(text))
 for label, text in orderer_mutants:
-    expect_assertion(label, lambda text=text: check_orderer(text))
+    expect_red(label, lambda text=text: check_orderer(text))
 total = len(installer_mutants) + len(checklist_mutants) + len(orderer_mutants)
 print(f"PASS mutants assertion-red={total}/{total}")
 PY

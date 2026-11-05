@@ -25,6 +25,8 @@ import sys
 from pathlib import Path
 
 root = Path(sys.argv[1])
+sys.path.insert(0, str(root / "tests/lib"))
+from contract import expect_red  # noqa: E402
 wake_path = Path(os.environ.get("WAKE_SKILL", root / "skills/wake/SKILL.md"))
 
 START = "<!-- untagged-operator-confirmation:start -->"
@@ -417,16 +419,6 @@ assert_verdict_cases(untagged_operator_basis)
 print(f"PASS verdict-lint red={len(red_cases)}/{len(red_cases)} green={len(green_cases)}/{len(green_cases)}")
 
 
-def expect_assertion(label, callback):
-    try:
-        callback()
-    except AssertionError:
-        return
-    except Exception as exc:
-        raise AssertionError(f"{label} mutant errored instead of assertion RED: {exc}") from exc
-    raise AssertionError(f"{label} mutant did not go RED")
-
-
 ADJACENT_ONLY = re.compile(
     r"(운영자|operator)[^\n]{0,12}?(확인|승인|보고|컨펌|오케이|\bOK\b|confirm|approv|verif|report)", re.I
 )
@@ -474,6 +466,6 @@ mutants = [
         lint_variant(claim=_claim_unbounded_negation))),
 ]
 for label, callback in mutants:
-    expect_assertion(label, callback)
+    expect_red(label, callback)
 print(f"PASS mutants assertion-red={len(mutants)}/{len(mutants)}")
 PY

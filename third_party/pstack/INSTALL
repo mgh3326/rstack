@@ -1,8 +1,10 @@
 # Vendored pstack skills that install.sh links into agent skill directories.
 # One name per line. Operator-desk decision (hk 2457): broad allowlist, aggressive adoption.
-# Not installed, on purpose: poteto-mode poteto-help setup-pstack swarm arena automate-me
-# make-bot-ui (not in this pin) ketchup ketchup-video bro. Skills that route to them are listed
-# in REVIEW.md; every vendored skill stays readable through relative links.
+# Every vendored skill not listed here is not installed, on purpose, and
+# scripts/check-harness-skills.py reports it as excluded if a harness discovers it.
+# Skills that route to excluded ones are listed in REVIEW.md; every vendored skill stays
+# readable through relative links. install/sets.json "full" must equal core + this list
+# (tests/test-install.py).
 # Adapter: skills/robin-mode/SKILL.md §Fleet adapter for vendored pstack governs fleet use.
 how
 why

@@ -15,6 +15,9 @@ import sys
 from pathlib import Path
 
 root = Path(sys.argv[1])
+sys.path.insert(0, str(root / "tests/lib"))
+from contract import delete_row, expect_red, flat, section  # noqa: E402
+
 PATHS = {
     "desk": "skills/desk/SKILL.md",
     "reap": "skills/ops/references/reap.md",
@@ -31,19 +34,6 @@ SECTIONS = ("## Commitments", "## Resume", "## Before `tasks add`", "## Delegati
 RESUME_ORDER = ("`date ", "hk tasks with a next action", "Open decisions", "Inbox READY/ESC",
                 "Live jobs", "PRs awaiting gate")
 NOT_NEUTRAL = re.compile(r"claude|codex|AskUserQuestion|spawn_agent|\.agents/", re.IGNORECASE)
-
-
-def flat(text):
-    return re.sub(r"\s+", " ", text)
-
-
-def section(text, heading):
-    """Body of a ##/### section up to the next heading of same-or-higher level."""
-    assert heading in text, f"missing heading: {heading}"
-    body = text.split(heading, 1)[1]
-    level = len(heading) - len(heading.lstrip("#"))
-    m = re.search(rf"(?m)^#{{1,{level}}} ", body)
-    return body[: m.start()] if m else body
 
 
 # (doc, section heading or None, row name, pattern on the flattened scope)
@@ -138,43 +128,31 @@ check(docs, sets)
 print(f"PASS desk-skill-contract sections={len(SECTIONS)} rows={len(REQUIRED)}")
 
 
-def expect_red(label, d, s=sets):
-    try:
-        check(d, s)
-    except AssertionError:
-        return
-    except Exception as exc:
-        raise AssertionError(f"{label} errored instead of assertion RED: {exc}") from exc
-    raise AssertionError(f"mutant {label} did not go RED")
+def red(label, d, s=sets):
+    expect_red(label, check, d, s)
 
 
 count = 0
 for doc, heading, row, pattern in REQUIRED:
-    text = docs[doc]
-    start = text.index(heading) + len(heading) if heading else 0
-    end = start + len(section(text, heading)) if heading else len(text)
-    words = re.search(pattern, flat(text[start:end])).group(0).split()
-    raw = re.compile(r"\s+".join(re.escape(w) for w in words)).search(text, start, end)
-    assert raw, f"fixture: row {row} not found unflattened in its section"
-    expect_red(f"row-{row}-deleted", {**docs, doc: text[: raw.start()] + text[raw.end():]})
+    red(f"row-{row}-deleted", {**docs, doc: delete_row(docs[doc], heading, pattern, row)})
     count += 1
 
 desk = docs["desk"]
 for heading in SECTIONS:
-    expect_red(f"section-{heading}-removed", {**docs, "desk": desk.replace(f"\n{heading}\n", "\n## Other\n", 1)})
+    red(f"section-{heading}-removed", {**docs, "desk": desk.replace(f"\n{heading}\n", "\n## Other\n", 1)})
     count += 1
     body = section(desk, f"{heading}\n")
-    expect_red(f"failure-cite-{heading}-removed", {**docs, "desk": desk.replace(body, body.replace("**Prevents:**", "Note:"), 1)})
+    red(f"failure-cite-{heading}-removed", {**docs, "desk": desk.replace(body, body.replace("**Prevents:**", "Note:"), 1)})
     count += 1
 
 first = "2. hk tasks with a next action"
 second = "3. Open decisions"
 assert first in desk and second in desk, "fixture: resume steps not found"
 swapped = desk.replace(first, "\0").replace(second, "2. Open decisions").replace("\0", "3. hk tasks with a next action")
-expect_red("resume-steps-swapped", {**docs, "desk": swapped})
-expect_red("harness-specific-term", {**docs, "desk": desk + "\nUse the Claude Agent tool.\n"})
-expect_red("desk-not-in-full-set", docs, {**sets, "full": [n for n in sets["full"] if n != "desk"]})
-expect_red("desk-in-worker-set", docs, {**sets, "worker": sets["worker"] + ["desk"]})
+red("resume-steps-swapped", {**docs, "desk": swapped})
+red("harness-specific-term", {**docs, "desk": desk + "\nUse the Claude Agent tool.\n"})
+red("desk-not-in-full-set", docs, {**sets, "full": [n for n in sets["full"] if n != "desk"]})
+red("desk-in-worker-set", docs, {**sets, "worker": sets["worker"] + ["desk"]})
 count += 4
 print(f"PASS mutants assertion-red={count}/{count}")
 PY

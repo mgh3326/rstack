@@ -20,21 +20,12 @@ import sys
 from pathlib import Path
 
 root = Path(sys.argv[1])
+sys.path.insert(0, str(root / "tests/lib"))
+from contract import expect_red, flat, section  # noqa: E402
 doc_path = Path(os.environ.get("DECISION_REQUEST_DOC", root / "skills/ops/references/decision-request.md"))
 doc_text = doc_path.read_text(encoding="utf-8")
 
 HEADING = "## 운영자 결정 요청"
-
-
-def flat(text: str) -> str:
-    return re.sub(r"\s+", " ", text)
-
-
-def section(text: str, heading: str) -> str:
-    assert heading in text, f"missing heading: {heading}"
-    body = text.split(heading, 1)[1]
-    m = re.search(r"(?m)^#{1,2} ", body)
-    return body[: m.start()] if m else body
 
 
 def check(text: str) -> None:
@@ -79,17 +70,6 @@ def check(text: str) -> None:
     assert "--supersedes" in sec and "decision-resolve" in sec, "supersede and resolve lines missing"
 
 
-def expect_assertion(label, callback):
-    try:
-        callback()
-    except AssertionError as exc:
-        print(f"EXPECTED RED {label}: {exc}")
-        return
-    except Exception as exc:  # noqa: BLE001 - a crash is not a RED assertion
-        raise AssertionError(f"{label} mutant errored instead of assertion RED: {exc}")
-    raise AssertionError(f"{label} mutant did not go RED")
-
-
 check(doc_text)
 print("PASS decision-request.md contract")
 
@@ -110,6 +90,6 @@ mutants = [
 ]
 for label, text in mutants:
     assert text != doc_text, f"{label} mutant did not change the text"
-    expect_assertion(label, lambda t=text: check(t))
+    expect_red(label, lambda t=text: check(t))
 print(f"PASS mutants assertion-red={len(mutants)}/{len(mutants)}")
 PY

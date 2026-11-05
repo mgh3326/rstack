@@ -7,7 +7,11 @@ import re
 import sys
 ROOT = Path(__file__).resolve().parent.parent
 manifest = json.loads((ROOT / 'install/sets.json').read_text())
-excluded = re.compile(r'^(poteto-mode|babysit|swarm|arena|setup-pstack|thermos|thermo-nuclear-.*|deslop|fix-ci|fix-merge-conflicts|get-pr-comments|make-pr-easy-to-review|automate-me|bro|ketchup.*|poteto-help|what-did-i-get-done)$')
+# Excluded = vendored pstack skills that INSTALL does not list. INSTALL stays the one allowlist.
+install = {n for n in (ROOT / 'third_party/pstack/INSTALL').read_text().splitlines()
+           if n and not n.startswith('#')}
+excluded = {p.name for p in (ROOT / 'third_party/pstack/skills').iterdir()
+            if (p / 'SKILL.md').is_file()} - install
 print('| harness | set | scanned dirs | support/evidence | visible | excluded | duplicate names |')
 print('|---|---|---|---|---:|---:|---:|')
 failed = False
@@ -32,7 +36,7 @@ for name, harness in manifest['harnesses'].items():
                 for child in path.iterdir():
                     visit(child, ancestors | {real})
         visit(base, set())
-    bad = sum(bool(excluded.fullmatch(n)) for n in found)
+    bad = sum(n in excluded for n in found)
     duplicates = sum(len(paths) > 1 for paths in found.values())
     missing = set(manifest['sets'][harness['set']]) - found.keys()
     extra = set(found) - set(manifest['sets'][harness['set']])
