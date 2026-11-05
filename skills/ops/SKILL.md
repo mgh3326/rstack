@@ -76,7 +76,7 @@ anything here. Unset or missing is normal — the abstract rules below apply alo
 
 ## Escalate a decision
 
-A spawned pane (worker, delegated seat, installer seat, consultant) **never opens an interactive question**
+A spawned pane (worker, installer seat, consultant) **never opens an interactive question**
 — no confirmation prompt and no chooser (AskUserQuestion or any picker). Only the operator
 sees a pane, so the question blocks silently (operator 2026-10-29). Instead:
 
@@ -98,6 +98,6 @@ panewire emit --kind lane.event --lane <parent-lane> --type decision \
 
 ## Who does what
 
-Authority of the design session, workers, delegated seats, operator-desk and the operator is
+Authority of the design session, workers, operator-desk and the operator is
 `wake` §Authority; what READY means is `wake` §READY. operator-desk spawns the installer seat;
 the **Installer** executes one deploy and judges nothing (`deploy.md`).
