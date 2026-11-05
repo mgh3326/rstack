@@ -527,6 +527,9 @@ contract. Do not widen scope to answer a finding.
   Mergewake-Author-Family: <anthropic|openai|google|…>
   Mergewake-Author-Profile: <launch profile>
   Mergewake-Task: <id>
+  Mergewake-Grade: <G from the hk task title marker (grade G, Tn)>
+  Mergewake-Tier: <Tn from the same marker>
+  Mergewake-Experiment: <id>/<arm>  (only when the spawn preamble assigns an arm; otherwise omit the line)
 - First review: if `~/.config/mergewake/config.yaml` exists on this host, after opening the PR
   run once
   `GITHUB_TOKEN=$(gh auth token) mergewake review --repo <owner>/<repo> --pr <n> --author-family <family> --apply`.
