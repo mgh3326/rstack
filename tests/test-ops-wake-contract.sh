@@ -38,6 +38,7 @@ docs = {
 }
 refs = {p.name: p.read_text(encoding="utf-8") for p in sorted(refs_dir.glob("*.md"))}
 docs["consult"] = refs["consult.md"]
+docs["spawn"] = refs["spawn.md"]
 
 RETIRED = ("spawn-worker", "relay-handoff", "consult-advisor", "linear-archive",
            "node-ops", "planner", "architect", "checker", "director", "installer",
@@ -94,6 +95,8 @@ REQUIRED = [
     ("wake", "## The loop", "brief-in-hk", r"handoffkeep doc put --key brief/<date>/<job> --kind note"),
     ("wake", "## The loop", "spawn-owner-host", r"--role worker --owner operator-desk --host auto"),
     ("wake", "## The loop", "owner-why", r"`SPAWN_FAILED` must reach a lane that outlives it"),
+    ("wake", "## The loop", "quota-front-door", r"`panewire quota status --json` shows quota; `panewire quota refresh <pool>` re-measures a stale pool"),
+    ("spawn", "## 4. 기동·주입·감시", "quota-front-door", r"쿼타 확인은 `panewire quota status --json`.{0,60}낡은 풀은 `panewire quota refresh <풀>`"),
     ("wake", "## The loop", "no-unlanded-blocker", r"Spawn only tickets with no unlanded blocker"),
     ("wake", "## The loop", "accepted-proves-nothing", r"it proves nothing about a pane"),
     ("wake", "## The loop", "landing-proof", r"you read it from the exit of the step 5 run with `--wait --wait-timeout 2m` \(one launch, not a second spawn\), never with your own HTTP call"),
@@ -155,6 +158,7 @@ REQUIRED = [
     ("wake", "## Brief rules", "prod-e2e", r"\*\*Production e2e only with the operator present\.\*\*"),
     # ops invariants.
     ("ops", "## Invariants (all references)", "delivery-claim", r"\*\*A delivery claim is not delivery evidence\.\*\*"),
+    ("ops", "## Invariants (all references)", "quota-is-panewire-quota", r"Quota is `panewire quota`; review and post-merge cleanup are `mergewake`"),
     ("ops", "## Invariants (all references)", "one-launcher", r"\*\*One launcher per task\.\*\*"),
     ("ops", "## Invariants (all references)", "emit-carries-type", r"\*\*Every `panewire emit` between sessions carries `--type`\.\*\* A notice, receipt or handoff note that needs no reply is `info` or `ack`.{0,80}Only what needs action now is `decision`, `blocked` or `order`"),
     ("ops", "## Invariants (all references)", "no-polling", r"\*\*No polling loops\.\*\*"),
@@ -167,6 +171,9 @@ REQUIRED = [
 
 # Rows that must be absent: panewire resolve refuses --builder-family with --role consult.
 FORBIDDEN = [
+    # hk 3000: quota guidance goes through `panewire quota`; `pacelever reps` and the real-HOME lines stay.
+    ("wake", None, "wake-no-pacelever-quota", r"pacelever (?:--json|refresh)"),
+    ("spawn", None, "spawn-no-pacelever-quota", r"pacelever (?:--json|refresh)"),
     ("consult", None, "consult-no-builder-family", r"--builder-family"),
 ]
 
@@ -282,6 +289,8 @@ injections = [
     ("ops-routes-to-relay-handoff", "ops", "## Routing table\n", "## Routing table\n\nSee relay-handoff §3.\n"),
     ("ops-emit-prefix-untyped", "ops", "## Invariants (all references)\n", "## Invariants (all references)\n\n- Notify with `panewire emit --kind lane.event --lane operator-desk`.\n"),
     ("wake-emit-untyped", "wake", "## Brief rules\n", "## Brief rules\n\n- Notify with `panewire emit --kind lane.event --lane <parent-lane> --event-id x --text '[x] note'`.\n"),
+    ("wake-pacelever-json-readded", "wake", "## The loop\n", "## The loop\n\nRun `pacelever --json` for quota.\n"),
+    ("spawn-pacelever-refresh-readded", "spawn", "## 4. 기동·주입·감시\n", "## 4. 기동·주입·감시\n\n- 낡은 풀은 `pacelever refresh <풀>`.\n"),
     ("consult-old-builder-family-line", "consult", "## 1. 자문처 결정\n", "## 1. 자문처 결정\n\n`panewire resolve --role consult --builder-family <질문자 계열>`\n"),
 ]
 for label, doc, anchor, new in injections:

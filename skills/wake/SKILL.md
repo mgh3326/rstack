@@ -166,7 +166,7 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
 4. **Model and host are panewire's.** With `-m auto` panewire filters the quota catalog by the
    task's grade, role and tags, orders pools by hk `policy/quota-stop` and admits the first candidate
    that passes presence and the quota gate; unknown evidence fails closed. Do not pick a model
-   from a recommend list. `pacelever --json` shows quota; `pacelever refresh <pool>` re-measures
+   from a recommend list. `panewire quota status --json` shows quota; `panewire quota refresh <pool>` re-measures
    a stale pool. An explicit `-m` or `--host NAME` needs `--override-reason`, which is recorded.
 5. **Preview, then spawn** (`ops` spawn). Spawn only tickets with no unlanded blocker. Later tickets
    are spawned when their blockers merge, by whichever session is open (the design session if still
