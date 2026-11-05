@@ -60,7 +60,7 @@ mergewake reap 이 한다.
   은 `--override-reason '<사유>'` 가 필수이고 기록되며, quota gate 는 그대로 적용된다.
   escalation·consult_only rung 은 `--allow-escalation` 없이 자동 후보가 아니다. 추천 목록에서
   모델을 고르지 않는다.
-- 쿼타 확인은 `pacelever --json`(공유 쿼타는 handoffkeep 경유), 낡은 풀은 `pacelever refresh <풀>`.
+- 쿼타 확인은 `panewire quota status --json`(공유 쿼타는 handoffkeep 출처로 같은 출력에 나온다), 낡은 풀은 `panewire quota refresh <풀>`.
 - 🔴 **워커의 `-c` 는 그 PR 의 worktree 다**(먼저 만든다) — mergewake reap 은 pane cwd 가 그 PR
   worktree 인 것으로 워커를 찾는다. `-l` 은 잡 id 의 기본값이자 pane 이름이고 mergewake 는
   `<jobs>/<pane 이름>` 이 있어야 닫으므로 `--job` 을 라벨과 다르게 주지 않는다.
