@@ -558,6 +558,8 @@ contract. Do not widen scope to answer a finding.
   interactive chooser; nobody sees it and it blocks silently. On a decision emit
   `panewire emit --kind lane.event --lane <parent-lane> --type decision --event-id <job>-decision-<n> --text '[<job>] ESC | <question> | options: <A>/<B> | default: <A>'`
   then continue with the default only if it is safe; otherwise stop and wait for the reply.
+- Difficulty, size or time is never a blocker; ESC only for a concrete blocker with evidence or a
+  decision you cannot default.
 
 ## Done
 Write ~/work/herdr-inbox/jobs/<job>/report.md — outside the worktree, so it does not affect

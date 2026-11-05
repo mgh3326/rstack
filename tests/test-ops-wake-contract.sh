@@ -134,6 +134,7 @@ REQUIRED = [
     ("wake", "## Rules", "brief-no-chooser", r"Never ask a question in this pane — no confirmation prompt, no AskUserQuestion"),
     ("wake", "## Rules", "brief-esc-command", r"panewire emit --kind lane\.event --lane <parent-lane> --type decision"),
     ("wake", "## Rules", "brief-safe-default", r"continue with the default only if it is safe; otherwise stop and wait for the reply"),
+    ("wake", "## Rules", "brief-difficulty-not-blocker", r"Difficulty, size or time is never a blocker; ESC only for a concrete blocker with evidence or a decision you cannot default\."),
     ("ops", "## Escalate a decision", "ops-never-interactive", r"\*\*never opens an interactive question\*\* — no confirmation prompt and no chooser \(AskUserQuestion"),
     ("ops", "## Escalate a decision", "ops-esc-command", r"panewire emit --kind lane\.event --lane <parent-lane> --type decision"),
     ("ops", "## Escalate a decision", "ops-safe-default", r"If the default is safe .{0,80}continue with it .{0,60}Otherwise stop and wait for the reply"),
