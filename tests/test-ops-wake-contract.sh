@@ -135,6 +135,20 @@ REQUIRED = [
     ("wake", "## Rules", "brief-difficulty-not-blocker", r"Difficulty, size or time is never a blocker; ESC only for a concrete blocker with evidence or a decision you cannot default\."),
     ("ops", "## Escalate a decision", "ops-never-interactive", r"\*\*never opens an interactive question\*\* — no confirmation prompt and no chooser \(AskUserQuestion"),
     ("ops", "## Escalate a decision", "ops-esc-command", r"panewire emit --kind lane\.event --lane <parent-lane> --type decision"),
+    ("wake", "## Escalation and notifications", "esc-question-job-stays", r"\*\*ESC is a question; the job stays open\.\*\* The lane event records `job\.waiting_decision`"),
+    ("wake", "## Escalation and notifications", "esc-answer-resumes", r"The answer resumes the job when it arrives by `panewire prompt` or a relay to the pane's lane"),
+    ("wake", "## Escalation and notifications", "esc-unanswered-lost", r"unanswered decision becomes `lost` \(`decision_unanswered`\) after the decision timeout \(`PANEWIRE_DECISION_TIMEOUT_S`, six hours by default\)"),
+    ("wake", "## Escalation and notifications", "esc-only-ready-done-complete", r"Only READY or DONE, with a stable report, completes a job"),
+    ("wake", "## Escalation and notifications", "esc-give-up-escalate", r"To give up, run `panewire escalate <job> --question '<why>'`"),
+    ("wake", "## Escalation and notifications", "esc-cites-panewire-doc", r"`docs/r21-lane-event\.md` \(panewire@e1f9f39, lines 100-119\)"),
+    ("wake", "## The loop", "landing-exit-83-escalate", r"`83` escalated means `panewire escalate`; an ESC alone no longer ends the job"),
+    ("wake", "## Rules", "brief-esc-stay-in-pane", r"After an ESC, stay in the pane and wait for the answer; the job is not over\. To give up, run `panewire escalate <job> --question '<why>'`\."),
+    ("ops", "## Escalate a decision", "ops-esc-question-job-stays", r"\*\*An ESC is a question, and the job stays open\*\* \(`job\.waiting_decision`\)"),
+    ("ops", "## Escalate a decision", "ops-esc-answer-resumes", r"The answer resumes it when delivered by `panewire prompt` or a relay to the pane's lane"),
+    ("ops", "## Escalate a decision", "ops-esc-unanswered-lost", r"unanswered decision becomes `lost` after the decision timeout \(`PANEWIRE_DECISION_TIMEOUT_S`, six hours by default\)"),
+    ("ops", "## Escalate a decision", "ops-esc-only-ready-done", r"Only READY or DONE completes a job"),
+    ("ops", "## Escalate a decision", "ops-esc-give-up-escalate", r"Giving up is `panewire escalate <job> --question '<why>'`, not an ESC"),
+    ("ops", "## Escalate a decision", "ops-esc-cites-panewire-doc", r"`docs/r21-lane-event\.md` \(panewire@e1f9f39, lines 100-119\)"),
     ("ops", "## Escalate a decision", "ops-safe-default", r"If the default is safe .{0,80}continue with it .{0,60}Otherwise stop and wait for the reply"),
     # Standing worker rules folded from the retired fleet-tooling block (b953).
     ("wake", "## Rules", "b953-secrets", r"Never read, print or copy env, token or credential files, never print env vars"),
@@ -167,6 +181,8 @@ REQUIRED = [
 
 # Rows that must be absent: panewire resolve refuses --builder-family with --role consult.
 FORBIDDEN = [
+    ("wake", None, "esc-ends-job", r"(?i)ESC (?:ends|completes|closes) the (?:current )?job"),
+    ("ops", None, "ops-esc-ends-job", r"(?i)ESC (?:ends|completes|closes) the (?:current )?job"),
     ("consult", None, "consult-no-builder-family", r"--builder-family"),
 ]
 
@@ -282,6 +298,8 @@ injections = [
     ("ops-routes-to-relay-handoff", "ops", "## Routing table\n", "## Routing table\n\nSee relay-handoff §3.\n"),
     ("ops-emit-prefix-untyped", "ops", "## Invariants (all references)\n", "## Invariants (all references)\n\n- Notify with `panewire emit --kind lane.event --lane operator-desk`.\n"),
     ("wake-emit-untyped", "wake", "## Brief rules\n", "## Brief rules\n\n- Notify with `panewire emit --kind lane.event --lane <parent-lane> --event-id x --text '[x] note'`.\n"),
+    ("wake-esc-ends-job", "wake", "## Escalation and notifications\n", "## Escalation and notifications\n\n- ESC ends the job.\n"),
+    ("ops-esc-completes-job", "ops", "## Escalate a decision\n", "## Escalate a decision\n\nAn ESC completes the job.\n"),
     ("consult-old-builder-family-line", "consult", "## 1. 자문처 결정\n", "## 1. 자문처 결정\n\n`panewire resolve --role consult --builder-family <질문자 계열>`\n"),
 ]
 for label, doc, anchor, new in injections:
