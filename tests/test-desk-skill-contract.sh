@@ -20,7 +20,6 @@ from contract import delete_row, expect_red, flat, section  # noqa: E402
 
 PATHS = {
     "desk": "skills/desk/SKILL.md",
-    "reap": "skills/ops/references/reap.md",
     "spawn": "skills/ops/references/spawn.md",
     "decision": "skills/ops/references/decision-request.md",
     "ops": "skills/ops/SKILL.md",
@@ -61,10 +60,6 @@ REQUIRED = [
     ("desk", "## Facts", "brief-doc-put", r"handoffkeep doc put --key brief/<date>/<job> --kind note --file <brief>"),
     ("desk", "## Task record", "stage-waiting-on", r"Every open task has one stage and one waiting-on"),
     ("desk", "## Time", "clock-source", r"Clock times in records come only from `date` or the server"),
-    ("reap", "### 6-2.", "never-close-lead", r"마지막 보고의 `next unit:` 줄이 단위를 가리키는 리드는 닫지 않는다"),
-    ("reap", "### 6-2.", "none-closes", r"닫을 수 있는 값은 `next unit: none` 뿐이다"),
-    ("reap", "### 6-2.", "lead-report-line", r"리드 보고는 이 줄을 반드시 싣는다"),
-    ("reap", "### 6-2.", "tools-do-not-read", r"`panewire reap` 과 mergewake 데몬은 이 줄을 읽지 않는다"),
     ("spawn", "### 4-3.", "nudge-once-terminal", r"첫 턴 뒤 보고 없이 멈추면 한 번만 재촉한다\. 그 뒤에도 보고 없이 멈추면 그 attempt 는 terminal"),
     ("decision", "## 데스크 결정 루프", "one-record", r"질문 하나에 기록 하나"),
     ("decision", "## 데스크 결정 루프", "reuse", r"다시 물을 때는 같은 요청을 쓴다"),

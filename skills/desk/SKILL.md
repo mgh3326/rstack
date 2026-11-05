@@ -100,7 +100,7 @@ else it owed waited.
 On `SPAWN_FAILED`, a non-zero exit, or no landing evidence (`ops` spawn §4-2):
 
 1. Read the exit code, stage, reason and saved pane screen in the job directory once.
-2. Make **one fix attempt on the same task**, and only for a cause you can name.
+2. Make **one fix attempt on the same task**, and only for a cause you can name. The design session does not: it makes no fix attempt and ESCs to the desk (`wake` §On spawn failure).
 3. **If it still fails, file a task against the tool and stop.** Put the evidence paths on that task.
    Comment on the blocked task: `next:` to resume it, `trigger: hk <tool task> merged`.
 
@@ -152,8 +152,7 @@ not record was invisible to them.
 
 ## Task record
 
-**Every open task has one stage and one waiting-on.** Until hk has the fields (hk 2771), they live in
-the task's latest `next:` comment. Read the table top-down; the first match wins.
+**Every open task has one stage and one waiting-on.** They live in the task's latest `next:` comment. Read the table top-down; the first match wins.
 
 | Stage | Waiting on | The comment names |
 |---|---|---|
@@ -199,6 +198,5 @@ root-cause task.
 
 | When | Read |
 |---|---|
-| Closing a lead pane | `ops` reap §6-2: its last report's `next unit:` line decides |
 | A worker stopped after its first turn | `ops` spawn §4-3 |
 | Choosing a harness for a lead or implementer | `robin-mode` roles.md |
