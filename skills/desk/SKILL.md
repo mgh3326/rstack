@@ -190,7 +190,7 @@ Keep one row per containment in the fixed hk doc key `ops/workaround-ledger`:
 ```
 
 Run `bin/containment-check` before applying and before releasing, piping the body from
-`handoffkeep doc get ops/workaround-ledger` into it. Correct any reported rows first.
+`handoffkeep doc get ops/workaround-ledger` into it. Run the pipeline under `set -o pipefail`. Correct any reported rows first.
 
 **Prevents:** a model-profile exclusion from a grade on 2026-11-05 had no decision record or
 root-cause task.
