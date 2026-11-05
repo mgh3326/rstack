@@ -1,0 +1,67 @@
+#!/usr/bin/env python3
+"""Print the Mergewake trailer block for a PR opened without a worker job."""
+
+import argparse
+import json
+import os
+import re
+import subprocess
+import sys
+
+MARKER = re.compile(r'\(grade ([A-Z]\+?), (T[0-3])\)')
+
+
+def fail(message):
+    print(f'pr-trailers: {message}', file=sys.stderr)
+    sys.exit(2)
+
+
+def task_title(task):
+    command = os.environ.get('HANDOFFKEEP') or 'handoffkeep'
+    try:
+        result = subprocess.run([command, 'tasks', 'show', task], capture_output=True, text=True)
+    except OSError as error:
+        fail(f'cannot run {command}: {error.strerror}')
+    if result.returncode != 0:
+        fail(f'{command} tasks show {task} failed (rc {result.returncode})')
+    try:
+        title = json.loads(result.stdout).get('title')
+    except (ValueError, AttributeError):
+        fail(f'{command} tasks show {task} did not print a JSON object')
+    if not isinstance(title, str):
+        fail(f'task {task} has no title')
+    return title
+
+
+def main():
+    parser = argparse.ArgumentParser(description='Print the Mergewake trailer block for a PR opened without a worker job.')
+    parser.add_argument('--task', required=True, help='hk task id')
+    parser.add_argument('--family', required=True, help='author model family')
+    parser.add_argument('--profile', required=True, help='launch profile')
+    parser.add_argument('--lane', help='notify lane (default: env PANEWIRE_LANE)')
+    args = parser.parse_args()
+
+    markers = MARKER.findall(task_title(args.task))
+    if not markers:
+        fail(f'task {args.task} title has no "(grade <G>, <Tn>)" marker')
+    grade, tier = markers[-1]
+    lane = args.lane if args.lane is not None else os.environ.get('PANEWIRE_LANE', '')
+
+    lines = [
+        ('Mergewake-Author-Family', args.family),
+        ('Mergewake-Author-Profile', args.profile),
+        ('Mergewake-Task', args.task),
+        ('Mergewake-Grade', grade),
+        ('Mergewake-Tier', tier),
+        ('Mergewake-Notify-Lane', lane),
+    ]
+    for key, value in lines:
+        if not value.strip():
+            fail(f'{key} is empty' + (' (pass --lane or set PANEWIRE_LANE)' if key.endswith('Lane') else ''))
+        if '\n' in value or '\r' in value:
+            fail(f'{key} contains a newline')
+    print('\n'.join(f'{key}: {value}' for key, value in lines))
+
+
+if __name__ == '__main__':
+    main()
