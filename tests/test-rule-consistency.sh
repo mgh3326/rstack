@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Rules that drifted between skill files stay stated once and agree:
-#   1. merge authority: every "no session merges" names wake §Direct merge;
+#   1. merge authority: every "no session merges" names the lead under `lead` §Ledger;
 #   2. a stuck or failed spawn is never respawned automatically (ops spawn);
 #   3. the tracker is hk, never Linear (relay packet);
 #   4. emit delivery and the non-claude exception live only in relay.md §3-1;
@@ -34,9 +34,9 @@ docs = {name: path.read_text(encoding="utf-8") for name, path in PATHS.items()}
 # (doc, section heading or None, row name, pattern on the flattened scope)
 REQUIRED = [
     ("robin", "## Fleet adapter for vendored pstack", "merge-exception",
-     r"no session merges, except the design session under `wake` §Direct merge"),
+     r"no session merges, except a lead under `lead` §Ledger"),
     ("deploy", "## 발주자 측 — operator-desk", "merge-exception",
-     r"디자인 세션의 머지는 `wake` §Direct merge\(임시 완화\)뿐이다"),
+     r"디자인 세션은 머지하지 않는다\. 세션의 직접 머지는 lead 뿐이다\(`lead` §Ledger\)"),
     ("spawn", "## 4. 기동·주입·감시", "stuck-no-respawn",
      r"stuck 으로 판정하고 스폰 실패로 다룬다 — 자동 재스폰하지 않는다"),
     ("relay", "## 1. 핸드오프 프롬프트 5요소", "hk-task", r"hk task 연결"),

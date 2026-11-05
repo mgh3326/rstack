@@ -4,20 +4,19 @@ A role is what a session is asked to do. Pick it from the harness's capabilities
 
 | Capability | Roles it can take |
 |---|---|
-| In-session subagents | **Lead**: takes a goal without a written contract, compares designs, slices tickets, writes briefs, spawns and owns implementers, escalates policy choices. **Design**: operator-run design session, same model rules as lead. **Consult**: design and strategy advice. **Desk**: coordination with the operator, deploy orders, decisions (`desk`). |
+| In-session subagents | **Lead**: the session the operator opens directly, following the `lead` skill. Takes a goal without a written contract, writes the closed contract for its in-session subagents, uses in-session subagents only, and merges directly under `lead` §Ledger. **Design**: operator-run design session, same model rules as lead. **Consult**: design and strategy advice. **Desk**: coordination with the operator, deploy orders, decisions (`desk`). |
 | No subagents, strong coder | **Implementer**: builds one PR from a written contract (Current, Desired, Key interfaces, Acceptance), verifies it, and fixes its own review findings until merge. **Reviewer**: one mergewake review pass. |
 | One-turn (stops after its first turn) | **Explorer** and **Consult** only, whatever else it can do. |
 
 ## Rules
 
-- **The closed contract decides the line.** A design session (with the operator) or a lead (delegated, without the operator) writes the closed contract: Current, Desired, Key interfaces and Acceptance.
+- **The closed contract decides the line.** A design session (with the operator) or a lead (opened by the operator, following the `lead` skill) writes the closed contract: Current, Desired, Key interfaces and Acceptance.
 - **Implementer:** builds exactly one PR from a written contract, verifies it (in-session subagents allowed), and fixes its own review findings until merge.
-- **Lead:** takes a goal without a contract. It compares designs, slices tickets, writes briefs, spawns and owns implementers, and escalates policy choices.
+- **Lead:** the session the operator opens directly, following the `lead` skill. It takes a goal without a contract, writes the closed contract for its in-session subagents, uses in-session subagents only, and merges directly under `lead` §Ledger.
 - **A hard single PR is an implementer with a higher grade, not a lead.** There is no separate fixer role: the PR's author fixes its findings.
 - **Vocabulary:** seat roles are lead, implementer, reviewer, consult and design. Explorer, verifier and judge are resolve-only: they name an in-session subagent's `panewire resolve` role (below), never a spawned seat. No reader, tester or delegate role exists.
 - **Verifier:** runs the acceptance list against the built artifact and answers PASS / PASS+NOTES / FAIL, with no fixing and no free bug hunting.
 - **Leads and implementers must run on harnesses that keep going across turns**, until READY or ESC, with nobody pressing continue. **One-turn profiles may take explorer and consult roles only.** On 2026-11-03 a one-turn profile routed to implementation stopped after its first turn on every attempt. A worker that stops this way goes through `ops` spawn §4-3.
-- A lead's every report carries a `next unit:` line (`ops` reap §6-2). A lead whose last report names a unit is not closed.
 - A lead delegates and spawns under `robin-mode` §Subagents versus spawned workers.
 - An implementer gets a brief whose design is already decided (data shape, files, acceptance). If the brief needs a design choice, it escalates instead of guessing.
 - Whether a review pass counts as independent: `fleet-review` §Independence.

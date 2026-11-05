@@ -80,7 +80,7 @@ The brief, host safety, `wake` authority and `fleet-review` govern fleet work. V
 2. **Unattended sessions:** "going to bed" grants no new authority. Stop for an unsafe decision.
 3. **Subagents:** follow §Subagents versus spawned workers. Missing `pstack:comment-sicko` is not an available agent: for `no-comments`, review inline and report that substitution. Never launch a missing upstream executable.
 4. **Models:** ignore all pstack Models sections, model slugs, `pstack-models.md` and `/setup-pstack`. Use `panewire resolve` and `roles.md`.
-5. **Landing:** mergewake merges after its gate; no session merges, except the design session under `wake` §Direct merge (temporary relief). No babysit, swarm or arena routing; robin-mode is not babysit/swarm/arena.
+5. **Landing:** mergewake merges after its gate; no session merges, except a lead under `lead` §Ledger. No babysit, swarm or arena routing; robin-mode is not babysit/swarm/arena.
 6. **Waves:** a wave is a series of independently green PRs, never stacked PRs. Rebase only before the first push; thereafter merge the base, never force-push. Candidate worktrees belong in scratch, outside canonical checkouts and skill discovery roots.
 7. **Review ownership:** the author handles its own findings. `fleet-review` decides scope, severity, disposition and independence; `interrogate` and `blast-radius` supply analysis without replacing the review gate.
 8. **Waits:** no polling, watchers or autonomous loops from pstack. Use `ops` waiting procedures.
