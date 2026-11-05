@@ -117,7 +117,7 @@ def check(d):
 
 
 check(docs)
-print(f"PASS lead-skill-contract rows={len(REQUIRED)}")
+print(f"PASS rows={len(REQUIRED)}")
 
 # One deletion mutant per required row: remove the matched text inside that row's own section.
 count = 0
