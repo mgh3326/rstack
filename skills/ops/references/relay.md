@@ -109,7 +109,7 @@ panewire find <이름|라벨> --pane-only  # 스크립트용
 ### 3-1. 완료 통지·pane kind 분기 정본
 
 🔴 **방향 규칙 (2026-11-02 사고):** 이 절의 직접주입·제출 검증은 **지시를 보내는 쪽**(부모 레인·desk → 워커)의 의무다.
-워커·좌석이 **operator-desk 또는 claude 부모 레인**으로 올리는 READY·ESC·보고는 **`panewire emit --kind lane.event` 만** 쓴다.
+워커·좌석이 **operator-desk 또는 claude 부모 레인**으로 올리는 READY·ESC·보고는 **`panewire emit --kind lane.event --type <type>` 만** 쓴다.
 그 pane 에 `herdr agent prompt`·`pane send-text`·`send-keys` 로 쓰지 않는다 — 운영자 입력창에 꽂혀
 제출되지 않은 채 남고, 허브의 보류·묶음 전달을 우회하며, 운영자가 치던 글과 섞인다.
 수신 pane 이 안 보이면(다른 호스트, `panewire find` 미검출) `emit` rc 0 으로 충분하다 — 폴백 채널을 만들거나

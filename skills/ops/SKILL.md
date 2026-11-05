@@ -21,7 +21,7 @@ anything here. Unset or missing is normal — the abstract rules below apply alo
   This check belongs to the **sender of instructions** (a parent lane or the desk
   injecting into a worker). It never applies upward.
 - **Never inject into operator-desk's pane.** READY, ESC and every other notice to
-  operator-desk go only through `panewire emit --kind lane.event --lane operator-desk`;
+  operator-desk go only through `panewire emit --kind lane.event --lane operator-desk --type <type>`;
   the desk is a claude pane, the hub records delivery and holds or batches it while
   the desk is busy. `herdr agent prompt`, `herdr pane send-text` or `send-keys` into
   the desk pane land in the operator's input box, bypass hold/batching and can mix
