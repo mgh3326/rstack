@@ -14,7 +14,7 @@
 #   3. mutants of both go RED through an assertion.
 #
 # With VERDICT_DOC=<path> it lints that verdict file instead and exits 1 when
-# it would be RED — the check a repo session runs before using a report.
+# it would be RED — the check a design session runs before using a report.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

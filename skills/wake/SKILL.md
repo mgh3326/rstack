@@ -6,8 +6,7 @@ description: Run repo work by the wake method from a disposable design session �
 # wake — design-session PR loop
 
 A design session owns one repository's work with the operator directly. It is disposable: one per
-repo, in a herdr workspace named `design`. (`repo session` in older text, including `ops`, means this
-session.) It decides **what** a task is; tools compute **who** runs it and **where**.
+repo, in a herdr workspace named `design`. It decides **what** a task is; tools compute **who** runs it and **where**.
 
 The path is: settle, one hk task per PR, brief, spawn, prove the landing. The worker opens the PR.
 mergewake reviews it (`fleet-review`) and merges it. CI runs after the merge and reverts what breaks.
@@ -129,8 +128,8 @@ The session is thrown away after it spawns, so whatever it did not write down is
 
 - **One ticket is one PR and one hk task** (`robin-mode` §Work boundary), small enough for one fresh session.
 - **A tracer bullet:** a narrow, complete path through every layer that can be verified alone.
-- **Blocking edges only where one ticket truly gates another.** Until hk has sub-tasks (hk 2770), record
-  an edge as a comment on the blocker: `blocks: <task ids>`.
+- **Blocking edges only where one ticket truly gates another.** Record an edge with
+  `handoffkeep tasks relate <blocker-id> --kind blocks --other <blocked-id>`.
 - **Every ticket carries** Current, Desired, Key interfaces, Acceptance, Out of scope and pinned Evidence
   (`<repo>@<sha> <path>:<line>`), because an unpinned path goes stale while a ticket waits. The first
   five map onto §Worker brief.
@@ -152,7 +151,6 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    ```
    Expected duration (2h small fix, 6h feature, 1d large) is what hk `policy/quota-stop` reads
    when a pane stops on quota.
-   Until the hk deploy ships `--expected`, record `Expected: <duration>` as a task comment.
 2. **Worktree** from fresh `origin/main`, never in the canonical checkout:
    ```sh
    git -C ~/work/<repo> fetch
@@ -226,6 +224,7 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
 
 `failed`, `SPAWN_FAILED`, a non-zero refusal, or a status still not terminal past the deadline:
 
+- **The design session makes no fix attempt and ESCs.** The desk makes the one fix attempt (`desk` §Spawn failure).
 - **Do not retry on the same task.** Replaying the same command and saved request after a lost response
   is not a retry; it reuses the reservation (`ops` spawn). On `retryable` the same replay starts a new
   attempt, so it is a retry: do not run it.
@@ -276,7 +275,9 @@ All must hold for head `$H`:
 owns the mechanics; today's actors are below). Nobody waits for CI before a merge; never replay CI on a host as a
 substitute.
 
-**Until the hk 2788 slice 5 cutover ships,** mergewake's own code still holds on the policy's
+*Temporary (operator-desk 2026-11-03, hk 2788): ends when the hk 2788 slice 5 cutover ships (hk 2788).*
+
+mergewake's own code still holds on the policy's
 `required_checks` (`mergewake@969c151 internal/pipeline/gate.go:87`), and merging needs its daemon
 acting rather than in shadow. That is the tool's remaining behaviour, not a step for a session here. A PR
 it holds or does not merge in the meantime is the desk's, never the design session's. A red main is not
@@ -473,9 +474,9 @@ contract. Do not widen scope to answer a finding.
 - The PR body (required) ends with these trailers, each on its own line, exactly once;
   repeating them in commits is optional. mergewake reads the PR body first and then only the
   head commit (mergewake `prTask`, `internal/pipeline/deliver.go`), so a merge commit on the
-  head is still covered by the PR body. If the spawn preamble has a
-  `Mergewake trailers (paste at the end of the PR body):` block, paste its lines verbatim and add by
-  hand only a line it omits; otherwise fill in the lines below.
+  head is still covered by the PR body. The spawn preamble's
+  `Mergewake trailers (paste at the end of the PR body):` block is the source: paste its lines verbatim and add by
+  hand only a line it omits. The template below names every trailer.
   Mergewake-Author-Family: <anthropic|openai|google|…>
   Mergewake-Author-Profile: <launch profile>
   Mergewake-Task: <id>

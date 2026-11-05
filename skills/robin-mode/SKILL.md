@@ -24,6 +24,12 @@ Each rule is stated once, in the home below; other documents point to it. Inside
 
 hk:doc `policy/index` is the index of rule homes across the fleet, including tools and repos.
 
+**A temporary rule carries one marker line**, directly above the rule it limits, in this format:
+
+*Temporary (<who> <date>, hk <id>): ends when <condition> (<hk or issue id>).*
+
+A rule with no marker is permanent. When the condition is met, delete the rule and its marker in the same change.
+
 ## Openers (every task)
 
 1. **Restate the goal** in one or two sentences: what the operator wants and why, and the smallest change that meets it. Put the same sentence at the top of every brief and PR body. If the evidence rules out the requested change, show it and stop (ESC).

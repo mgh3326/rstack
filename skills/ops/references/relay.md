@@ -158,6 +158,7 @@ v1 의 요지: **완료를 아는 쪽(답변자·워커)이 요청자 레인으�
   도착을 확인한다. 위로 올리는 통지(답변자·워커 → 요청자·부모)는 위 방향 규칙대로 확인하지 않는다.
 - 착지 확인은 visible 큐 표시와 `recent-unwrapped` 를 둘 다 본다. 큐 대기 중 주입은
   `recent-unwrapped` 에 아직 안 보이므로 한쪽만 보면 큐잉을 미착지로 오판한다.
+- *Temporary (desk 2026-09-14, hk 3132): ends when panewire #252 is fixed and the four-pane re-measurement after panewire #264 is all ✅ (panewire #252/#264).*
 - 등록은 필요조건이지 충분조건이 아니다. 2026-09-14 실측에서 hub 등록이 완료되고 `emit` 이 rc=0 을 반환했는데도 비-claude pane(당시 grok·devin·codex)에서 `lane.event` 가 도착하지 않았다 (관측 가능한 부작용을 요구하는 프로브가 120~150초 동안 실행되지 않았고, 그동안 그 pane 은 정상 작업 중이었다). claude 계열 pane 에서는 정상 배달됐다. 원인 수리 전까지, 통지가 오지 않는 것이 곧 답변이 없다는 뜻은 아니다.
 - `#252 가 수리되면 이 예외를 삭제한다.` 실제 삭제는 `#264` 수리 후 4종 재측정이 전부 ✅임을
   확인한 뒤에만 한다. 이 예외에는 비-claude 수신자용 직접 주입 경로가 포함된다.
