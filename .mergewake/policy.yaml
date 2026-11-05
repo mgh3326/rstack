@@ -2,6 +2,8 @@ version: 1
 enabled: true
 required_checks:
   - 'ci-ok'
+watch_checks:
+  - 'post-ok'
 blocking:
   - paths: ['install.sh', 'install/**', 'scripts/install-skills.py', 'skills/ops/references/deploy*.md']
     reason: Installation and deploy procedures can replace running tools before a revert.

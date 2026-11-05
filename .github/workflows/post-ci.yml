@@ -1,0 +1,49 @@
+name: Post CI
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  contracts:
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.PANEWIRE_POST_LINUX_RUNNER) || 'ubuntu-latest' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install tests and moved contracts
+        run: |
+          python3 tests/test-install.py
+          python3 tests/test-adapter.py
+          python3 tests/test-skill-triggers.py
+          python3 tests/test-fleet-install-review.py
+          python3 tests/test-fleet-install-concurrent.py
+          for test in tests/test-*.sh; do bash "$test"; done
+  contracts-macos:
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.PANEWIRE_POST_MAC_RUNNER) || 'macos-latest' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install tests and moved contracts
+        run: |
+          python3 tests/test-install.py
+          python3 tests/test-adapter.py
+          python3 tests/test-skill-triggers.py
+          python3 tests/test-fleet-install-review.py
+          python3 tests/test-fleet-install-concurrent.py
+          for test in tests/test-*.sh; do bash "$test"; done
+  post-ok:
+    if: ${{ github.ref == 'refs/heads/main' && always() && (contains(needs.*.result, 'failure') || !contains(needs.*.result, 'cancelled')) }}
+    needs: [contracts, contracts-macos]
+    runs-on: ubuntu-latest
+    steps:
+      - run: test '${{ needs.contracts.result }}' = success && test '${{ needs.contracts-macos.result }}' = success

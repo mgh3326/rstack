@@ -52,6 +52,6 @@ NOTICE.md, NOTICE-skills.md and LICENSE* there. It is copied from a pinned commi
 never auto-updated. Excluded skills remain readable as upstream reference files.
 
 Run the changed installer checks with `python3 tests/test-install.py` and
-`python3 tests/test-adapter.py`. CI runs the moved contracts and retained tool tests
-on Linux and macOS. The macOS job is advisory; the required `ci-ok` check
-aggregates the Linux job.
+`python3 tests/test-adapter.py`. On pull requests, CI runs the moved contracts and retained tool tests on hosted
+Linux, with `ci-ok` gating merge. After pushes to main, the full suite runs on
+Linux and macOS, with `post-ok` watched for failures.
