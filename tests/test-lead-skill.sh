@@ -71,8 +71,10 @@ REQUIRED = [
     ("lead", "## Ledger", "ledger-regression", r"\(b\) a regression test that is red on the pre-fix code and green on `\$H`"),
     ("lead", "## Ledger", "ledger-regression-na", r"or `regression: n/a \(<reason>\)` for a docs/config change with no behaviour"),
     ("lead", "## Ledger", "ledger-verifier-verdict", r"\(c\) the verifier subagent's verdict on `\$H`"),
-    ("lead", "## Ledger", "base-freshness", r"check base freshness, `git merge-base --is-ancestor origin/<base> \"\$H\"`"),
+    ("lead", "## Ledger", "base-freshness", r"`git fetch origin <base>` and check base freshness, `git merge-base --is-ancestor origin/<base> \"\$H\"`"),
     ("lead", "## Ledger", "leak-scan", r"run the public-repo leak scan on the diff \(`wake` §Merge gate\)"),
+    ("lead", "## Ledger", "verifier-runs-acceptance", r"reached by running the brief's closed acceptance list on `\$H`"),
+    ("lead", "## Ledger", "critical-high-never-deferred", r"\*\*A finding of critical or high severity is never deferred: it is fixed, or dismissed with evidence, and while one is unresolved there is no merge\.\*\*"),
     ("lead", "## Ledger", "merge-command", r"`gh pr merge <n> --squash --match-head-commit \"\$H\"`"),
     ("lead", "## Ledger", "record-line", r"`direct-merge pr=<n> head=<H> evidence=<…>`"),
     # PR trailers.
@@ -81,6 +83,7 @@ REQUIRED = [
     # After the merge.
     ("lead", "## After the merge", "watch-handles", r"\*\*mergewake watch handles post-merge CI, bisect and revert\.\*\*"),
     ("lead", "## After the merge", "no-ci-wait", r"Do not wait for CI before merging"),
+    ("lead", "## After the merge", "watch-covers-repo-before-merge", r"\*\*Before a direct merge, confirm that `mergewake watch` covers the repository\.\*\*"),
     ("lead", "## After the merge", "revert-merged-by-desk", r"A revert PR that `watch` opens is merged by the desk, not by the lead"),
     ("lead", "## After the merge", "close-task", r"Close the hk task after the merge"),
     # Briefs to subagents.

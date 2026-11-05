@@ -63,15 +63,15 @@ Before any direct merge, record all three on the same head SHA `$H`:
 
 - (a) the tests for the changed packages pass on `$H`;
 - (b) a regression test that is red on the pre-fix code and green on `$H`, or `regression: n/a (<reason>)` for a docs/config change with no behaviour;
-- (c) the verifier subagent's verdict on `$H` (PASS, PASS+NOTES or FAIL, with `same_family`).
+- (c) the verifier subagent's verdict on `$H` (PASS, PASS+NOTES or FAIL, with `same_family`), reached by running the brief's closed acceptance list on `$H`.
 
-Then check base freshness, `git merge-base --is-ancestor origin/<base> "$H"`, and run the public-repo leak scan on the diff (`wake` §Merge gate). A new head voids the ledger; repeat it.
+Then `git fetch origin <base>` and check base freshness, `git merge-base --is-ancestor origin/<base> "$H"`, and run the public-repo leak scan on the diff (`wake` §Merge gate). A new head voids the ledger; repeat it.
 
 Merge pinned to the head: `gh pr merge <n> --squash --match-head-commit "$H"`. Record on the hk task:
 
 `direct-merge pr=<n> head=<H> evidence=<…>`
 
-where `<…>` quotes the three ledger results. Every mergewake or reviewer finding on the PR is fixed, dismissed with a reason or deferred to a task before the merge (`fleet-review` §Triage rubric). A FAIL verdict, a missing row or a stale head means no merge.
+where `<…>` quotes the three ledger results. Every mergewake or reviewer finding on the PR is fixed, dismissed with a reason or deferred to a task before the merge (`fleet-review` §Triage rubric). **A finding of critical or high severity is never deferred: it is fixed, or dismissed with evidence, and while one is unresolved there is no merge.** A FAIL verdict, a missing row or a stale head also means no merge.
 
 ## PR trailers
 
@@ -80,6 +80,7 @@ The PR body ends with the Mergewake trailers exactly as a worker's does (`wake` 
 ## After the merge
 
 - **mergewake watch handles post-merge CI, bisect and revert.** Do not wait for CI before merging (`wake` §Merge gate).
+- **Before a direct merge, confirm that `mergewake watch` covers the repository.** If `watch` is not running, nothing opens the revert and main stays red (`wake` §Merge gate); if you cannot confirm it, escalate to operator-desk (`ops` decision-request) instead of merging.
 - A revert PR that `watch` opens is merged by the desk, not by the lead.
 - Close the hk task after the merge, with the `direct-merge` line already on it.
 
