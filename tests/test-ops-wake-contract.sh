@@ -158,6 +158,7 @@ REQUIRED = [
     ("wake", "## Brief rules", "prod-e2e", r"\*\*Production e2e only with the operator present\.\*\*"),
     # ops invariants.
     ("ops", "## Invariants (all references)", "delivery-claim", r"\*\*A delivery claim is not delivery evidence\.\*\*"),
+    ("ops", "## Invariants (all references)", "quota-is-panewire-quota", r"Quota is `panewire quota`; review and post-merge cleanup are `mergewake`"),
     ("ops", "## Invariants (all references)", "one-launcher", r"\*\*One launcher per task\.\*\*"),
     ("ops", "## Invariants (all references)", "emit-carries-type", r"\*\*Every `panewire emit` between sessions carries `--type`\.\*\* A notice, receipt or handoff note that needs no reply is `info` or `ack`.{0,80}Only what needs action now is `decision`, `blocked` or `order`"),
     ("ops", "## Invariants (all references)", "no-polling", r"\*\*No polling loops\.\*\*"),
