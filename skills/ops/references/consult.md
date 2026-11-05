@@ -37,7 +37,7 @@ pane인 기본 경로에서는 답변자가 답변 파일 작성 직후 아래 �
 패킷에는 `relay.md` §3-1 정본에 따른 비-claude 대체 통지도 함께 포함한다:
 
 ```bash
-panewire emit --kind lane.event --lane <요청자 레인> --event-id <고유id> --text '[consult-done] <1줄 요지> | <답변 파일 경로>'
+panewire emit --kind lane.event --lane <요청자 레인> --type ready --event-id <고유id> --text '[consult-done] <1줄 요지> | <답변 파일 경로>'
 ```
 비-claude 수신자용 통지 경로의 정본은 **`relay.md` §3-1**이며, 질문 패킷에는 아래
 직접 주입을 함께 포함한다:

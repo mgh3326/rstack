@@ -17,7 +17,7 @@
 - 답변자는 답변 파일 작성 직후, 수신자가 claude pane인 기본 경로에서 아래 통지를 반드시 실행한다:
 
   ```bash
-  panewire emit --kind lane.event --lane <요청자 레인> --event-id <고유id> --text '[consult-done] <1줄 요지> | <답변 파일 경로>'
+  panewire emit --kind lane.event --lane <요청자 레인> --type ready --event-id <고유id> --text '[consult-done] <1줄 요지> | <답변 파일 경로>'
   ```
 - pane kind별 통지 경로의 정본은 **`relay.md` §3-1**이다. 질문 패킷에는 그 정본에 따른
   claude 기본 통지와 비-claude 대체 통지를 함께 적는다:

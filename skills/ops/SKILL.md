@@ -31,6 +31,10 @@ anything here. Unset or missing is normal — the abstract rules below apply alo
   A **non-claude parent** (codex, grok, devin) does not receive `lane.event`; for that
   parent only, keep the documented escalation route (§Escalate a decision: emit, then
   `herdr agent prompt` to the parent pane and confirm it landed).
+- **Every `panewire emit` between sessions carries `--type`.** A notice, receipt or handoff note
+  that needs no reply is `info` or `ack` (the hub files it in the inbox). Only what needs action
+  now is `decision`, `blocked` or `order` (interrupt). A completion the receiver is waiting on
+  (a worker's or seat's READY, a `[consult-done]`) is `--type ready`. Operator 2026-11-05.
 - **A worker's self-report is not evidence.** Compare it with the artifact itself and
   `git ls-remote` before acting on it.
 - **No polling loops.** Wait for the pushed event or one bounded blocking wait

@@ -160,6 +160,7 @@ REQUIRED = [
     # ops invariants.
     ("ops", "## Invariants (all references)", "delivery-claim", r"\*\*A delivery claim is not delivery evidence\.\*\*"),
     ("ops", "## Invariants (all references)", "one-launcher", r"\*\*One launcher per task\.\*\*"),
+    ("ops", "## Invariants (all references)", "emit-carries-type", r"\*\*Every `panewire emit` between sessions carries `--type`\.\*\* A notice, receipt or handoff note that needs no reply is `info` or `ack`.{0,80}Only what needs action now is `decision`, `blocked` or `order`"),
     ("ops", "## Invariants (all references)", "no-polling", r"\*\*No polling loops\.\*\*"),
     # consult §1 (hk 2898): resolve has no --builder-family; the questioner checks the family by hand.
     ("consult", "## 1. 자문처 결정", "consult-resolve-command", r"`panewire resolve --role consult`"),
@@ -243,8 +244,20 @@ def check_rows(d: dict) -> None:
         assert not re.search(pattern, scope), f"{doc}: forbidden row '{row}' present"
 
 
+# Operator 2026-11-05: every emit command line names its --type (inbox vs interrupt).
+EMIT_CMD = re.compile(r"panewire emit --kind [^\n`']*--text")
+
+
+def check_emit_types(texts: dict) -> None:
+    for name, text in texts.items():
+        for n, line in enumerate(text.splitlines(), 1):
+            if EMIT_CMD.search(line) or ("panewire emit --kind" in line and "…" in line):
+                assert "--type " in line, f"{name}:{n}: panewire emit without --type: {line.strip()}"
+
+
 def check(d: dict, ref_texts: dict) -> None:
     check_links(d["ops"], ref_texts)
+    check_emit_types({**d, **ref_texts})
     for name in ("wake", "ops"):
         check_self_contained(name, d[name])
     check_refs(ref_texts)
@@ -275,6 +288,7 @@ injections = [
     ("wake-routes-to-director", "wake", "## Authority\n", "## Authority\n\nThe director merges.\n"),
     ("wake-builder-skill", "wake", "## Delegated seat\n", "## Delegated seat\n\nRead the builder skill first.\n"),
     ("ops-routes-to-relay-handoff", "ops", "## Routing table\n", "## Routing table\n\nSee relay-handoff §3.\n"),
+    ("wake-emit-untyped", "wake", "## Brief rules\n", "## Brief rules\n\n- Notify with `panewire emit --kind lane.event --lane <parent-lane> --event-id x --text '[x] note'`.\n"),
     ("consult-old-builder-family-line", "consult", "## 1. 자문처 결정\n", "## 1. 자문처 결정\n\n`panewire resolve --role consult --builder-family <질문자 계열>`\n"),
 ]
 for label, doc, anchor, new in injections:
