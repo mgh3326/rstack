@@ -73,9 +73,25 @@ Merge pinned to the head: `gh pr merge <n> --squash --match-head-commit "$H"`. R
 
 where `<…>` quotes the three ledger results. Every mergewake or reviewer finding on the PR is fixed, dismissed with a reason or deferred to a task before the merge (`fleet-review` §Triage rubric). **A finding of critical or high severity is never deferred: it is fixed, or dismissed with evidence, and while one is unresolved there is no merge.** A FAIL verdict, a missing row or a stale head also means no merge.
 
+## Merge overdue
+
+When a READY PR waits too long and nothing blocks it, mergewake sends one `merge_overdue` notice to the lane `lead`. Policy: hk:doc `policy/merge-sla-lead-escalation`; read it with `handoffkeep doc get` when a rule here is in doubt, and the doc wins.
+
+- **The lead session's lane is `lead`.** One lead session runs at a time; the desk registers the route when the operator opens it.
+- **The notice reads** `[mergewake] MERGE_OVERDUE <repo>#<n> head=<sha7> | <condition> after <age> | gate: … | checks: … | review: …`. The condition is `review_not_started`, `not_landed` or `ready_too_long`.
+
+On a notice, in this order:
+
+1. **Read the PR's current head.** Drop the notice if it differs from `head=` (a new head starts new clocks) or the PR is merged or closed.
+2. **Check what mergewake does not:** the hk task has no hold, the PR is not T3 and touches no `deploy_approval` path, no critical or high finding is unresolved, and no check has failed.
+3. **Run §Ledger on that head and merge by it, or record on the hk task why you did not.**
+4. **Add `merge_overdue=<condition>` to the `direct-merge` line** on the hk task.
+
+mergewake stops on its own once the PR is merged; there is no other marker. **A notice you decline is answered on the hk task, not by a merge.**
+
 ## PR trailers
 
-The PR body ends with the Mergewake trailers exactly as a worker's does (`wake` §Worker brief Rules): paste the spawn preamble's block when there is one, otherwise `Mergewake-Author-Family`, `Mergewake-Author-Profile`, `Mergewake-Task`, `Mergewake-Grade` and `Mergewake-Tier`. A lead PR also carries `Mergewake-Notify-Lane: <lead lane>` (`wake` §Tier, a PR opened without a worker job), so the post-merge notice reaches the lead.
+The PR body ends with the Mergewake trailers exactly as a worker's does (`wake` §Worker brief Rules): paste the spawn preamble's block when there is one, otherwise `Mergewake-Author-Family`, `Mergewake-Author-Profile`, `Mergewake-Task`, `Mergewake-Grade` and `Mergewake-Tier`. A lead PR also carries `Mergewake-Notify-Lane: lead` (`wake` §Tier, a PR opened without a worker job), so the post-merge notice reaches the lead.
 
 ## After the merge
 
