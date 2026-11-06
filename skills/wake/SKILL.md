@@ -371,6 +371,7 @@ original guards. A temporary observation uses `panewire wait --agent NAME --stat
   (`PANEWIRE_DECISION_TIMEOUT_S`, six hours by default) unless a later lane event from the pane resumes the job
   first. Only READY or DONE, with a stable report, completes a job. To give up, run
   `panewire escalate <job> --question '<why>'`. Source: panewire `docs/r21-lane-event.md` (panewire@e1f9f39, lines 100-119).
+- **A `MERGE_OVERDUE` notice that reaches a design session is not merge authority:** the session acks it with `--type ack` and does nothing else (mergewake already sent the desk an FYI; the operator opens a lead session).
 - Deploys and infra go to operator-desk. The design session does not deploy.
 - A worker's READY/ESC reach its parent lane, `operator-desk` for a design session's worker. Inbox-capable CLIs may block on
   `panewire inbox wait` once shipped; otherwise the message arrives as pane text.
