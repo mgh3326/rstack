@@ -14,6 +14,8 @@ anything here. Unset or missing is normal — the abstract rules below apply alo
 
 ## Invariants (all references)
 
+- Follow hk:doc `policy/operator-facing-korean`: operator-facing text is Korean; identifiers, code and commands stay as they are; English-only text gets a stored Korean translation.
+
 - Record and check operational stopgaps as specified in `desk` §Containment.
 
 - **A delivery claim is not delivery evidence.** A normal reply from an injection or

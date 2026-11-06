@@ -114,6 +114,8 @@ with a new task minted per attempt.
 
 ## Decisions
 
+Follow hk:doc `policy/operator-facing-korean`: operator-facing text is Korean; identifiers, code and commands stay as they are; English-only text gets a stored Korean translation.
+
 The loop is `ops` decision-request §데스크 결정 루프. At the desk it comes down to three rules:
 
 - **An answer given in chat is resolved in hk in the same turn**, before you act on it.

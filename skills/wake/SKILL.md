@@ -113,6 +113,8 @@ Who verifies, and when a subagent or a spawned worker does the work, is `robin-m
 
 ## Settle before spawning
 
+For operator questions, follow hk:doc `policy/operator-facing-korean`: operator-facing text is Korean; identifiers, code and commands stay as they are; English-only text gets a stored Korean translation.
+
 The session is thrown away after it spawns, so whatever it did not write down is lost.
 
 **Decisions.** Walk the open points as a tree: each decision opens the ones that depend on it.
@@ -475,6 +477,7 @@ contract. Do not widen scope to answer a finding.
 - Verify the reported head against the live PR head before READY.
 
 ## Rules
+- Follow hk:doc `policy/operator-facing-korean`: operator-facing text is Korean; identifiers, code and commands stay as they are; English-only text gets a stored Korean translation.
 - Small PR. No direct merge. Run only the tests for what you changed; full suites belong to CI.
 - Catch up with main by rebase before the first push. A pushed branch catches up with
   `git merge origin/main`; never rebase or force-push it.
