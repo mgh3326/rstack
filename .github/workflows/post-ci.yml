@@ -3,10 +3,15 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        required: false
 permissions:
   contents: read
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name == 'push' && github.ref || github.run_id }}
   cancel-in-progress: true
 jobs:
   contracts:
@@ -14,6 +19,8 @@ jobs:
     runs-on: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.PANEWIRE_POST_LINUX_RUNNER) || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -24,6 +31,8 @@ jobs:
     runs-on: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.PANEWIRE_POST_MAC_RUNNER) || 'macos-latest' }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
