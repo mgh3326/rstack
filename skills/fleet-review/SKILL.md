@@ -49,6 +49,8 @@ and https://github.com/addyosmani/agent-skills.
 
 ## Triage rubric
 
+For deferred task titles and hk comments, follow hk:doc `policy/operator-facing-korean`: operator-facing text is Korean; identifiers, code and commands stay as they are; English-only text gets a stored Korean translation.
+
 Severity decides blocking. Disposition is what you do about it.
 
 | Severity | Blocks? | Allowed dispositions |
