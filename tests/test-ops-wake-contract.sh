@@ -199,20 +199,23 @@ FORBIDDEN = [
 WAKE_FORBIDDEN = re.compile(r"gh pr merge|gh pr checks|ci-any-ref|--owner <repo-session-lane>|curl[^\n]*/v1/spawns|\(operator credential\)|operator (?:credential|token)s? to|(?:source|cat|\. ) ?[~\w/.-]*(?:\.env|token|credential)")
 
 
-# Retired skill names may not appear in the two skill files except as the
-# `wrk spawn --role builder` tool flag and, in ops, the installer *seat* (the
-# deploy role kept its name; only its skill retired) and the director/ gate
-# policy path, which stays until Phase B. References may not route to a
+# Retired skill names may not appear in the two skill files except, in ops,
+# the installer *seat* (the deploy role kept its name; only its skill retired)
+# and the director/ gate policy path, which stays until Phase B. References may not route to a
 # retired skill as the place a rule lives.
 SKILL_FORBIDDEN = re.compile(r"\b(?:" + "|".join(map(re.escape, RETIRED)) + r")\b")
 SKILL_ALLOWED = {
     # director/ keeps the Phase B gate scripts and their policy file.
     # `architect` also names a vendored pstack skill (third_party/pstack); only that exact phrase is exempt.
-    "wake": re.compile(r"--role builder|director/gate_policy\.json|vendored `how`, `architect`, `blast-radius`, `tdd`"),
-    "ops": re.compile(r"--role builder|\binstaller seat\b|\*\*Installer\*\*"),
+    "wake": re.compile(r"director/gate_policy\.json|vendored `how`, `architect`, `blast-radius`, `tdd`"),
+    "ops": re.compile(r"\binstaller seat\b|\*\*Installer\*\*"),
 }
+# The delegated seat and the lead routing were removed (operator 2026-11-05):
+# none of these terms may come back in wake, ops or its references.
+SEAT_TERMS = r"--role builder|panewire lead\b|--include-builders|위임 좌석|repo 세션"
+SEAT_FORBIDDEN = re.compile(SEAT_TERMS)
 REF_FORBIDDEN = re.compile(
-    r"spawn-worker|relay-handoff|consult-advisor|linear-archive|node-ops"
+    SEAT_TERMS + r"|spawn-worker|relay-handoff|consult-advisor|linear-archive|node-ops"
     r"|`builder` 스킬|builder 스킬|director 스킬|checker 스킬|director/(?:SKILL|panewire)"
     r"|\$AGENT_SKILLS_DOMAIN/(?!ops\.md)"
 )
@@ -232,6 +235,8 @@ def check_self_contained(name: str, text: str) -> None:
         scrubbed = SKILL_ALLOWED[name].sub("", line)
         m = SKILL_FORBIDDEN.search(scrubbed)
         assert not m, f"{name}:{n}: names retired skill {m.group(0)!r}: {line.strip()}"
+        m = SEAT_FORBIDDEN.search(line)
+        assert not m, f"{name}:{n}: names the removed delegated seat or lead routing {m.group(0)!r}: {line.strip()}"
 
 
 def check_refs(ref_texts: dict) -> None:
@@ -310,6 +315,12 @@ injections = [
     ("ops-esc-completes-job", "ops", "## Escalate a decision\n", "## Escalate a decision\n\nAn ESC completes the job.\n"),
     ("wake-pacelever-json-readded", "wake", "## The loop\n", "## The loop\n\nRun `pacelever --json` for quota.\n"),
     ("spawn-pacelever-refresh-readded", "spawn", "## 4. 기동·주입·감시\n", "## 4. 기동·주입·감시\n\n- 낡은 풀은 `pacelever refresh <풀>`.\n"),
+    ("wake-role-builder-readded", "wake", "## Rules\n", "## Rules\n\nSpawn with `panewire spawn --role builder --lane x`.\n"),
+    ("ops-role-builder-readded", "ops", "## Routing table\n", "## Routing table\n\nSpawn with `panewire spawn --role builder --lane x`.\n"),
+    ("wake-panewire-lead-readded", "wake", "## Rules\n", "## Rules\n\nRun `panewire lead <task-id>`.\n"),
+    ("ops-panewire-lead-readded", "ops", "## Routing table\n", "## Routing table\n\nRun `panewire lead <task-id>`.\n"),
+    ("wake-delegated-seat-readded", "wake", "## Rules\n", "## Rules\n\n위임 좌석은 PR 을 올린다.\n"),
+    ("ops-repo-session-readded", "ops", "## Routing table\n", "## Routing table\n\nrepo 세션이 스폰한다.\n"),
     ("consult-old-builder-family-line", "consult", "## 1. 자문처 결정\n", "## 1. 자문처 결정\n\n`panewire resolve --role consult --builder-family <질문자 계열>`\n"),
 ]
 for label, doc, anchor, new in injections:
@@ -344,6 +355,11 @@ first = next(iter(refs))
 ref_mutants = [
     ("ref-routes-to-builder-skill", {**refs, first: refs[first] + "\n정본은 `builder` 스킬 §후속 라운드.\n"}),
     ("ref-legacy-overlay", {**refs, first: refs[first] + "\n$AGENT_SKILLS_DOMAIN/spawn-worker.md 를 먼저 읽어라.\n"}),
+    ("ref-role-builder", {**refs, first: refs[first] + "\n`panewire spawn --role builder` 로 띄운다.\n"}),
+    ("ref-panewire-lead", {**refs, first: refs[first] + "\n`panewire lead <task-id>` 로 띄운다.\n"}),
+    ("ref-include-builders", {**refs, first: refs[first] + "\n`--include-builders` 를 준다.\n"}),
+    ("ref-delegated-seat", {**refs, first: refs[first] + "\n위임 좌석 pane 은 제외한다.\n"}),
+    ("ref-repo-session", {**refs, first: refs[first] + "\nrepo 세션이 거둔다.\n"}),
     ("ref-orphaned", {**refs, "orphan.md": "# orphan\n"}),
 ]
 for label, ref_texts in ref_mutants:

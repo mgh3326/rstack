@@ -6,7 +6,7 @@
 
 mergewake 데몬(`reap` 역할)이 머지 직후 그 PR 의 워커 pane 을 닫고(마지막 화면은
 `<jobs>/<pane 이름>/pane-screen.txt` 에 남는다), `worktree_after`(기본 168h) 동안 revert 가 없으면
-worktree 와 branch 를 지운다. **repo 세션은 머지 후 pane 을 손으로 닫지 않는다.**
+worktree 와 branch 를 지운다. **디자인 세션은 머지 후 pane 을 손으로 닫지 않는다.**
 
 - 매칭은 이름이 아니라 위치다: pane cwd 가 linked worktree 이고, 현재 branch 가 PR head branch,
   checkout commit 이 PR head SHA, origin 이 그 repo 여야 한다. 그래서 워커는 PR worktree 를 `-c` 로,
@@ -87,7 +87,7 @@ panewire reap --lane <내 레인> --apply      # 실제 회수
   (`pane-working-or-mismatch`). close 직전에 잡 기록과 pane 을 다시 읽는다 — 잡이 되살아났으면
   건너뛰고, pane 이 바뀌었으면 rc 75 로 멈춘다. 닫은 잡은 quota 를 풀고 허브 레인을 지우고
   `job.reaped` 를 남긴다.
-- 위임 좌석 pane 은 `--include-builders` 없이는 제외한다. `--worktrees` 는 깨끗하고 origin/main 에
+- `--worktrees` 는 깨끗하고 origin/main 에
   머지된 linked worktree 만 force 없이 지운다(branch 는 남는다).
 - 🔴 panewire 는 `--apply` 에 `--lane` 을 강제하지 않는다 — 전역 회수는 금지이므로 항상
   `--lane <내 레인>` 을 준다.

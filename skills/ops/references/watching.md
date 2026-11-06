@@ -85,13 +85,10 @@ attempt를 먼저 대조한다. 새 워커 재시도 루프를 만들지 않는�
 
 panewire R19a 계약은 두 종류의 이벤트를 같이 소비한다.
 
-- arbiter 산출물은 envelope이다: `job_id`, `seq`, `kind`, `payload`, `created_at`. 위임 좌석 claim의
-  `payload.parent_lane`이 상위 목적지다.
+- arbiter 산출물은 envelope이다: `job_id`, `seq`, `kind`, `payload`, `created_at`.
 - `panewire done`·`panewire escalate`는 `arbiter event`로 기록하므로 같은 envelope이다(panewire에는
   `joined`가 없다). 평면 레코드는 옛 launcher 잡의 events 디렉터리에만 있다.
-  위임 좌석의 `job.escalate`는 `owner_lane`에 **좌석 자신의 레인**을 기록하고,
-  정보용 `parent_lane`도 함께 기록한다. `parent_lane`은 라우팅 근거가 아니다. R19a는
-  panewire의 `lanes.json`으로 owner 레인의 parent를 해석해 상위 pane으로 주입한다.
+  R19a는 panewire의 `lanes.json`으로 owner 레인의 parent를 해석해 상위 pane으로 주입한다.
 
 `tests/fixtures/panewire-r19a/`의 claim fixture는 실제 `arbiter claim` artifact와 같은 envelope
 shape다. 소비자는 flat completion event를 arbiter envelope이라고 가정하면 안 된다.

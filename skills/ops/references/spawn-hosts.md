@@ -37,12 +37,9 @@
 
 ## 레인 등록
 
-- worker 는 `-l` 라벨을 레인으로, `--owner` 를 parent 로 등록한다. `--role builder` 는 `--lane` 을
-  레인으로, `--parent` 를 parent 로 등록하고 OK 줄 끝에 `lane=<lane>@<machine>` 또는
-  `lane=UNREGISTERED` 를 단다(`PANEWIRE_LANE_STRICT=1` 이면 rc 82 — pane 은 그대로 유효). worker 는
-  등록됐을 때만 `lane=` 을 단다.
-- 자격 체인: worker 레인 `lanes_token_env` → `hub_token_env`, builder 레인 `lanes_token_env` →
-  `operator_token_env` → `hub_token_env`. panewire 는 자격 값을 출력하지 않는다.
+- worker 는 `-l` 라벨을 레인으로, `--owner` 를 parent 로 등록한다. 등록됐을 때만 OK 줄 끝에
+  `lane=<lane>@<machine>` 을 단다.
+- 자격 체인: worker 레인 `lanes_token_env` → `hub_token_env`. panewire 는 자격 값을 출력하지 않는다.
 - `panewire lanes-missing` 이 레인이나 parent 가 허브에 없는 열린 잡을 읽기 전용으로 나열한다.
 
 ## 호스트 준비·업그레이드 — Codex hook 승인
