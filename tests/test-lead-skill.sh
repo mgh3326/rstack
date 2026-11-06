@@ -86,7 +86,7 @@ REQUIRED = [
     ("lead", "## Merge overdue", "overdue-drop-stale", r"1\. \*\*Read the PR's current head\.\*\* Drop the notice if it differs from `head=` \(a new head starts new clocks\) or the PR is merged or closed"),
     ("lead", "## Merge overdue", "overdue-checks-mergewake-skips", r"2\. \*\*Check what mergewake does not:\*\* the hk task has no hold, the PR is not T3 and touches no `deploy_approval` path, no critical or high finding is unresolved, and no check has failed"),
     ("lead", "## Merge overdue", "overdue-ledger-or-record", r"3\. \*\*Run §Ledger on that head and merge by it, or record on the hk task why you did not\.\*\*"),
-    ("lead", "## Merge overdue", "overdue-direct-merge-field", r"4\. \*\*Add `merge_overdue=<condition>` to the `direct-merge` line\*\* on the hk task"),
+    ("lead", "## Merge overdue", "overdue-direct-merge-field", r"4\. \*\*If you merged, add `merge_overdue=<condition>` to the `direct-merge` line\*\* on the hk task\. A declined notice gets no `direct-merge` line"),
     ("lead", "## Merge overdue", "overdue-no-other-marker", r"mergewake stops on its own once the PR is merged; there is no other marker"),
     ("lead", "## Merge overdue", "overdue-decline-on-task", r"\*\*A notice you decline is answered on the hk task, not by a merge\.\*\*"),
     # After the merge.
