@@ -38,7 +38,7 @@ mergewake reap 이 한다.
 
 ## 프리셋과 선택 순서
 
-`panewire work <task-id>` / `panewire lead <task-id>`는 task의 job·label·lane·T/grade·brief/report와 caller owner/parent, checkout 경로를 유도한다. 명시 플래그가 기본값을 덮어쓴다. 일반적인 선택은 `-m auto --host auto`다.
+`panewire work <task-id>`는 task의 job·label·lane·T/grade·brief/report와 caller owner/parent, checkout 경로를 유도한다. 명시 플래그가 기본값을 덮어쓴다. 일반적인 선택은 `-m auto --host auto`다.
 선택 순서는 reset 때 버려질 quota → free(SWE-2) → grade 적합도와 남은 quota → API credit이다. API credit도 만료까지 4일 이내이면 소멸할 quota로 앞선다. 모델 순서를 하드코딩하거나 quota 때문에 grade를 낮추지 않는다.
 응답 유실 후 같은 명령은 같은 submission receipt를 재사용한다. timeout이나 단절을 spawn 실패 확정으로 해석하지 않는다. 미확인 attempt는 예약 상태로 남으며 다른 host에 다시 띄우지 않는다.
 
@@ -69,9 +69,6 @@ mergewake reap 이 한다.
   조회 키(`reap.md`)이자 worker 레인의 parent 가 된다. 빠뜨리면 `default` 로 들어가 네 워커를
   다시 찾을 수 없고 완료 push 도 오지 않는다 — 2026-08-02 에 기록 22건이 전부 `default` 라 잔여
   세션 11개를 손으로 걷어냈다. `-L live|mock` 은 **실행 레인**이고 `--owner` 는 **스폰 주체**다.
-- 🔴 **`--role builder`(위임 좌석)는 `--lane`+`--parent`+`--task` 가 필수이고 `--owner` 를
-  거부한다**(rc 2). ESC·완료는 `--parent` 로 간다 — `--parent` 가 틀린 좌석은 PR 을 올려도 부모가
-  모른다(2026-09-16 사고: push 후 2시간 동안 아무도 몰랐다).
 - **effort 는 인자로 준다** — 같은 모델도 effort 로 급이 바뀐다(실측: Luna Light 42 → Ultra 75).
   프로필 이름에 effort 를 박지 말고 `--effort` 를 쓴다(자동 선택은 rung 의 effort 를 쓴다).
   🔴 effort 별 실사용 건수는 `quota_pool_records.profile` 이 아니라 events payload 의
