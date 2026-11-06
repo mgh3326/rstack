@@ -4,6 +4,7 @@ required_checks:
   - 'ci-ok'
 watch_checks:
   - 'post-ok'
+any_ref_workflow: ci-any-ref.yml
 blocking:
   - paths: ['install.sh', 'install/**', 'scripts/install-skills.py', 'skills/ops/references/deploy*.md']
     reason: Installation and deploy procedures can replace running tools before a revert.

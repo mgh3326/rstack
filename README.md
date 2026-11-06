@@ -57,4 +57,4 @@ workflows call it, so a new `tests/test-*.py` or `tests/test-*.sh` needs no CI e
 Contract tests share `tests/lib/contract.py` (section scoping, row deletion and
 mutant checks). On pull requests, CI runs the moved contracts and retained tool tests on hosted
 Linux, with `ci-ok` gating merge. After pushes to main, the full suite runs on
-Linux and macOS, with `post-ok` watched for failures.
+Linux and macOS, with `post-ok` watched for failures. `ci-any-ref.yml` runs the same checks on any one commit (`workflow_dispatch` with a 40-hex `ref`) and posts `post-ok` on it, so a watcher can bisect a red main whose intermediate runs were cancelled.
