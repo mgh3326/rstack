@@ -37,6 +37,12 @@ NOT_NEUTRAL = re.compile(r"claude|codex|AskUserQuestion|spawn_agent|\.agents/", 
 
 # (doc, section heading or None, row name, pattern on the flattened scope)
 REQUIRED = [
+    # r2 (hk:doc decision/2026-11-07/design-session-desk-authority): the desk is the fallback for a
+    # project that has no design session open, and it receives the session's hand-off.
+    # PR #48 finding r4501835276: a closed session's jobs keep its lane as owner.
+    ("desk", None, "desk-reads-closed-lane", r"until that repo's next design session opens the desk reads their ESCs and spawn\s+failures in that lane's inbox"),
+    ("desk", None, "desk-scope", r"The desk takes a project's ESC decisions, spawn failures, merge holds and deploys only while that project has no design session open — with one open they are the session's \(`wake` §Authority\)\."),
+    ("desk", None, "desk-close-handoff", r"It receives a closing session's one-line hand-off and the `--type info` line a session sends before touching a target several projects share; lane routes stay with the desk\."),
     ("desk", "## Containment", "ledger-key", r"`ops/workaround-ledger`"),
     ("desk", "## Commitments", "record-first", r"Before you say \"I will X\", record it in hk"),
     ("desk", "## Commitments", "subtask-then-comment", r"sub-task of the task it belongs to once hk sub-tasks exist\. Until then, use a task comment on the parent"),

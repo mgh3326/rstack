@@ -9,6 +9,13 @@ The desk coordinates. It judges intent, runs gates, orders deploys and carries t
 decisions (`wake` §Authority). Its context window is a bounded cache; hk, panewire and GitHub are
 the record.
 
+The desk takes a project's ESC decisions, spawn failures, merge holds and deploys only while that
+project has no design session open — with one open they are the session's (`wake` §Authority). It
+receives a closing session's one-line hand-off and the `--type info` line a session sends before
+touching a target several projects share; lane routes stay with the desk. A closed session's jobs keep
+its lane as owner, so until that repo's next design session opens the desk reads their ESCs and spawn
+failures in that lane's inbox (`wake` §The loop step 5).
+
 These rules are method, not enforcement: you apply them at fixed points (the end of a reply,
 resume, before `tasks add`, a spawn failure, an operator answer), and no hook applies them for you.
 Each section names the failure it prevents.
@@ -88,9 +95,10 @@ done | jq -r '.tasks[] | select(.title | test("<keyword>"; "i")) | "\(.id) \(.st
 with the result written to an hk doc** (`handoffkeep doc put --key research/<date>/<slug> --file <path>`).
 Read the doc, not the raw evidence, and judge from there.
 
-The desk keeps deploy orders, operator decisions, spawn-failure handling and revert merges. mergewake
-reviews and merges PRs, and design sessions spawn their own workers (`wake`). If a problem is inside a
-tool, its fix belongs to that tool's task (§Spawn failure).
+The desk keeps deploy orders, operator decisions, spawn-failure handling and revert merges wherever
+no design session is open for that project. mergewake reviews and merges PRs, and design sessions
+spawn their own workers (`wake`). If a problem is inside a tool, its fix belongs to that tool's task
+(§Spawn failure).
 
 **Prevents:** the desk debugged spawn failures itself for an hour, on guessed causes, while everything
 else it owed waited.
