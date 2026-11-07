@@ -75,9 +75,10 @@ mergewake reap 이 한다.
   **`launch_profile`** 으로 센다(ROB-1213). 정규화 컬럼은 effort 를 뭉갠다.
 - 브리프 주입과 제출 검증은 **`relay.md` 절차**를 따른다(제출 검증 생략 금지,
   접수 확인 도구 1회 지시 포함).
-- pane kind별 지시·중단·답변 통지 분기와 매트릭스·측정 조건·예외 삭제 조건은
-  **`relay.md` §3-1 정본**을 참조한다(통지는 claude pane 에만 `lane.event`,
-  비-claude pane 은 §3-1 의 직접주입 경로). **후속 라운드·보충 지시의 주입은
+- 지시·중단·답변 통지는 하네스와 무관하게 **`relay.md` §3-1 정본**을 참조한다 —
+  `panewire emit --kind lane.event --type <type>` 가 claude·codex·devin·grok·omp·cmd pane 으로
+  릴레이된다.
+  **후속 라운드·보충 지시의 주입은
   `panewire prompt --uptake status-transition` 으로 한다** — `relay.md`
   §3-3 후속 라운드·보충 지시의 주입이 정본이고, 하네스별 제출 증명 차이
   (claude·codex 만 증명 가능, 그 외 하네스는 `unproven`)와 rc≠0 처리도 그 절을

@@ -109,12 +109,18 @@ panewire find <이름|라벨> --pane-only  # 스크립트용
 ### 3-1. 완료 통지·pane kind 분기 정본
 
 🔴 **방향 규칙 (2026-11-02 사고):** 이 절의 직접주입·제출 검증은 **지시를 보내는 쪽**(부모 레인·desk → 워커)의 의무다.
-워커·좌석이 **operator-desk 또는 claude 부모 레인**으로 올리는 READY·ESC·보고는 **`panewire emit --kind lane.event --type <type>` 만** 쓴다.
+워커·좌석이 **operator-desk 또는 부모 레인**으로 올리는 READY·ESC·보고는 **`panewire emit --kind lane.event --type <type>` 만** 쓴다.
 그 pane 에 `herdr agent prompt`·`pane send-text`·`send-keys` 로 쓰지 않는다 — 운영자 입력창에 꽂혀
 제출되지 않은 채 남고, 허브의 보류·묶음 전달을 우회하며, 운영자가 치던 글과 섞인다.
 수신 pane 이 안 보이면(다른 호스트, `panewire find` 미검출) `emit` rc 0 으로 충분하다 — 폴백 채널을 만들거나
-"전달 미확인" ESC 를 내지 않는다. **비-claude 부모(codex·grok·devin)** 는 `lane.event` 를 받지 못하므로 그 경우에만
-위 표의 직접주입 경로(SKILL.md §Escalate a decision)를 유지한다 — operator-desk 는 claude pane 이라 해당 없음.
+"전달 미확인" ESC 를 내지 않는다. 하네스가 달라도 규칙은 하나다 — 허브가 아래 여섯 pane kind 로 릴레이한다.
+
+**배달 확인 — 지시를 보낸 쪽만.** `emit` rc 0 은 전달 증거가 아니다. 그 이벤트의 `event_id=` 로
+①허브 로그의 `relay delivered`, 미확인일 때는 `relay unconfirmed` 를 보고
+②`panewire inbox status --event-id <id> [--json]` 로 접수 상태를 확인하고
+③수신 pane 을 읽는다 — `herdr agent read <pane>`, 다른 호스트의 pane 이면
+`ssh <host> herdr agent read <pane>`. 위로 올리는 통지(워커 → 부모, 누구 → operator-desk)는
+확인하지 않으며, 수신 pane 이 보이지 않으면 `emit` rc 0 으로 충분하다.
 
 **`comms-contract: v1`** — 이 절이 통신 계약의 **정본이고 유일한 버전 출처**다.
 v1 의 요지: **완료를 아는 쪽(답변자·워커)이 요청자 레인으로 통지를 보낸다.**
@@ -129,39 +135,34 @@ v1 의 요지: **완료를 아는 쪽(답변자·워커)이 요청자 레인으�
 
 🔴 **버전을 갖는 것은 이번이 처음이다.** 이전 판들은 번호가 없었고, 그래서 위 사고가 났다.
 
-비-claude pane 대상의 지시·중단·답변은 `herdr agent prompt` 직접주입을 기본으로 하고,
-`lane.event`는 claude pane에만 사용한다. 아래 표·측정 조건·예외 삭제 조건이 이 분기의
-정본이다.
-
 🔴 **예외 — 후속 라운드·보충 지시(이미 떠 있는 워커 에 대한 재지시)는
 `herdr agent prompt` 가 아니라 `panewire prompt --uptake status-transition` 이다.**
 정본은 §3-3 후속 라운드·보충 지시의 주입(하네스별 제출 증명 차이·rc≠0
 처리 포함)이며, `herdr pane send-text`·`send-keys` 는 복구 목적 외에 금지한다.
-이 절의 `herdr agent prompt` 직접주입은 초기 브리프 주입과 통지·질의에만 해당한다.
+이 절의 `herdr agent prompt` 직접주입은 초기 브리프 주입에만 해당한다.
 
-| pane kind | `lane.event` | `herdr agent prompt` 직접주입 |
-|---|---|---|
-| claude | ✅ | ✅ |
-| codex | ❌ | ✅ |
-| grok | ❌ | ✅ |
-| devin | ❌ | ✅ |
+| pane kind | `lane.event` |
+|---|---|
+| claude | ✅ |
+| codex | ✅ |
+| devin | ✅ |
+| grok | ✅ |
+| omp | ✅ |
+| cmd | ✅ |
 
-측정 조건: *등록 완료·`emit` rc=0·pane 정상 작업 중 상태에서 관측 가능한 부작용 프로브 120~150초 관측(2026-09-14)*.
+근거: panewire@828f5a8 `relay_harness_adapter.go:90-95` 가 여섯 하네스의 relay 어댑터를 등록하고
+`hub_client.go:700` `relayInjectForHarness` 가 이벤트를 pane 에 넣는다(devin 은 자체 경로,
+cmd 는 pane transport — panewire #286, hk 3330). 2026-11-07 실측에서 다른 호스트의 codex 워커가
+`relay delivered` 4건을 받았다.
 
-- **claude pane 질의자**: 이벤트를 기다린다. **폴링 0. 기한 전 파일 확인 0.**
-- **비-claude pane 질의자(grok·devin·codex)**: `lane.event` 대신 직접 주입 경로를 사용하며,
-  기한 도달 시 답변 파일 확인 **1회 의무**(폴링이 아니라 기한 1회)다.
-- 두 경우 모두 기한 경과 후에도 파일이 없으면 기존 무응답 처리(화면 전사 폴백 → 무응답
+- **질의자(모든 하네스)**: 이벤트를 기다린다. **폴링 0. 기한 전 파일 확인 0.**
+- 기한 경과 후에도 파일이 없으면 기존 무응답 처리(화면 전사 폴백 → 무응답
   보고 → 재질의 1회)를 따른다.
 - 주기 폴링 루프(`until [ -f ... ]; do sleep N; done`)는 금지한다.
 - `panewire emit` 의 `rc=0` 을 전달 증거로 쓰지 않는다. **지시를 보낸 쪽**은 `herdr agent read <pane>`로
   도착을 확인한다. 위로 올리는 통지(답변자·워커 → 요청자·부모)는 위 방향 규칙대로 확인하지 않는다.
 - 착지 확인은 visible 큐 표시와 `recent-unwrapped` 를 둘 다 본다. 큐 대기 중 주입은
   `recent-unwrapped` 에 아직 안 보이므로 한쪽만 보면 큐잉을 미착지로 오판한다.
-- *Temporary (desk 2026-09-14, hk 3132): ends when panewire #252 is fixed and the four-pane re-measurement after panewire #264 is all ✅ (panewire #252/#264).*
-- 등록은 필요조건이지 충분조건이 아니다. 2026-09-14 실측에서 hub 등록이 완료되고 `emit` 이 rc=0 을 반환했는데도 비-claude pane(당시 grok·devin·codex)에서 `lane.event` 가 도착하지 않았다 (관측 가능한 부작용을 요구하는 프로브가 120~150초 동안 실행되지 않았고, 그동안 그 pane 은 정상 작업 중이었다). claude 계열 pane 에서는 정상 배달됐다. 원인 수리 전까지, 통지가 오지 않는 것이 곧 답변이 없다는 뜻은 아니다.
-- `#252 가 수리되면 이 예외를 삭제한다.` 실제 삭제는 `#264` 수리 후 4종 재측정이 전부 ✅임을
-  확인한 뒤에만 한다. 이 예외에는 비-claude 수신자용 직접 주입 경로가 포함된다.
 
 ```bash
 # 1) 긴 프롬프트는 반드시 파일로 (인라인은 셸 이스케이프로 깨짐)

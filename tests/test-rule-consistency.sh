@@ -3,9 +3,9 @@
 #   1. merge authority: every "no session merges" names the lead under `lead` §Ledger;
 #   2. a stuck or failed spawn is never respawned automatically (ops spawn);
 #   3. the tracker is hk, never Linear (relay packet);
-#   4. emit delivery and the non-claude exception live only in relay.md §3-1;
+#   4. emit delivery lives only in relay.md §3-1 and reaches every relay harness;
 #      consult.md and session-questions.md point there and carry each
-#      [consult-done] command once;
+#      [consult-done] emit command exactly once, with no direct-injection copy;
 #   5. temporary rules (hk 3132): every line in skills/ that says "Temporary" is
 #      one marker line in the `robin-mode` format; no stale "until" rule, no
 #      rule for a removed lead pane, one term ("design session"), and the
@@ -64,8 +64,6 @@ REQUIRED = [
      r"\*Temporary \(operator 2026-11-04, hk 2856\): ends when hk 2857 lands and restores the rule \(hk 2857\)\.\*"),
     ("wake", "## Merge gate", "marker-ci-cutover",
      r"\*Temporary \(operator-desk 2026-11-03, hk 2788\): ends when the hk 2788 slice 5 cutover ships \(hk 2788\)\.\*"),
-    ("relay", None, "marker-emit-exception",
-     r"\*Temporary \(desk 2026-09-14, hk 3132\): ends when panewire #252 is fixed and the four-pane re-measurement after panewire #264 is all ✅ \(panewire #252/#264\)\.\*"),
     ("watching", None, "marker-single-shot",
      r"\*Temporary \(desk 2026-11-03, hk 3132\): ends when the panewire #80 and #66 deploys give push events \(panewire #80/#66\)\.\*"),
     ("wake", "## Settle before spawning", "blocks-edge-command",
@@ -83,10 +81,12 @@ FORBIDDEN = [
     ("spawn", "auto-respawn", r"→ ?재스폰", "\n- stuck 판정→재스폰.\n"),
     ("relay", "linear", r"Linear 이슈", "\n5. Linear 이슈 등록.\n"),
 ]
+DIRECT_INJECT = "herdr agent prompt <pane> '[consult-done]"
 for doc in ("consult", "questions"):
     FORBIDDEN += [
         (doc, "copied-exception", r"등록은 필요조건이지 충분조건이 아니다", "\n- 등록은 필요조건이지 충분조건이 아니다.\n"),
-        (doc, "copied-removal-condition", r"#252 가 수리되면", "\n- #252 가 수리되면 이 예외를 삭제한다.\n"),
+        (doc, "direct-inject-consult-done", re.escape(DIRECT_INJECT),
+         "\n```bash\n" + DIRECT_INJECT + " <1줄 요지> | <답변 파일 경로>'\n```\n"),
     ]
 
 # (row name, pattern on every flattened skill file, text a mutant appends to the first skill file)
@@ -101,8 +101,45 @@ SCANS = [
 
 ONCE = {
     "emit": "panewire emit --kind lane.event --lane <요청자 레인> --type ready --event-id <고유id> --text '[consult-done]",
-    "prompt": "herdr agent prompt <pane> '[consult-done]",
 }
+
+RELAY_31 = "### 3-1. 완료 통지·pane kind 분기 정본"
+HARNESSES = ("claude", "codex", "devin", "grok", "omp", "cmd")
+DELIVERY_CHECKS = (
+    "relay delivered",
+    "relay unconfirmed",
+    "panewire inbox status --event-id",
+    "herdr agent read",
+)
+OPS_STALE = re.compile(
+    r"claude panes only|claude pane ?에만|non-claude|비-claude|Temporary \(desk 2026-09-14"
+)
+
+
+def check_relay_table(text):
+    """§3-1 lists every relay harness with lane.event and the sender's checks."""
+    sec = flat(section(text, RELAY_31))
+    rows = re.findall(r"\|\s*([a-z]+)\s*\|\s*✅\s*\|", sec)
+    assert rows == list(HARNESSES), f"relay §3-1 rows {rows}, want {list(HARNESSES)}"
+    assert "**배달 확인" in sec, "relay §3-1 배달 확인 list missing"
+    start = sec.index("**배달 확인")
+    end = sec.find("**`comms-contract: v1`**", start)
+    assert end != -1, "relay §3-1 delivery-check paragraph not followed by comms-contract"
+    checks = sec[start:end]
+    for phrase in DELIVERY_CHECKS:
+        assert phrase in checks, f"relay §3-1 delivery check missing: {phrase}"
+    assert "ssh <host> herdr agent read" in checks, (
+        "relay §3-1 remote delivery check (ssh <host> herdr agent read) missing"
+    )
+
+
+def check_ops_stale(skills):
+    """The claude-only exception may not come back anywhere under skills/ops."""
+    for name, text in skills.items():
+        if not name.startswith("skills/ops/"):
+            continue
+        m = OPS_STALE.search(flat(text))
+        assert not m, f"{name}: stale claude-only relay rule {m.group(0)!r}"
 
 
 def check(d):
@@ -115,6 +152,7 @@ def check(d):
         for kind, command in ONCE.items():
             n = d[doc].count(command)
             assert n == 1, f"{doc}: [consult-done] {kind} command appears {n} times, want 1"
+    check_relay_table(d["relay"])
 
 
 def check_skills(skills):
@@ -128,7 +166,8 @@ def check_skills(skills):
 
 check(docs)
 check_skills(SKILLS)
-print(f"PASS rule-consistency required={len(REQUIRED)} forbidden={len(FORBIDDEN)} once={2 * len(ONCE)} scans={len(SCANS) + 1} skill-files={len(SKILLS)}")
+check_ops_stale(SKILLS)
+print(f"PASS rule-consistency required={len(REQUIRED)} forbidden={len(FORBIDDEN)} once={2 * len(ONCE)} scans={len(SCANS) + 2} skill-files={len(SKILLS)}")
 
 count = 0
 for doc, heading, row, pattern in REQUIRED:
@@ -148,5 +187,44 @@ for row, _, injected in SCANS:
 expect_red("skills-unmarked-temporary", check_skills, {**SKILLS, first: SKILLS[first] + "\n**Temporary relief (operator 2026-11-04).** Until hk 1 lands.\n"})
 expect_red("skills-marker-without-condition", check_skills, {**SKILLS, first: SKILLS[first] + "\n*Temporary (operator 2026-11-04, hk 1).*\n"})
 count += 2
+
+# The relay table names exactly the six harnesses, each on lane.event.
+for harness in HARNESSES:
+    row = f"| {harness} | ✅ |"
+    mutated = docs["relay"].replace(row, "", 1)
+    assert mutated != docs["relay"], f"fixture: relay row {harness} not found"
+    expect_red(f"relay-harness-{harness}-deleted", check, {**docs, "relay": mutated})
+    count += 1
+for label, row, replacement in (
+    ("relay-harness-cmd-not-relayed", "| cmd | ✅ |", "| cmd | ❌ |"),
+    ("relay-harness-extra", "| cmd | ✅ |", "| cmd | ✅ |\n| kiro | ✅ |"),
+):
+    mutated = docs["relay"].replace(row, replacement, 1)
+    assert mutated != docs["relay"], f"fixture: relay row {row!r} not found"
+    expect_red(label, check, {**docs, "relay": mutated})
+    count += 1
+
+# The sender's delivery checks are named in §3-1.
+for i, phrase in enumerate(DELIVERY_CHECKS):
+    mutated = docs["relay"].replace(phrase, "아무 확인")
+    assert mutated != docs["relay"], f"fixture: delivery check {phrase!r} not found"
+    expect_red(f"relay-delivery-check-{i}-removed", check, {**docs, "relay": mutated})
+    count += 1
+
+# The deleted claude-only exception may not come back under skills/ops.
+STALE_LINES = (
+    "claude panes only",
+    "claude pane 에만",
+    "claude pane에만",
+    "non-claude parent",
+    "비-claude pane",
+    "*Temporary (desk 2026-09-14, hk 3132): ends when panewire #252 is fixed.*",
+)
+ops_skill = "skills/ops/SKILL.md"
+for i, line in enumerate(STALE_LINES):
+    expect_red(f"ops-stale-{i}-injected", check_ops_stale,
+               {**SKILLS, ops_skill: SKILLS[ops_skill] + "\n" + line + "\n"})
+    count += 1
+
 print(f"PASS mutants assertion-red={count}/{count}")
 PY
