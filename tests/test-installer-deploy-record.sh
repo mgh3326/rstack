@@ -153,12 +153,12 @@ def check_checklist(text: str) -> None:
 
 
 def check_orderer(text: str) -> None:
-    deploy = flat(section(text, "## 발주자 측 — operator-desk"))
+    deploy = flat(section(text, "## 발주자 측 — 발주 세션 (레포의 디자인 세션, 없으면 operator-desk)"))
     assert "생긴 것을 확인하기 전에는 installer 세션을 회수하지 않는다" in deploy, (
         "the orderer may reap installer before the record exists"
     )
     assert "기존 `deploy/` 키는 덮어쓰지 않는다" in deploy
-    assert "기록 키는 installer 스폰 입력으로 operator-desk가 정한다(시각 = 스폰 시각, UTC `YYYYMMDDTHHMMSSZ`)" in deploy
+    assert "기록 키는 installer 스폰 입력으로 발주 세션이 정한다(시각 = 스폰 시각, UTC `YYYYMMDDTHHMMSSZ`)" in deploy
 
 
 check_installer(installer_text)

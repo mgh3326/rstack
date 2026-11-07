@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-# Deploy route contract (#115, hk 2290): the installer seat in
-# ops/references/deploy.md takes orders from and reports to exactly one lane,
-# operator-desk, and the ops routing table says the same. The retired gate and
-# orchestrator seats must not come back as a route anywhere in the deploy files.
+# Deploy route contract (#115, hk 2290; r2 hk 3455): the installer seat in
+# ops/references/deploy.md takes orders from and reports to exactly one receiver,
+# the ordering session — the repo's design session, or operator-desk when that repo
+# has none open (hk:doc decision/2026-11-07/design-session-desk-authority) — and the
+# ops routing table says the same. The retired gate and orchestrator seats must not
+# come back as a route anywhere in the deploy files.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -14,7 +16,7 @@ import sys
 
 root = Path(sys.argv[1])
 sys.path.insert(0, str(root / "tests/lib"))
-from contract import expect_red, section  # noqa: E402
+from contract import expect_red, flat, section  # noqa: E402
 installer_path = Path(
     os.environ.get("INSTALLER_SKILL", root / "skills/ops/references/deploy.md")
 )
@@ -27,27 +29,33 @@ installer_text = installer_path.read_text(encoding="utf-8")
 checklist_text = checklist_path.read_text(encoding="utf-8")
 ops_text = ops_path.read_text(encoding="utf-8")
 
-RECIPIENT = "operator-desk"
+# One receiver for every route: the ordering session. Its resolution names the
+# one lane the desk keeps when no design session is open.
+ORDERER = "발주 세션"
+FALLBACK = "operator-desk"
 
 
 # Every place the installer names where it takes orders from or reports to.
-# Each anchor captures the recipient token; the token must EQUAL RECIPIENT.
+# Each anchor captures the receiver phrase; it must EQUAL ORDERER.
 INSTALLER_SLOTS = (
-    ("R1-parent", "## R1. 정체", r"parent는 \*\*([^*\s]+)\*\*다\."),
-    ("R1-orders", "## R1. 정체", r"지시는 (\S+?)에게서 받고"),
-    ("R1-results", "## R1. 정체", r"결과\(JOIN/ESC\)도 (\S+?)에게 올린다"),
+    ("R1-parent", "## R1. 정체", r"parent는 \*\*(.+?)\*\*이다"),
+    ("R1-orders", "## R1. 정체", r"지시는 (.+?)에게서 받고"),
+    ("R1-results", "## R1. 정체", r"결과\(JOIN/ESC\)도 (.+?)에게 올린다"),
     ("R3-step8", "## R3. 고정 절차 (9단계, 순서 불변)",
-     r"(?m)^8\. \*\*JOIN 보고\*\* — (\S+?) 레인에 R11의 JOIN 템플릿으로 보고한다\.$"),
-    ("R10-route", "## R10. 사이트 정본 분리", r"디제스트/체크포인트 디렉터리, (\S+?)로의 보고 경로\."),
-    ("R11-join-line8", "## R11. 보고 형식", r"(?m)^8\. JOIN 보고 — 증거: <(\S+?)로 전달한 경로/시각>$"),
-    ("orderer-heading", None, r"(?m)^## 발주자 측 — (\S+)$"),
+     r"8\. \*\*JOIN 보고\*\* — (.+?) 레인에 R11의 JOIN 템플릿으로 보고한다\."),
+    ("R10-route", "## R10. 사이트 정본 분리", r"디제스트/체크포인트 디렉터리, (.+?)으로의 보고 경로\."),
+    ("R11-join-line8", "## R11. 보고 형식", r"8\. JOIN 보고 — 증거: <(.+?)으로 전달한 경로/시각>"),
 )
+ORDERER_HEADING = re.compile(r"(?m)^## 발주자 측 — 발주 세션 \(레포의 디자인 세션, 없으면 operator-desk\)$")
+ORDERER_RESOLUTION = r"발주 세션\*\*이다 — 레포의 디자인 세션이고, 그 레포에 디자인 세션이 없으면 operator-desk다"
+R1_WORKERS_ONLY = r"installer는 워커와 직접 통신하지 않는다"
+R1_OLD_PARENT_WALL = r"디자인 세션·워커와 직접 통신하지 않는다"
 CHECKLIST_SLOTS = (
-    ("checklist-step8", None, r"(?m)^- \[ \] 8\. JOIN 보고 — 증거: `<(\S+?)로 전달한 경로/시각,"),
+    ("checklist-step8", None, r"(?m)^- \[ \] 8\. JOIN 보고 — 증거: `<[^>]+로 전달한 경로/시각,"),
 )
 OPS_SLOTS = (
     ("ops-deploy-row", None,
-     r"(?m)^\| Deploy one change \| \[`deploy\.md`\]\(references/deploy\.md\)[^\n]*?spawned by and reporting only to (\S+?)[,;. ]"),
+     r"(?m)^\| Deploy one change \| \[`deploy\.md`\]\(references/deploy\.md\)[^\n]*?spawned by and reporting to the ordering session \(the repo's design session, else (operator-desk)\)[;,. ]"),
 )
 
 # R3's fixed procedure: count and order are an invariant of the skill itself.
@@ -69,11 +77,11 @@ FORBIDDEN = re.compile(r"(?i)checker|director|gate[- ]lane")
 
 def check_slots(text: str, slots) -> None:
     for name, heading, pattern in slots:
-        scope = section(text, heading) if heading else text
+        scope = flat(section(text, heading)) if heading else text
         m = re.search(pattern, scope)
         assert m, f"{name}: route anchor missing"
-        assert m.group(1) == RECIPIENT, (
-            f"{name}: recipient {m.group(1)!r} != {RECIPIENT!r}"
+        assert m.group(1) == ORDERER, (
+            f"{name}: receiver {m.group(1)!r} != {ORDERER!r}"
         )
 
 
@@ -93,19 +101,39 @@ def check_r3(text: str) -> None:
     )
 
 
+def check_orderer(text: str) -> None:
+    m = ORDERER_HEADING.search(text)
+    assert m, "orderer heading is not the ordering session with its operator-desk fallback"
+    r1 = flat(section(text, "## R1. 정체"))
+    assert re.search(ORDERER_RESOLUTION, r1), (
+        "R1 does not resolve the ordering session: the repo's design session, else operator-desk"
+    )
+    assert R1_WORKERS_ONLY in r1, "installer talks to workers, or no longer names the wall"
+    assert R1_OLD_PARENT_WALL not in flat(text), (
+        "the installer still refuses its own parent (the repo's design session)"
+    )
+
+
 def check_installer(text: str) -> None:
     check_slots(text, INSTALLER_SLOTS)
     check_no_retired_seat(text, "deploy.md")
     check_r3(text)
+    check_orderer(text)
 
 
 def check_checklist(text: str) -> None:
-    check_slots(text, CHECKLIST_SLOTS)
+    for name, heading, pattern in CHECKLIST_SLOTS:
+        scope = flat(section(text, heading)) if heading else text
+        assert re.search(pattern, scope), f"{name}: route anchor missing"
     check_no_retired_seat(text, "deploy-checklist.md")
 
 
 def check_ops(text: str) -> None:
-    check_slots(text, OPS_SLOTS)
+    for name, heading, pattern in OPS_SLOTS:
+        scope = flat(section(text, heading)) if heading else text
+        m = re.search(pattern, scope)
+        assert m, f"{name}: route anchor missing"
+        assert m.group(1) == FALLBACK, f"{name}: fallback {m.group(1)!r} != {FALLBACK!r}"
     rows = [line for line in text.splitlines() if "references/deploy.md" in line]
     assert len(rows) == 1, f"ops deploy row count {len(rows)} != 1"
     assert not FORBIDDEN.search(rows[0]), f"ops deploy row names a retired seat: {rows[0]}"
@@ -114,7 +142,7 @@ def check_ops(text: str) -> None:
 check_installer(installer_text)
 print(
     f"PASS installer route slots={len(INSTALLER_SLOTS)}/{len(INSTALLER_SLOTS)} "
-    f"recipient={RECIPIENT} r3-steps={len(R3_STEPS)}/9"
+    f"receiver={ORDERER} fallback={FALLBACK} r3-steps={len(R3_STEPS)}/9"
 )
 check_checklist(checklist_text)
 print(f"PASS installer checklist slots={len(CHECKLIST_SLOTS)}/{len(CHECKLIST_SLOTS)}")
@@ -127,21 +155,34 @@ def mutate(text: str, old: str, new: str) -> str:
     return text.replace(old, new, 1)
 
 
-step8 = "8. **JOIN 보고** — operator-desk 레인에"
-r1_parent = "parent는 **operator-desk**다."
-r1_results = "결과(JOIN/ESC)도 operator-desk에게 올린다"
-r10 = "operator-desk로의 보고 경로."
-r11 = "8. JOIN 보고 — 증거: <operator-desk로 전달한 경로/시각>"
+step8 = "8. **JOIN 보고** — 발주 세션 레인에"
+r1_parent = "parent는 **발주 세션**이다"
+r1_results = "결과(JOIN/ESC)도 발주 세션에게 올린다"
+r10 = "발주 세션으로의 보고 경로."
+r11 = "8. JOIN 보고 — 증거: <발주 세션으로 전달한 경로/시각>"
+r1_resolution = "parent는 **발주 세션**이다 — 레포의 디자인 세션이고, 그 레포에 디자인 세션이 없으면 operator-desk다"
 esc_heading = "## R9. escalate 트리거 (8개 전부)\n"
 
 installer_mutants = [
-    ("step8->checker", mutate(installer_text, step8, step8.replace("operator-desk", "checker"))),
-    ("step8->director", mutate(installer_text, step8, step8.replace("operator-desk", "director"))),
-    ("r1-parent->director", mutate(installer_text, r1_parent, "parent는 **director**다.")),
-    ("r1-results->gate-lane", mutate(installer_text, r1_results, r1_results.replace("operator-desk", "gate-lane"))),
-    ("r10->repo-session", mutate(installer_text, r10, "repo-session로의 보고 경로.")),
-    ("r11->checker", mutate(installer_text, r11, r11.replace("operator-desk", "checker"))),
-    ("orderer->repo-session", mutate(installer_text, "## 발주자 측 — operator-desk", "## 발주자 측 — repo-session")),
+    ("step8->checker", mutate(installer_text, step8, step8.replace("발주 세션", "checker"))),
+    ("step8->director", mutate(installer_text, step8, step8.replace("발주 세션", "director"))),
+    ("r1-parent->director", mutate(installer_text, r1_parent, "parent는 **director**이다")),
+    ("r1-results->gate-lane", mutate(installer_text, r1_results, r1_results.replace("발주 세션", "gate-lane"))),
+    ("r10->repo-session", mutate(installer_text, r10, "repo-session으로의 보고 경로.")),
+    ("r11->checker", mutate(installer_text, r11, r11.replace("발주 세션", "checker"))),
+    ("orderer->repo-session", mutate(
+        installer_text,
+        "## 발주자 측 — 발주 세션 (레포의 디자인 세션, 없으면 operator-desk)",
+        "## 발주자 측 — repo-session",
+    )),
+    # r2: the parent is resolved, not left as one hard-coded lane.
+    ("r1-parent-fallback-dropped", mutate(
+        installer_text, r1_resolution, "parent는 **발주 세션**이다",
+    )),
+    # r2: the installer's parent is the repo's design session, so it may not refuse it.
+    ("r1-design-session-wall-readded", mutate(
+        installer_text, "installer는 워커와 직접\n통신하지 않는다", "installer는 디자인 세션·워커와 직접\n통신하지 않는다",
+    )),
     # New route sentence added elsewhere: slots stay green, the sweep must catch it.
     ("new-esc-route-sentence", mutate(
         installer_text, esc_heading,
@@ -158,11 +199,17 @@ installer_mutants = [
 ]
 checklist_line = "`<operator-desk로 전달한 경로/시각,"
 checklist_mutants = [
-    ("checklist->checker", mutate(checklist_text, checklist_line, checklist_line.replace("operator-desk", "checker"))),
+    ("checklist-receiver-dropped", mutate(
+        checklist_text, checklist_line, "`<전달한 경로/시각,",
+    )),
 ]
-ops_row = "spawned by and reporting only to operator-desk"
+ops_row = "spawned by and reporting to the ordering session (the repo's design session, else operator-desk)"
 ops_mutants = [
     ("ops-row->director", mutate(ops_text, ops_row, "spawned by and reporting only to director")),
+    ("ops-row-fallback-dropped", mutate(
+        ops_text, ops_row,
+        "spawned by and reporting to the ordering session (the repo's design session)",
+    )),
     ("ops-row-checker-appended", mutate(ops_text, ops_row, ops_row + " (JOIN via checker)")),
 ]
 

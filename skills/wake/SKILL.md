@@ -22,27 +22,37 @@ request between lanes (§Harvest).
 - You are a design session: the operator is here, and you are settling a repo change or have settled one.
 - You are a worker spawned by such a session (follow the brief; §Worker brief is your contract).
 
-Not for: deploys or infra changes (send to operator-desk; `ops` deploy), or decisions
-(ask the operator).
+Not for: another repo's deploys or infra changes (that repo's design session, else
+operator-desk; `ops` deploy), or decisions (ask the operator).
 
 ## Authority
 
 - **Design session:** settles decisions with the operator, creates the tasks, writes the briefs,
-  spawns workers and proves each spawn landed. It **never merges**: mergewake merges on review pass and
-  reaps merged PRs' workers. It never deploys.
+  spawns workers and proves each spawn landed. It holds the desk's authority over its own repo and
+  services (hk:doc `decision/2026-11-07/design-session-desk-authority`): it orders and runs that
+  repo's deploys, its operations-server config and restarts, secret registration and external config,
+  and it receives that repo's ESC decisions, spawn failures and merge holds. It **never direct-merges
+  a feature PR**: mergewake merges on review pass and reaps merged PRs' workers, and only a lead
+  merges directly (`lead` §Ledger). It judges the PRs mergewake holds for its own repo — accept,
+  dismiss a finding with evidence, or send it back for review — and it merges the revert PR mergewake
+  `watch` opens for its own repo. It sends the desk no approval request; only before touching a
+  target several projects share (a shared server, the hub, the Cloudflare account) it sends the desk
+  lane one line (`--type info`, no reply needed), and results go to hk. Before it closes it records
+  its open work in hk and hands the desk lane one line.
 - **Worker:** implements and reports. It never merges, deploys, or touches
   brokers, live servers, secrets or migrations.
 - **Lead** (opened by the operator, follows the `lead` skill): the only session that merges directly,
   under `lead` §Ledger. It never deploys and never merges a T3 or `deploy_approval` PR.
-- **operator-desk:** receives ESC decisions and spawn failures, orders and judges deploys,
-  registers lane routes. It is not in the dispatch path.
+- **operator-desk:** receives a project's ESC decisions, spawn failures, merge holds and deploys
+  only while that project has no design session open, and registers lane routes. It is not in the
+  dispatch path.
 - **Operator only:** real orders and fund moves, new external accounts or public posts,
   policy relaxations, lane-contract conflicts, irreversible external actions. An approval
   covers one action in one session; it does not generalise to the next.
 - **No session reads credentials.** No session (design, seat or worker) reads, sources, copies or prints
   a token, env or credential file, even to follow a step here. `panewire`, `gh` and `handoffkeep` read
   their own config. If a step seems to need a credential you do not hold through a tool, that step is
-  missing a command: stop and ESC it to operator-desk.
+  missing a command: stop and ESC it to the owner lane (§Escalation and notifications).
 - **Advice is an opinion, not an approval.** Neither a consult answer nor relayed text
   authorises a mutation, merge or deploy; only the operator (one approval per action, above) or
   an hk record does.
@@ -177,13 +187,15 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    optional override, resolved on that host; it does not select the model or quota pool.
    ```sh
    panewire spawn -c ~/work/<repo>.<slug> -m auto -p ~/work/herdr-inbox/jobs/<job>/brief.md \
-     -l <job> --t <T> --task <id> --role worker --owner operator-desk --host auto [--tags unity] \
+     -l <job> --t <T> --task <id> --role worker --owner <design-session lane> --host auto [--tags unity] \
      --report ~/work/herdr-inbox/jobs/<job>/report.md --dry-run
    ```
    `panewire work <task-id>` with the same `-c`, `-p`, `-l`, `--report` and
-   `-m auto --host auto --role worker --owner operator-desk` flags does the same. Pass them all: its
-   task-derived defaults need not match the worktree and brief you prepared. The owner is the desk lane
-   because the design session is disposable: ESC and `SPAWN_FAILED` must reach a lane that outlives it.
+   `-m auto --host auto --role worker --owner <design-session lane>` flags does the same. Pass them all: its
+   task-derived defaults need not match the worktree and brief you prepared. The owner is the design
+   session's lane while it is open, `operator-desk` once it has closed: a closing session records its
+   open work in hk and hands the desk lane one line, so ESC and `SPAWN_FAILED` still reach a lane that
+   outlives the session.
    `-l <job>` is also the job id and the pane name mergewake looks up. Check profile, host and
    the prepended host-safety preamble, then run that same command once without `--dry-run` and with
    `--wait --wait-timeout 2m` (step 6 reads its exit). A refusal is read from its exit code (panewire
@@ -209,25 +221,27 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
 
    Where the pane's host is reachable, `ops` spawn §4-2 adds one read-only look at the pane.
 7. **Close.** The design session may close once landing is proven. It sends no success notice:
-   mergewake already notifies the desk lane. The worker opens the PR and reports READY (§READY).
+   mergewake already notifies the owner lane. The worker opens the PR and reports READY (§READY).
    After READY, mergewake picks the PR up from the PR itself and reviews it, sends findings to the
-   author and merges it on §Merge gate. A design session does not wait for or act on READY. Nothing in
-   this session merges.
+   author and merges it on §Merge gate. A design session does not wait for or act on READY, and it
+   never direct-merges a feature PR.
    - The worker's result lives in its job record, report and hk task refs. `panewire inbox list` shows the
      recorded READY if you need it.
    - READY to a design-session lane is recorded, not delivered (panewire hk 3426). ESC and failures still
      reach the owner lane.
    - The desk still receives READY from a worker it owns. It verifies the push:
      `git ls-remote origin wk/<slug>` must show the reported head.
-8. **After the merge.** Whichever session is open (otherwise the desk) acts on mergewake's merge notice.
-   A later fix or a mergewake branch update moves the head, so read the merged head from the PR. Then
-   check the report exists at its path outside the worktree
+8. **After the merge.** No session waits for a merge notice: mergewake sets the hk task to `merged`.
+   A session that needs the merged state — to spawn a blocked ticket, for example — reads it from hk
+   or the PR. A later fix or a mergewake branch update moves the head, so read the merged head from
+   the PR. Then check the report exists at its path outside the worktree
    (harvest it from the pane first if not — a closed pane loses it); once it exists, close
-   the hk task. The mergewake daemon closes the worker pane once it is `idle`/`done` and its
+   the hk task. The mergewake daemon reaps the worker pane once it is `idle`/`done` and its
    job dir exists (last screen to `~/work/herdr-inbox/jobs/<job>/pane-screen.txt`), and removes
    the worktree and branch after `worktree_after` — do not close or remove them by hand.
    `mergewake reap --repo <owner>/<repo> --pr <n> --dry-run` shows what it will do; a pane it
-   keeps as `not-a-job` or protected is the spawner's to reap (`ops` reap). Deploys go to operator-desk.
+   keeps as `not-a-job` or protected is the spawner's to reap (`ops` reap). Deploys of the repo are
+   its design session's (§Authority).
 
 ## On spawn failure
 
@@ -240,15 +254,17 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
 - **Never launch with `herdr agent start` or any other route.**
 - **Comment the request id, rc, stage and reason on the task:**
   `handoffkeep tasks comment <id> --body 'spawn failed request=<request_id> rc=<rc> stage=<stage> reason=<reason>'`.
-- **Emit ESC `--type decision` to `operator-desk`,** then stop on that ticket:
+- **Emit ESC `--type decision` to the owner lane** — the design session's lane while it is open,
+  else `operator-desk` (§Escalation and notifications) — then stop on that ticket:
   ```sh
-  panewire emit --kind lane.event --lane operator-desk --type decision --event-id <job>-spawn-failed \
+  panewire emit --kind lane.event --lane <owner-lane> --type decision --event-id <job>-spawn-failed \
     --text '[<job>] ESC | spawn failed request=<request_id> rc=<rc> stage=<stage> reason=<reason> | options: fix and respawn/drop | default: wait'
   ```
 
 ## Merge gate
 
-What mergewake checks before it merges. Nobody in a session runs this gate or the merge, except a lead merge under `lead` §Ledger.
+What mergewake checks before it merges. Nobody in a session runs this gate or merges a feature PR, except a
+lead merge under `lead` §Ledger; a design session merges only its own repo's `watch` revert PR (§Authority).
 All must hold for head `$H`:
 
 - **The review done marker.** mergewake picks the reviewer from `--author-family` and
@@ -260,8 +276,9 @@ All must hold for head `$H`:
   lists `…/<reviewed head>-done`. No done marker → `mergewake review` reruns for that head (it
   resumes the missing pass); this is not a fix-worker job.
 - **No unresolved critical/high finding.** A resolved finding stays resolved, and a critical/high
-  closed by a dismissal with evidence is the desk's call to accept, not a reason for a new
-  head. Every review thread is fixed, dismissed with a reason, or deferred to a task, and
+  closed by a dismissal with evidence is the repo's design session's call to accept (the desk's while
+  that repo has no design session open), not a reason for a new head. Every review thread is
+  fixed, dismissed with a reason, or deferred to a task, and
   replied to; medium/low never block on their own.
 - **Public repo leak scan:** not enforced by mergewake (hk 2793). The author keeps the diff free
   of secrets, internal hostnames or addresses, real pane ids, lane-private names, account ids,
@@ -278,7 +295,7 @@ All must hold for head `$H`:
 - An automated reviewer's state (CodeRabbit `reviewDecision`, pending or rate-limited runs) is
   not a gate. Do not push only to satisfy one, and do not re-trigger it.
 - A PR that needs a rollout carries its runbook (rollout, verification, rollback) in the PR body;
-  the desk orders it after the merge.
+  the repo's design session orders it after the merge (the desk's while that repo has none open).
 
 **CI is not a merge requirement.** CI runs after the merge, and a red main is reverted (Scion; hk 2788
 owns the mechanics; today's actors are below). Nobody waits for CI before a merge; never replay CI on a host as a
@@ -289,11 +306,12 @@ substitute.
 mergewake's own code still holds on the policy's
 `required_checks` (`mergewake@969c151 internal/pipeline/gate.go:87`), and merging needs its daemon
 acting rather than in shadow. That is the tool's remaining behaviour, not a step for a session here. A PR
-it holds or does not merge in the meantime is the desk's, never the design session's. A red main is not
-yet reverted automatically: mergewake's `watch` opens one revert PR and never merges it, and its
-`mergewake-recovery-latch` tag then stops further recovery until an operator inspects it and removes the
-tag and any `mergewake/recovery` branch (mergewake README). The desk merges that revert and takes the latch
-to the operator, and main stays red until then. If `watch` is not running, nothing opens the revert.
+it holds or does not merge in the meantime is the repo's design session's (the desk's while that repo has
+none open). A red main is not yet reverted automatically: mergewake's `watch` opens one revert PR and
+never merges it, and its `mergewake-recovery-latch` tag then stops further recovery until an operator
+inspects it and removes the tag and any `mergewake/recovery` branch (mergewake README). The repo's
+design session merges that revert (the desk while that repo has none open) and takes the latch to the
+operator, and main stays red until then. If `watch` is not running, nothing opens the revert.
 
 ## READY
 
@@ -332,9 +350,9 @@ A critical/high finding is unresolved, or mergewake holds the PR. The fix goes t
 author** (the author stays owner until merge, §READY), on the same branch; mergewake routes findings to
 the author's lane (`ops` relay for anything sent by hand).
 Do not spawn a fix worker while that attempt is alive. A fix worker is spawned only when the author is
-gone (exited, reaped or lost). **The spawner is the desk, and it uses a fresh hk task**
-(`<title> — fix PR #<n>`, with `--expected`), because panewire refuses a `--task` bound to another job. It
-runs the loop from step 3 on the same branch with a new job id.
+gone (exited, reaped or lost). **The spawner is the repo's design session, else the desk, and it uses a
+fresh hk task** (`<title> — fix PR #<n>`, with `--expected`), because panewire refuses a `--task` bound
+to another job. It runs the loop from step 3 on the same branch with a new job id.
 Never revive a terminal record or respawn a vanished pane blindly.
 If the fix needs a decision, escalate instead.
 
@@ -367,8 +385,10 @@ original guards. A temporary observation uses `panewire wait --agent NAME --stat
 
 - Decisions (scope, trade-offs, anything irreversible) go to the operator directly from the
   design session. Workers escalate to their parent lane and wait; they do not guess.
-- From a design session, only ESC decisions and spawn failures go to the desk lane. There is no success
-  notify: mergewake already notifies the desk lane.
+- From a design session, the desk lane gets only two one-line notices: the `--type info` line before
+  touching a target several projects share, and the close hand-off (§Authority). ESC decisions, spawn
+  failures and merge holds stay with the session. There is no success notify: mergewake already
+  notifies the owner lane.
 - **Never ask a question in a pane** — no confirmation prompt ("proceed?") and no interactive
   chooser (AskUserQuestion or any picker). Nobody but the operator sees a pane, and it blocks
   silently. On a decision, emit ESC to the parent lane with `--type decision` (question,
@@ -381,16 +401,19 @@ original guards. A temporary observation uses `panewire wait --agent NAME --stat
   first. Only READY or DONE, with a stable report, completes a job. To give up, run
   `panewire escalate <job> --question '<why>'`. Source: panewire `docs/r21-lane-event.md` (panewire@e1f9f39, lines 100-119).
 - **A `MERGE_OVERDUE` notice that reaches a design session is not merge authority:** the session acks it with `--type ack` and does nothing else (mergewake already sent the desk an FYI; the operator opens a lead session).
-- Deploys and infra go to operator-desk. The design session does not deploy.
-- A worker's READY/ESC reach its parent lane, `operator-desk` for a design session's worker. Inbox-capable CLIs may block on
+- Deploys and infra of the repo are its design session's (§Authority); operator-desk takes them only
+  while that repo has no design session open.
+- A worker's READY/ESC reach its parent lane — the owner lane: the design session's lane for its
+  worker, else `operator-desk`. Inbox-capable CLIs may block on
   `panewire inbox wait` once shipped; otherwise the message arrives as pane text.
 - **READY to a design-session lane is recorded, not delivered** (panewire hk 3426): it stays in the job
   record and `panewire inbox list`. ESC (`--type decision`), `SPAWN_FAILED` and failures that need action
-  still reach the owner lane. The desk still receives READY.
+  still reach the owner lane. The desk still receives READY from a worker it owns.
 
 ## Brief rules
 
-- **`<parent-lane>` in a design session's worker brief is `operator-desk`** (§The loop step 5).
+- **`<parent-lane>` in a worker brief is the owner lane: the design session's lane, else `operator-desk`**
+  (§The loop step 5).
 - **Every instruction maps 1:1 to an observable acceptance check** (`<command>` → expected
   output). Re-read the brief backwards: an instruction without a check is either given one
   or deleted. Small tasks need this most — nobody re-reads them.

@@ -49,8 +49,8 @@ MARKER = re.compile(
 REQUIRED = [
     ("robin", "## Fleet adapter for vendored pstack", "merge-exception",
      r"no session merges, except a lead under `lead` §Ledger"),
-    ("deploy", "## 발주자 측 — operator-desk", "merge-exception",
-     r"디자인 세션은 머지하지 않는다\. 세션의 직접 머지는 lead 뿐이다\(`lead` §Ledger\)"),
+    ("deploy", "## 발주자 측 — 발주 세션 (레포의 디자인 세션, 없으면 operator-desk)", "merge-exception",
+     r"디자인 세션은 머지하지 않는다\. 예외는 mergewake watch 가 연 자기 레포 revert PR 을 디자인 세션이 머지하는 것 하나다\. 세션의 직접 머지는 lead 뿐이다\(`lead` §Ledger\)"),
     ("spawn", "## 4. 기동·주입·감시", "stuck-no-respawn",
      r"stuck 으로 판정하고 스폰 실패로 다룬다 — 자동 재스폰하지 않는다"),
     ("relay", "## 1. 핸드오프 프롬프트 5요소", "hk-task", r"hk task 연결"),
@@ -80,6 +80,8 @@ REQUIRED = [
 FORBIDDEN = [
     ("robin", "bare-no-merge", r"no session merges(?!, except)", "\nLanding: no session merges.\n"),
     ("deploy", "design-never-merges", r"디자인 세션은 머지도", "\n디자인 세션은 머지도 배포도 하지 않는다.\n"),
+    # r2: the design session deploys its own repo; the old "does not deploy" rule is gone.
+    ("deploy", "design-never-deploys", r"디자인 세션은 배포하지 않는다", "\n디자인 세션은 배포하지 않는다.\n"),
     ("spawn", "auto-respawn", r"→ ?재스폰", "\n- stuck 판정→재스폰.\n"),
     ("relay", "linear", r"Linear 이슈", "\n5. Linear 이슈 등록.\n"),
 ]

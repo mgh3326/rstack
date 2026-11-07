@@ -76,7 +76,7 @@ anything here. Unset or missing is normal — the abstract rules below apply alo
 | Ask the operator to choose | [`decision-request.md`](references/decision-request.md) | `handoffkeep tasks decision-request` first, then notify with the request_id |
 | Wait for a worker, job or CI | [`watching.md`](references/watching.md), [`panewire-events.md`](references/panewire-events.md) | push events, one bounded wait, at most 3 temporary waits |
 | Reap finished panes | [`reap.md`](references/reap.md) | mergewake reaps merged PRs' workers; the spawner reaps the rest with `panewire reap --lane`, preview then `--apply` |
-| Deploy one change | [`deploy.md`](references/deploy.md) (+ [`deploy-checklist.md`](references/deploy-checklist.md)) | installer seat, spawned by and reporting only to operator-desk; fixed 9 steps, no judgement |
+| Deploy one change | [`deploy.md`](references/deploy.md) (+ [`deploy-checklist.md`](references/deploy-checklist.md)) | installer seat, spawned by and reporting to the ordering session (the repo's design session, else operator-desk); fixed 9 steps, no judgement |
 
 ## Escalate a decision
 
@@ -109,5 +109,6 @@ panewire emit --kind lane.event --lane <parent-lane> --type decision \
 ## Who does what
 
 Authority of the design session, workers, operator-desk and the operator is
-`wake` §Authority; what READY means is `wake` §READY. operator-desk spawns the installer seat;
-the **Installer** executes one deploy and judges nothing (`deploy.md`).
+`wake` §Authority; what READY means is `wake` §READY. The repo's design session spawns the installer seat,
+or operator-desk when that repo has none open; the **Installer** executes one deploy and judges
+nothing (`deploy.md`).
