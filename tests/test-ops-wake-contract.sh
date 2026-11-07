@@ -18,8 +18,9 @@
 #   6. r2 (hk:doc decision/2026-11-07/design-session-desk-authority): the design
 #      session holds the desk's authority over its own repo and services and merges its
 #      repo's watch revert PR; only a lead direct-merges a feature PR; the worker's
-#      --owner is that lane while it is open, operator-desk once it has closed; no
-#      session waits for a merge notice (N2, hk 3455).
+#      --owner is that lane and stays for the job's life (closing does not move it;
+#      the next design session or the desk reads that lane's inbox); no session
+#      waits for a merge notice (N2, hk 3455).
 # Every required row has a mutant that deletes the matched text in memory and
 # must go RED by assertion; every forbidden row has an injected mutant.
 set -euo pipefail
@@ -105,7 +106,8 @@ REQUIRED = [
     ("wake", "## The loop", "brief-in-hk", r"handoffkeep doc put --key brief/<date>/<job> --kind note"),
     ("wake", "## The loop", "spawn-owner-host", r"--role worker --owner <design-session lane> --host auto"),
     ("wake", "## The loop", "owner-work-sentence", r"`-m auto --host auto --role worker --owner <design-session lane>` flags does the same"),
-    ("wake", "## The loop", "owner-why", r"The owner is the design session's lane while it is open, `operator-desk` once it has closed: a closing session records its open work in hk and hands the desk lane one line, so ESC and `SPAWN_FAILED` still reach a lane that outlives the session\."),
+    ("wake", "## The loop", "owner-why", r"panewire records it at spawn and it stays for the job's life: closing the session does not move it\."),
+    ("wake", "## The loop", "owner-closed-inbox", r"the repo's next design session opens on the same `<repo>-design` lane and reads them first \(`panewire inbox list --lane <repo>-design --unread`\), and until one opens the desk reads them there\."),
     ("wake", "## The loop", "quota-front-door", r"`panewire quota status --json` shows quota; `panewire quota refresh <pool>` re-measures a stale pool"),
     ("spawn", "## 4. 기동·주입·감시", "quota-front-door", r"쿼타 확인은 `panewire quota status --json`.{0,60}낡은 풀은 `panewire quota refresh <풀>`"),
     ("wake", "## The loop", "no-unlanded-blocker", r"Spawn only tickets with no unlanded blocker"),
@@ -131,7 +133,7 @@ REQUIRED = [
     ("wake", "## On spawn failure", "failure-no-bypass", r"\*\*Never launch with `herdr agent start` or any other route\.\*\*"),
     ("wake", "## On spawn failure", "failure-comment", r"\*\*Comment the request id, rc, stage and reason on the task"),
     ("wake", "## On spawn failure", "failure-esc", r"panewire emit --kind lane\.event --lane <owner-lane> --type decision"),
-    ("wake", "## On spawn failure", "failure-esc-owner-lane", r"Emit ESC `--type decision` to the owner lane\*\* — the design session's lane while it is open, else `operator-desk`"),
+    ("wake", "## On spawn failure", "failure-esc-owner-lane", r"Emit ESC `--type decision` to the owner lane\*\* — the job's recorded `--owner`: the design session's lane, or `operator-desk` for a job the desk spawned"),
     ("wake", "## Merge gate", "gate-done-marker", r"lists `…/<reviewed head>-done`"),
     ("wake", "## Merge gate", "gate-no-critical-high", r"\*\*No unresolved critical/high finding\.\*\*"),
     ("wake", "## Merge gate", "gate-no-ci", r"\*\*CI is not a merge requirement\.\*\* CI runs after the merge, and a red main is reverted"),
@@ -150,7 +152,7 @@ REQUIRED = [
     ("wake", "## Authority", "design-merges-revert", r"it merges the revert PR mergewake `watch` opens for its own repo"),
     ("wake", "## Authority", "design-no-approval-request", r"It sends the desk no approval request"),
     ("wake", "## Authority", "shared-target-notice", r"only before touching a target several projects share \(a shared server, the hub, the Cloudflare account\) it sends the desk lane one line \(`--type info`, no reply needed\)"),
-    ("wake", "## Authority", "close-handoff", r"Before it closes it records its open work in hk and hands the desk lane one line\."),
+    ("wake", "## Authority", "close-handoff", r"Before it closes it records its open work in hk and hands the desk lane one line naming its lane and open jobs; its jobs keep that lane as owner"),
     ("wake", "## Authority", "lead-never-deploys", r"It never deploys"),
     ("wake", "## Authority", "workers-never-merge", r"\*\*Worker:\*\* implements and reports\. It never merges, deploys"),
     ("wake", "## Authority", "lead-only-direct-merge", r"\*\*Lead\*\* \(opened by the operator, follows the `lead` skill\): the only session that merges directly, under `lead` §Ledger\. It never deploys and never merges a T3 or `deploy_approval` PR\."),
@@ -218,6 +220,8 @@ REQUIRED = [
 
 # Rows that must be absent: panewire resolve refuses --builder-family with --role consult.
 FORBIDDEN = [
+    # PR #48 finding r4501835276: closing a session does not move a job's owner lane.
+    ("wake", None, "owner-moves-on-close", r"(?i)`?operator-desk`? once it has closed"),
     ("wake", None, "esc-ends-job", r"(?i)ESC (?:ends|completes|closes) the (?:current )?job"),
     ("ops", None, "ops-esc-ends-job", r"(?i)ESC (?:ends|completes|closes) the (?:current )?job"),
     # hk 3000: quota guidance goes through `panewire quota`; `pacelever reps` and the real-HOME lines stay.

@@ -38,7 +38,8 @@ operator-desk; `ops` deploy), or decisions (ask the operator).
   `watch` opens for its own repo. It sends the desk no approval request; only before touching a
   target several projects share (a shared server, the hub, the Cloudflare account) it sends the desk
   lane one line (`--type info`, no reply needed), and results go to hk. Before it closes it records
-  its open work in hk and hands the desk lane one line.
+  its open work in hk and hands the desk lane one line naming its lane and open jobs; its jobs keep
+  that lane as owner (§The loop step 5).
 - **Worker:** implements and reports. It never merges, deploys, or touches
   brokers, live servers, secrets or migrations.
 - **Lead** (opened by the operator, follows the `lead` skill): the only session that merges directly,
@@ -193,9 +194,13 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    `panewire work <task-id>` with the same `-c`, `-p`, `-l`, `--report` and
    `-m auto --host auto --role worker --owner <design-session lane>` flags does the same. Pass them all: its
    task-derived defaults need not match the worktree and brief you prepared. The owner is the design
-   session's lane while it is open, `operator-desk` once it has closed: a closing session records its
-   open work in hk and hands the desk lane one line, so ESC and `SPAWN_FAILED` still reach a lane that
-   outlives the session.
+   session's lane. panewire records it at spawn and it stays for the job's life: closing the session
+   does not move it. Events for a closed session's jobs stay durable in that lane's inbox (panewire@330f1f7
+   `relay.go:245-247`): the repo's next design session opens on the same `<repo>-design` lane and reads
+   them first (`panewire inbox list --lane <repo>-design --unread`), and until one opens the desk reads
+   them there. So a closing session records its open work in hk and hands the desk lane one line naming
+   its lane and open jobs. A job the desk spawns while the repo has no design session open is owned
+   by `operator-desk`.
    `-l <job>` is also the job id and the pane name mergewake looks up. Check profile, host and
    the prepended host-safety preamble, then run that same command once without `--dry-run` and with
    `--wait --wait-timeout 2m` (step 6 reads its exit). A refusal is read from its exit code (panewire
@@ -254,8 +259,8 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
 - **Never launch with `herdr agent start` or any other route.**
 - **Comment the request id, rc, stage and reason on the task:**
   `handoffkeep tasks comment <id> --body 'spawn failed request=<request_id> rc=<rc> stage=<stage> reason=<reason>'`.
-- **Emit ESC `--type decision` to the owner lane** — the design session's lane while it is open,
-  else `operator-desk` (§Escalation and notifications) — then stop on that ticket:
+- **Emit ESC `--type decision` to the owner lane** — the job's recorded `--owner`: the design
+  session's lane, or `operator-desk` for a job the desk spawned (§The loop step 5) — then stop on that ticket:
   ```sh
   panewire emit --kind lane.event --lane <owner-lane> --type decision --event-id <job>-spawn-failed \
     --text '[<job>] ESC | spawn failed request=<request_id> rc=<rc> stage=<stage> reason=<reason> | options: fix and respawn/drop | default: wait'
