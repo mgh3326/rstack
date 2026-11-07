@@ -135,8 +135,8 @@ def check_relay_handoff(text: str) -> None:
     assert "send-text" in sec and "send-keys" in sec and re.search(
         r"복구 목적 외에 금지", sec
     ), "relay.md carve-out must repeat the send-text/send-keys ban"
-    assert "초기 브리프 주입과 통지·질의에만 해당" in sec, (
-        "carve-out scope sentence (initial-injection/notify only) missing"
+    assert "초기 브리프 주입에만 해당" in sec, (
+        "carve-out scope sentence (initial injection only) missing"
     )
     sec32 = flat(section(text, "### 3-2. 하네스별 제출 마커 표 (측정한 것만)"))
     assert "§3-3 후속 라운드" in sec32 and "정본" in sec32, (
@@ -225,9 +225,9 @@ assert spawn_tool_reverted != spawn_text, (
 )
 
 spawn_stale_readded = spawn_text.replace(
-    "비-claude pane 은 §3-1 의 직접주입 경로)",
-    "비-claude pane 은 §3-1 의 직접주입 경로). 후속 지시에도 비-claude pane "
-    "에는 `herdr agent prompt`를 쓴다",
+    "**`relay.md` §3-1 정본**을 참조한다",
+    "**`relay.md` §3-1 정본**을 참조한다. 비-claude pane 에는 "
+    "`herdr agent prompt` 를 쓴다",
     1,
 )
 assert spawn_stale_readded != spawn_text, (
@@ -235,7 +235,7 @@ assert spawn_stale_readded != spawn_text, (
 )
 
 relay_carveout_removed = re.sub(
-    r"(?s)🔴 \*\*예외 — 후속 라운드·보충 지시.*?통지·질의에만 해당한다\.\n",
+    r"(?s)🔴 \*\*예외 — 후속 라운드·보충 지시.*?초기 브리프 주입에만 해당한다\.\n",
     "",
     relay_text,
     count=1,

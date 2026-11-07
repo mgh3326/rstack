@@ -24,15 +24,13 @@ anything here. Unset or missing is normal — the abstract rules below apply alo
   injecting into a worker). It never applies upward.
 - **Never inject into operator-desk's pane.** READY, ESC and every other notice to
   operator-desk go only through `panewire emit --kind lane.event --lane operator-desk --type <type>`;
-  the desk is a claude pane, the hub records delivery and holds or batches it while
-  the desk is busy. `herdr agent prompt`, `herdr pane send-text` or `send-keys` into
-  the desk pane land in the operator's input box, bypass hold/batching and can mix
-  with what the operator is typing (2026-11-02 incident). The same holds for any
-  claude parent lane. If you cannot see the receiver (another host, `panewire find`
-  misses it), `emit` rc 0 is sufficient — no fallback channel, no ESC about delivery.
-  A **non-claude parent** (codex, grok, devin) does not receive `lane.event`; for that
-  parent only, keep the documented escalation route (§Escalate a decision: emit, then
-  `herdr agent prompt` to the parent pane and confirm it landed).
+  the hub records delivery and holds or batches it while the desk is busy. `herdr agent prompt`,
+  `herdr pane send-text` or `send-keys` into the desk pane land in the operator's input box,
+  bypass hold/batching and can mix with what the operator is typing (2026-11-02 incident).
+  The same holds for any parent lane — every relay harness (claude, codex, devin, grok, omp,
+  cmd) receives `lane.event` (`relay.md` §3-1). If you cannot see the receiver (another host,
+  `panewire find` misses it), `emit` rc 0 is sufficient — no fallback channel, no ESC about
+  delivery.
 - **Every `panewire emit` between sessions carries `--type`.** A notice, receipt or handoff note
   that needs no reply is `info` or `ack` (the hub files it in the inbox). Only what needs action
   now is `decision`, `blocked` or `order` (interrupt). A completion the receiver is waiting on
@@ -91,9 +89,8 @@ panewire emit --kind lane.event --lane <parent-lane> --type decision \
 ```
 
 - Name the question, the options and the default in that one event.
-- `lane.event` reaches claude panes only (`relay.md` §3-1). If the parent lane's pane is another
-  harness (codex, grok, devin), also inject the same text with
-  `herdr agent prompt <parent-pane> '<text>'` and confirm it landed (`relay.md` §3).
+- `lane.event` reaches every relay harness — claude, codex, devin, grok, omp and cmd
+  (`relay.md` §3-1). Emit once; do not also inject the same text into the parent pane.
 - If the default is safe (reversible, inside the brief's scope, no spend or external
   effect), continue with it and say so in the report. Otherwise stop and wait for the reply.
 - `panewire escalate <job> --question '<text>'` is only for giving up: it stops the job as escalated and
