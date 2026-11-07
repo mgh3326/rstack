@@ -13,6 +13,8 @@
 #      panewire spawn --wait exit codes (hk 2801), forbids credential reads,
 #      has a spawn-failure rule, never tells a session to merge, and carries no
 #      pre-merge CI requirement.
+#   5. after READY mergewake takes the PR and the design session does not act on
+#      READY, while the worker brief's ## Done still emits exactly one READY (hk 3427).
 # Every required row has a mutant that deletes the matched text in memory and
 # must go RED by assertion; every forbidden row has an injected mutant.
 set -euo pipefail
@@ -84,6 +86,9 @@ REQUIRED = [
     ("wake", "## Merge gate", "risks-measured", r"Every RISKS item is either measured harmless"),
     ("wake", "## Merge gate", "automated-reviewer-not-gate", r"An automated reviewer's state .{0,80}is not a gate"),
     ("wake", "## The loop", "ls-remote", r"`git ls-remote origin wk/<slug>` must show the reported head"),
+    # hk 3427: mergewake owns the PR after READY; the design session does not act on READY.
+    ("wake", "## The loop", "mergewake-takes-pr-after-ready", r"After READY, mergewake picks the PR up from the PR itself .{0,200}A design session does not wait for or act on READY"),
+    ("wake", "## Done", "done-emits-ready", r"Then emit exactly once: panewire emit --kind lane\.event --lane <parent-lane> --type ready --event-id <job>-ready"),
     # Design session (hk 2783).
     ("wake", "## Settle before spawning", "settle-facts", r"\*\*Resolve facts yourself\*\*, from code, docs and hk"),
     ("wake", "## Settle before spawning", "settle-decisions", r"\*\*Ask the operator only for decisions\.\*\* Number each question, give a recommended answer"),
@@ -193,6 +198,8 @@ FORBIDDEN = [
     ("wake", None, "wake-no-pacelever-quota", r"pacelever (?:--json|refresh)"),
     ("spawn", None, "spawn-no-pacelever-quota", r"pacelever (?:--json|refresh)"),
     ("consult", None, "consult-no-builder-family", r"--builder-family"),
+    # hk 3427: no loop step tells a design session to act on READY.
+    ("wake", "## The loop", "design-acts-on-ready", r"\bacts on READY|\bhandle READY|\bOn READY,"),
 ]
 
 # wake never tells a session to merge or to wait on CI before a merge, and never
@@ -278,6 +285,12 @@ def check_emit_types(texts: dict) -> None:
             assert "--type " in m.group(0), f"{name}:{n}: panewire emit without --type: {m.group(0).strip()}"
 
 
+def check_done_ready(wake: str) -> None:
+    # hk 3427: the worker brief's ## Done still emits exactly one READY.
+    n = section(wake, "## Done").count("--type ready")
+    assert n == 1, f"wake: ## Done must emit exactly one --type ready, found {n}"
+
+
 def check(d: dict, ref_texts: dict) -> None:
     check_links(d["ops"], ref_texts)
     check_emit_types({**d, **ref_texts})
@@ -285,6 +298,7 @@ def check(d: dict, ref_texts: dict) -> None:
         check_self_contained(name, d[name])
     check_refs(ref_texts)
     check_design_session(d["wake"])
+    check_done_ready(d["wake"])
     check_rows(d)
     assert "never read real agent dotfiles" not in d["wake"], "wake: old agent dotfiles prohibition restored"
 
@@ -323,6 +337,8 @@ injections = [
     ("wake-delegated-seat-readded", "wake", "## Rules\n", "## Rules\n\n위임 좌석은 PR 을 올린다.\n"),
     ("ops-repo-session-readded", "ops", "## Routing table\n", "## Routing table\n\nrepo 세션이 스폰한다.\n"),
     ("consult-old-builder-family-line", "consult", "## 1. 자문처 결정\n", "## 1. 자문처 결정\n\n`panewire resolve --role consult --builder-family <질문자 계열>`\n"),
+    ("wake-loop-acts-on-ready", "wake", "## The loop\n", "## The loop\n\nThe design session acts on READY.\n"),
+    ("wake-done-second-ready", "wake", "## Done\n", "## Done\npanewire emit --kind lane.event --lane <parent-lane> --type ready --event-id <job>-ready2 --text '[<job>] READY'\n"),
 ]
 for label, doc, anchor, new in injections:
     assert docs[doc].count(anchor) == 1, f"fixture: anchor {anchor!r} not unique in {doc}"
