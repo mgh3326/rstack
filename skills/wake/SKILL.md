@@ -203,17 +203,24 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    | Exit | Meaning | Do |
    |---|---|---|
    | `85` (`wait timeout for job`) | Landed: the spawn state was `succeeded` and the job is running | Comment the request id on the task, go to step 7 |
-   | `0`, `83`, `84` | Landed, then the job completed, escalated or was lost (`83` escalated means `panewire escalate`; an ESC alone no longer ends the job) | Comment the request id; handle READY, ESC or the loss |
+   | `0`, `83`, `84` | Landed, then the job completed, escalated or was lost (`83` escalated means `panewire escalate`; an ESC alone no longer ends the job) | Comment the request id; on `0` mergewake takes the PR (step 7); handle the ESC or the loss |
    | Any other, with `spawn refused: <reason> (operation <id>)` | `failed` or `retryable`: not landed | §On spawn failure; never replay |
    | Any other, with `spawn ownership is unresolved` | `reconciling` or `deadline_exceeded`: the hub keeps ownership | Never launch; §On spawn failure |
 
    Where the pane's host is reachable, `ops` spawn §4-2 adds one read-only look at the pane.
 7. **Close.** The design session may close once landing is proven. It sends no success notice:
-   mergewake already notifies the desk lane. The worker opens the PR and reports READY (§READY);
-   mergewake reviews and merges it on §Merge gate. Nothing in this session merges.
-8. **After the merge.** Whichever session is open (otherwise the desk) acts on READY and on mergewake's
-   merge notice. On READY, verify the push: `git ls-remote origin wk/<slug>` must show the reported head. A later fix or
-   a mergewake branch update moves the head, so after the merge read the merged head from the PR instead. Then
+   mergewake already notifies the desk lane. The worker opens the PR and reports READY (§READY).
+   After READY, mergewake picks the PR up from the PR itself and reviews it, sends findings to the
+   author and merges it on §Merge gate. A design session does not wait for or act on READY. Nothing in
+   this session merges.
+   - The worker's result lives in its job record, report and hk task refs. `panewire inbox list` shows the
+     recorded READY if you need it.
+   - READY to a design-session lane is recorded, not delivered (panewire hk 3426). ESC and failures still
+     reach the owner lane.
+   - The desk still receives READY from a worker it owns. It verifies the push:
+     `git ls-remote origin wk/<slug>` must show the reported head.
+8. **After the merge.** Whichever session is open (otherwise the desk) acts on mergewake's merge notice.
+   A later fix or a mergewake branch update moves the head, so read the merged head from the PR. Then
    check the report exists at its path outside the worktree
    (harvest it from the pane first if not — a closed pane loses it); once it exists, close
    the hk task. The mergewake daemon closes the worker pane once it is `idle`/`done` and its
@@ -377,6 +384,9 @@ original guards. A temporary observation uses `panewire wait --agent NAME --stat
 - Deploys and infra go to operator-desk. The design session does not deploy.
 - A worker's READY/ESC reach its parent lane, `operator-desk` for a design session's worker. Inbox-capable CLIs may block on
   `panewire inbox wait` once shipped; otherwise the message arrives as pane text.
+- **READY to a design-session lane is recorded, not delivered** (panewire hk 3426): it stays in the job
+  record and `panewire inbox list`. ESC (`--type decision`), `SPAWN_FAILED` and failures that need action
+  still reach the owner lane. The desk still receives READY.
 
 ## Brief rules
 
