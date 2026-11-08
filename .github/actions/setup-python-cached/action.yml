@@ -1,6 +1,9 @@
 name: Set up Python with a cached toolchain
 description: >-
-  Installs the exact Python version named in the repo-root .python-version file.
+  Installs the exact Python version named in the repo-root .python-version file,
+  or in .python-version-macos on a macOS runner: CPython 3.12.11 and later are
+  source-only releases with no macOS build in actions/python-versions, and
+  ubuntu-latest (26.04) has builds only from 3.12.13.
   The toolchain directory for that version is restored from and saved to the runner
   tool cache, so a warm run skips the download. On a miss, actions/setup-python runs
   up to three times with backoff so a transient 403 or 504 does not fail the job.
@@ -12,9 +15,13 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        v=$(tr -d '[:space:]' < .python-version)
+        file=.python-version
+        if [[ "$RUNNER_OS" == macOS ]]; then
+          file=.python-version-macos
+        fi
+        v=$(tr -d '[:space:]' < "$file")
         if ! [[ "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-          echo ".python-version: expected x.y.z (got '$v')" >&2
+          echo "$file: expected x.y.z (got '$v')" >&2
           exit 1
         fi
         echo "version=$v" >> "$GITHUB_OUTPUT"
