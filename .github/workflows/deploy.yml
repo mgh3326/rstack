@@ -24,9 +24,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.workflow_run.head_sha || inputs.ref }}
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
+      - uses: ./.github/actions/setup-python-cached
       - name: Full suite on the deploy target platform
         run: bash tests/run-all.sh
   install-smoke:
@@ -38,9 +36,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.workflow_run.head_sha || inputs.ref }}
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
+      - uses: ./.github/actions/setup-python-cached
       - name: Install the full set into a temporary HOME and check the expected skill dirs
         run: python3 tests/test-install.py
   deploy-ok:
