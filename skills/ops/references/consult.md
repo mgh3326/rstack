@@ -72,6 +72,7 @@ panewire spawn -c <dir> -m <프로필> -p <질문패킷파일> -w <ws> -l consul
 - **The asking session reads the answer from hk:** find the newest with `handoffkeep doc list --prefix reports/<consult job>/` (newest-round rule, `wake` loop step 8: highest `-rN`, else the base name, over only the keys starting with the literal `reports/<consult job>/`;
   a follow-up is stored as `answer-r<N>.md`) and `handoffkeep doc get <key>`,
   after the inbox item arrives (design and desk lanes are inbox-only, `watching.md` §Inbox wake line).
+  First do the failure-marker check in the newest-round rule: a `[consult-done]` notice with `(hk upload failed)` means do not read hk (never an older round).
 - 자문자는 답변 파일을 작성한 직후 §2 의 `[consult-done]` 통지를 실행한다(`panewire emit`).
   대기·기한 후 확인·착지 확인 분기는 **`relay.md` §3-1 정본**을 따른다.
 - 이벤트 수신 뒤 파일이 없으면 ①`herdr agent read <target> --lines 40`으로
@@ -92,7 +93,7 @@ panewire spawn -c <dir> -m <프로필> -p <질문패킷파일> -w <ws> -l consul
 
 - 자문 답변은 스폰 때 정한 `--report` 경로(`~/work/herdr-inbox/jobs/consult-<주제>/answer.md`)에
   쓰고(`panewire done --report` 의 입력이자 scratch), `panewire done` 으로 hk `reports/<consult job>/` 에 올린다(§3).
-  정본은 hk 이고 `handoffkeep doc list --prefix reports/<consult job>/` 로 나온 키는 최신 라운드 규칙(`wake` loop step 8: 리터럴 `reports/<consult job>/` 로 시작하는 키만 남기고,
+  정본은 hk 이되 통지에 `(hk upload failed)` 가 있으면 hk 를 읽지 않고(최신 라운드 규칙의 실패 표지 확인), `handoffkeep doc list --prefix reports/<consult job>/` 로 나온 키는 최신 라운드 규칙(`wake` loop step 8: 리터럴 `reports/<consult job>/` 로 시작하는 키만 남기고,
   가장 높은 `-rN`, 없으면 기본 이름)으로만 골라
   `handoffkeep doc get <key>` 로 읽는다.
   스폰 없는 상존 세션 질의는 `session-questions.md` §1 경로를 쓴다.
