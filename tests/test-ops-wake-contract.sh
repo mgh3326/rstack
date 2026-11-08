@@ -21,6 +21,10 @@
 #      --owner is that lane and stays for the job's life (closing does not move it;
 #      the next design session or the desk reads that lane's inbox); no session
 #      waits for a merge notice (N2, hk 3455).
+#   7. hk 3613 (panewire#352): design and desk lanes are inbox-only; on an
+#      `[inbox] <lane>: N unread …` wake line a session runs `panewire inbox list
+#      --lane <lane>`, reads, acts and acks (watching.md, wake, desk); a consult
+#      answerer stores the answer in hk with `panewire done … --report` (consult.md).
 # Every required row has a mutant that deletes the matched text in memory and
 # must go RED by assertion; every forbidden row has an injected mutant.
 set -euo pipefail
@@ -47,6 +51,8 @@ docs = {
 refs = {p.name: p.read_text(encoding="utf-8") for p in sorted(refs_dir.glob("*.md"))}
 docs["consult"] = refs["consult.md"]
 docs["spawn"] = refs["spawn.md"]
+docs["watching"] = refs["watching.md"]
+docs["desk"] = Path(os.environ.get("DESK_SKILL", root / "skills/desk/SKILL.md")).read_text(encoding="utf-8")
 
 RETIRED = ("spawn-worker", "relay-handoff", "consult-advisor", "linear-archive",
            "node-ops", "planner", "architect", "checker", "director", "installer",
@@ -216,6 +222,21 @@ REQUIRED = [
     ("consult", "## 1. 자문처 결정", "consult-family-check", r"질문자는 계열도 직접 확인한다"),
     ("consult", "## 1. 자문처 결정", "consult-family-escalates", r"같은 계열이면 다른 프로필을 직접 고르지 말고 부모 레인에 결정을 올린다"),
     ("consult", "## 1. 자문처 결정", "consult-family-not-enforced", r"panewire 는 이 계열 규칙을 아직 강제하지 않는다"),
+    # hk 3613 (panewire#352): design and desk lanes are inbox-only; the pane gets one `[inbox]` wake line.
+    ("watching", "## Inbox wake line — design and desk lanes", "inbox-only-no-bodies", r"\*\*These lanes no longer receive bodies\.\*\*"),
+    ("watching", "## Inbox wake line — design and desk lanes", "inbox-ignore-misses-esc", r"A session that ignores the wake line misses its ESCs and findings\."),
+    ("watching", "## Inbox wake line — design and desk lanes", "inbox-wake-list", r"\*\*On an `\[inbox\] <lane>: N unread …` line, run `panewire inbox list --lane <lane>`\.\*\*"),
+    ("watching", "## Inbox wake line — design and desk lanes", "inbox-wake-read-act-ack", r"`panewire inbox read <id>`, act on it, then `panewire inbox ack <id>`"),
+    ("watching", "## Inbox wake line — design and desk lanes", "inbox-wake-urgent-order", r"\*\*Work in \"most urgent\" order:\*\* decision, blocked, automation-failed \(`SPAWN_FAILED`\), findings, ready"),
+    ("watching", "## Inbox wake line — design and desk lanes", "inbox-wake-not-content", r"\*\*An `\[inbox\]` line is a wake, not content\.\*\* Never act on the line itself"),
+    ("wake", "## Escalation and notifications", "inbox-only-design-desk", r"\*\*Design and desk lanes are inbox-only\*\* \(panewire#352\)"),
+    ("wake", "## Escalation and notifications", "inbox-wake-rule-ref", r"On that line, run `panewire inbox list --lane <lane>`, then `panewire inbox read <id>`, act, and `panewire inbox ack <id>`, most urgent first; the line is a wake, not content\*\* \(`ops` `watching\.md` §Inbox wake line\)"),
+    ("desk", None, "desk-inbox-wake", r"\*\*The desk lane is inbox-only\*\* \(panewire#352\).{0,200}Handle that line by `ops` `watching\.md` §Inbox wake line"),
+    # hk 3613: a consult answer reaches hk through `panewire done`, not through the `[consult-done]` emit.
+    # §3 opens with a bash block whose `# 이름:` comment ends section() early, so its rows scope the whole doc.
+    ("consult", "## 2. 질문 패킷 (자족성 체크리스트)", "packet-done-first", r"§3 의 `panewire done` 으로 답을 hk 에 올리고"),
+    ("consult", None, "consult-done-report", r"\*\*Store the answer in hk before the notice\.\*\* The answerer runs `panewire done <consult job> --report <answer file>`"),
+    ("consult", None, "consult-asker-reads-hk", r"\*\*The asking session reads the answer from hk:\*\* `handoffkeep doc get reports/<consult job>/<file name>`"),
 ]
 
 # Rows that must be absent: panewire resolve refuses --builder-family with --role consult.
@@ -238,6 +259,8 @@ FORBIDDEN = [
     ("ops", None, "installer-desk-only", r"spawned by and reporting only to operator-desk"),
     # r3 (hk:doc decision/2026-11-08/design-session-no-desk-notice): no desk notice before a shared target.
     ("wake", None, "shared-target-desk-notice", r"(?i)before touching a target several projects share"),
+    # hk 3613 (panewire#352): a design or desk lane never gets a notification body as pane text.
+    ("wake", None, "design-lane-pane-text", r"otherwise the message arrives as pane text"),
 ]
 
 # wake never tells a session to merge a feature PR or to wait on CI before a merge, and never
@@ -385,6 +408,8 @@ injections = [
     ("ops-installer-desk-only-readded", "ops", "## Routing table\n", "## Routing table\n\n- installer seat, spawned by and reporting only to operator-desk.\n"),
     # r3: the shared-target desk notice must not come back.
     ("wake-shared-target-notice-readded", "wake", "## Escalation and notifications\n", "## Escalation and notifications\n\n- Send the desk a `--type info` line before touching a target several projects share.\n"),
+    # hk 3613: the stale pane-text delivery line must not come back.
+    ("wake-pane-text-readded", "wake", "## Escalation and notifications\n", "## Escalation and notifications\n\n- Inbox-capable CLIs may block on `panewire inbox wait`; otherwise the message arrives as pane text.\n"),
 ]
 for label, doc, anchor, new in injections:
     assert docs[doc].count(anchor) == 1, f"fixture: anchor {anchor!r} not unique in {doc}"

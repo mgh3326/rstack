@@ -16,6 +16,10 @@ several projects share. Lane routes stay with the desk. A closed session's jobs 
 its lane as owner, so until that repo's next design session opens the desk reads their ESCs and spawn
 failures in that lane's inbox (`wake` §The loop step 5).
 
+**The desk lane is inbox-only** (panewire#352): ESCs, spawn failures and READYs arrive as inbox
+items, and the pane gets only an `[inbox] <desk lane>: N unread …` wake line. Handle that line by
+`ops` `watching.md` §Inbox wake line.
+
 These rules are method, not enforcement: you apply them at fixed points (the end of a reply,
 resume, before `tasks add`, a spawn failure, an operator answer), and no hook applies them for you.
 Each section names the failure it prevents.
