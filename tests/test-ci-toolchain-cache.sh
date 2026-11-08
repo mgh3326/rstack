@@ -116,6 +116,7 @@ expect_red("setup-python is pinned to a tag", check,
 expect_red("version validation removed", check,
            mutate("action", r'if ! [[ "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then', "if false; then"))
 expect_red("pinned version is minor only", check,
-           mutate(".python-version", "3.12.16\n", "3.12\n"))
+           mutate(".python-version", files[".python-version"],
+                  ".".join(files[".python-version"].strip().split(".")[:2]) + "\n"))
 print("PASS test-ci-toolchain-cache")
 PY
