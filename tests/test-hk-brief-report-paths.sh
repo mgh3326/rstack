@@ -80,5 +80,10 @@ cn = fc[i:fc.find("The asking session reads", i)]
 assert "jq -r .sha256" in cn and "shasum -a 256" in cn, "consult sha step must name the sha check"
 assert "(hk upload failed)" in cn and "local answer path" in cn, "consult sha step must name the (hk upload failed) fallback"
 assert "newest-round rule" in cn, "consult sha step must point to the newest-round rule"
+# Every consult reader must name wake step 8's literal-prefix filter (LIKE `_` also matches `consult-api`).
+readers = [l for l in consult.splitlines() if "doc list --prefix reports/<consult job>/" in l]
+assert readers, "consult.md must have doc list readers"
+for l in readers:
+    assert ("literal" in l or "리터럴" in l) and "step 8" in l, "consult reader must point to wake step 8 and its literal-prefix filter: " + l.strip()
 print("PASS hk brief/report paths")
 PY
