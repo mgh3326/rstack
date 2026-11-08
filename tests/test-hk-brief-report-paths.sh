@@ -42,9 +42,16 @@ for path in sorted((root / "skills").rglob("*.md")):
 
 # Worker READY text names the hk key and the worker ends with panewire done.
 done = flat(section(wake, "## Done"))
-assert "hk:doc/reports/<job>/<basename>" in done, "READY text must name hk:doc/reports/<job>/<basename> from done's report= path"
-assert "report upload failed" in done and "(hk upload failed)" in done, "READY must name the failed-upload fallback"
-assert "Never name an hk key that was not uploaded" in done
+assert "hk:doc/reports/<job>/" in done, "READY text must name the prefix hk:doc/reports/<job>/"
+assert "hk:doc/reports/<job>/<basename>" not in done, "READY must not name a derived basename"
+assert done.find("handoffkeep doc list --prefix reports/<job>/") >= 0, "Done must check hk with doc list --prefix before READY"
+assert done.find("doc list --prefix reports/<job>/") < done.find("--type ready"), "the doc list check must come before the READY emit"
+assert "(hk upload failed)" in done and "local path" in done, "READY must name the local-path fallback with (hk upload failed)"
+assert "Never name the hk prefix unless the list showed a doc" in done
+assert not re.search(r"report= path|from the printed|basename of the", done), "no report= derivation rule may remain in Done"
+for name, text in (("wake", flat(wake)), ("consult", flat(consult)), ("reap", flat(reap))):
+    assert "key READY named" not in text, f"{name}: readers must not read the key READY named"
+assert "Newest-round rule" in flat(wake) and "highest `-rN`, else the base name" in flat(wake), "wake must state the newest-round rule"
 assert "panewire done <job> --report" in done, "the worker must end with panewire done <job> --report"
 assert not re.search(r"READY \| <pr> \| ~/work/herdr-inbox/jobs", done), "READY must not name the local report path"
 

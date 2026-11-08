@@ -236,7 +236,7 @@ REQUIRED = [
     # §3 opens with a bash block whose `# 이름:` comment ends section() early, so its rows scope the whole doc.
     ("consult", "## 2. 질문 패킷 (자족성 체크리스트)", "packet-done-first", r"§3 의 `panewire done` 으로 답을 hk 에 올리고"),
     ("consult", None, "consult-done-report", r"\*\*Store the answer in hk before the notice\.\*\* The answerer runs `panewire done <consult job> --report <answer file>`"),
-    ("consult", None, "consult-asker-reads-hk", r"\*\*The asking session reads the answer from hk:\*\* find the newest with `handoffkeep doc list --prefix reports/<consult job>/`"),
+    ("consult", None, "consult-asker-reads-hk", r"\*\*The asking session reads the answer from hk:\*\* find the newest with `handoffkeep doc list --prefix reports/<consult job>/` \(newest-round rule, `wake` loop step 8: highest `-rN`, else the base name"),
 ]
 
 # Rows that must be absent: panewire resolve refuses --builder-family with --role consult.
