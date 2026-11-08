@@ -59,6 +59,9 @@ mutant checks). On pull requests, CI runs the moved contracts and retained tool 
 Linux, with `ci-ok` gating merge. After pushes to main the light main tier (`post-ci.yml`, Linux
 only) posts `post-ok`; when it passes, `deploy.yml` runs the heavy tier for the same commit
 (macOS suite plus an install smoke) and posts `deploy-ok` without cancelling a running deploy.
+`post-ok` therefore covers Linux only: a macOS break on main shows on `deploy-ok`, which is not in
+`watch_checks` yet, so until mergewake adds deploy checks the PR's maintainer must watch the deploy
+run itself.
 `ci-any-ref.yml` runs either tier on any one commit (`workflow_dispatch` with a 40-hex `ref` and
 `suite` `main` or `deploy`) and posts the matching status, so a watcher can bisect a red main
-whose intermediate runs were cancelled.
+whose intermediate runs were cancelled and can re-run a deploy for a head the queue replaced.
