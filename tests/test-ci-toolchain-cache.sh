@@ -3,7 +3,7 @@
 # (.github/actions/setup-python-cached) after checkout. The composite restores the exact pinned
 # toolchain from the Actions cache before actions/setup-python, keys it by OS, arch and exact
 # version, runs setup three times with 30 s and 90 s backoff, pins its actions to full SHAs, and
-# reads an x.y.z version from .python-version. Each pin has one mutant that must go RED.
+# reads an x.y.z version from .python-version (.python-version-macos on macOS runners). Each pin has one mutant that must go RED.
 set -euo pipefail
 
 root=$(cd "$(dirname "$0")/.." && pwd)
@@ -25,6 +25,7 @@ SETUP = "uses: actions/setup-python@"
 files = {p.name: p.read_text() for p in (root / ".github/workflows").glob("*.yml")}
 files["action"] = (root / ".github/actions/setup-python-cached/action.yml").read_text()
 files[".python-version"] = (root / ".python-version").read_text()
+files[".python-version-macos"] = (root / ".python-version-macos").read_text()
 
 
 def job(text, name):
@@ -50,6 +51,8 @@ def check(files):
 
     assert "using: composite" in action, "action is not a composite"
     assert ".python-version" in action, "action does not read .python-version"
+    assert re.search(r'if \[\[ "\$RUNNER_OS" == macOS \]\]; then\n\s+file=\.python-version-macos', action), \
+        "action does not read .python-version-macos on macOS"
     assert r'[[ "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]' in action, "action does not validate x.y.z"
     key = r"key: setup-python-toolchain-\$\{\{ runner\.os \}\}-\$\{\{ runner\.arch \}\}-py\$\{\{ steps\.version\.outputs\.version \}\}"
     assert re.search(key, action), "cache key lacks os, arch or exact version"
@@ -68,6 +71,8 @@ def check(files):
         assert re.fullmatch(r"[\w.-]+/[\w.-]+@[0-9a-f]{40} # v\d+\.\d+\.\d+", pin), f"not a SHA pin: {pin}"
 
     assert re.fullmatch(r"\d+\.\d+\.\d+\n?", version), f".python-version is not x.y.z: {version!r}"
+    mac = files[".python-version-macos"]
+    assert re.fullmatch(r"\d+\.\d+\.\d+\n?", mac), f".python-version-macos is not x.y.z: {mac!r}"
 
 
 def mutate(name, old, new, count=-1):
@@ -115,6 +120,11 @@ expect_red("setup-python is pinned to a tag", check,
                   "actions/setup-python@v5", count=1))
 expect_red("version validation removed", check,
            mutate("action", r'if ! [[ "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then', "if false; then"))
+expect_red("macOS version file not used", check,
+           mutate("action", "file=.python-version-macos", "file=.python-version"))
+expect_red("macOS pinned version is minor only", check,
+           mutate(".python-version-macos", files[".python-version-macos"],
+                  ".".join(files[".python-version-macos"].strip().split(".")[:2]) + "\n"))
 expect_red("pinned version is minor only", check,
            mutate(".python-version", files[".python-version"],
                   ".".join(files[".python-version"].strip().split(".")[:2]) + "\n"))
