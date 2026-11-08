@@ -5,7 +5,7 @@
 ### 6-0. 머지된 PR 의 워커 — mergewake 가 거둔다
 
 mergewake 데몬(`reap` 역할)이 머지 직후 그 PR 의 워커 pane 을 닫고(마지막 화면은
-`<jobs>/<pane 이름>/pane-screen.txt` 에 남는다), `worktree_after`(기본 168h) 동안 revert 가 없으면
+hk 문서 `screens/<job>/pane-screen.txt` 가 정본이고, `<jobs>/<pane 이름>/pane-screen.txt` 는 scratch 사본이다), `worktree_after`(기본 168h) 동안 revert 가 없으면
 worktree 와 branch 를 지운다. **디자인 세션은 머지 후 pane 을 손으로 닫지 않는다.**
 
 - 매칭은 이름이 아니라 위치다: pane cwd 가 linked worktree 이고, 현재 branch 가 PR head branch,
@@ -30,16 +30,18 @@ worktree 와 branch 를 지운다. **디자인 세션은 머지 후 pane 을 손
 ```bash
 panewire jobs list --lane <내 레인> --json     # 내 job 목록 (세션 기억 아님)
 # 각 job → jobs/<job_id>/events/*job.claim.json 의 agent_label
+#   (hk 에 이 값을 돌려주는 조회가 없다 — handoffkeep jobs 는 skills-report 뿐이다 — 그래서 로컬 파일을 읽는다)
 panewire find <agent_label>                  # → pane_id · status
 herdr pane close <pane_id>                 # 회수
 ```
-🔴 **세션 기억으로 목록을 만들지 마라.** compact 되면 사라진다. 정본은 panewire hub + job 이벤트다.
+🔴 **세션 기억으로 목록을 만들지 마라.** compact 되면 사라진다. 정본은 panewire hub + job 이벤트다. 산출물의 정본은 hk 다: job 기록(state·`report_doc`·`report_sha256`·`result`)과 hk 문서(`reports/<job>/…`, `screens/<job>/pane-screen.txt`). `~/work/herdr-inbox/jobs/` 의 job 디렉터리는 scratch 이며, hk 가 산출물을 확인한 뒤 약 3일 지나면 TTL 패스(`panewire reap --apply --expire-job-dirs` 또는 노드 설정 `[reap] job_dir_ttl` 로 켤 때만)가 지울 수 있다. 손으로 지우지 않는다 — job 디렉터리가 있으면 fleet job 이라는 계약이 그대로다.
 
 ### 6-2. 회수 조건 — 모두 만족할 때만
 
 1. **job 이 terminal** — 머지·close·escalation **완료**. 이건 네 판단이다.
-2. **산출물이 파일로 확보** — `jobs/<job_id>/`(상속 스폰이면 부모 잡 디렉터리일 수 있다)에 최종
-   보고가 있다. 화면에만 있으면 닫는 순간 증거가 소실된다.
+2. **산출물이 hk 에 확보** — job 기록의 `report_doc` 이 채워졌고 `handoffkeep doc get reports/<job>/report.md`
+   가 읽힌다(상속 스폰이면 부모 잡의 문서일 수 있다). 화면과 로컬 파일에만 있으면 닫는 순간
+   증거가 소실된다.
 3. **pane 이 비-working**.
 
 ### 6-3. 🔴 비-working 은 회수 사유가 아니다
@@ -64,12 +66,12 @@ herdr pane list → 해당 workspace pane 전수
 분류:
   ① 살아 있는 에이전트 pane (agent list 와 대조)     → §6-2/6-3 규칙대로
   ② terminal_title 이 셸 프롬프트(<user>@…)          → 죽은 탭 후보. 그 pane 의 job 이 terminal 이고
-                                                         보고서가 지정 경로에 있을 때만 닫는다. 아니면 둔다
+                                                         보고서가 hk 에 올라가 있을 때(`report_doc`)만 닫는다. 아니면 둔다
   ③ 그 외 (판별 불가)                                 → 화면을 읽고 판단
 ```
 - panewire 는 스폰 실패 시 실패 pane 의 화면을 잡 디렉터리에 남기고 그 pane 을 닫는다(남겨 두는
   옵션은 없다). 비정상 종료·수동 스폰 잔해는 계속 생기므로 스윕은 여전히 필요하다.
-- ②를 닫아도 잃는 것은 종료된 에이전트의 스크롤백뿐이다 — 산출물 정본은 `jobs/<id>/` 파일이다.
+- ②를 닫아도 잃는 것은 종료된 에이전트의 스크롤백뿐이다 — 산출물 정본은 hk 문서(`reports/<id>/…`)다.
 - worktree 는 pane 과 별개다 — pane 을 닫아도 worktree 는 남는다.
 
 ### 6-6. `panewire reap` — 끝난 pane 일괄 회수

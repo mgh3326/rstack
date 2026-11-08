@@ -46,10 +46,11 @@ mergewake reap 이 한다.
 
 - 기동 — 미리보기 후 `--dry-run`을 빼고 실행한다. 기본 실행은 hub의 durable 예약 뒤 `ACCEPTED`를 반환한다. `SPAWNED`/`SPAWN_FAILED`를 기다리고 아래 착지 확인을 수행한다:
   ```bash
-  panewire spawn -c <worktree> -m auto -p <브리프파일> -l <라벨> --t <T0..T3> \
+  panewire spawn -c <worktree> -m auto -p hk:doc/<키> -l <라벨> --t <T0..T3> \
     --task <id> --role worker --owner <내 레인> --host auto [--tags a,b] \
     [--report ~/work/herdr-inbox/jobs/<라벨>/report.md] [--effort <레벨>] [-L live|mock] --dry-run
   ```
+  `-p hk:doc/<키>` 가 권장 형태다 — 브리프는 `handoffkeep doc put --kind brief` 로 hk 에 두고 그 문서를 읽힌다. 로컬 파일 경로도 여전히 유효하다.
   `--dry-run` 은 고른 호스트·프로필·selection 기록과 host-safety preamble 이 붙은 최종 브리프를
   보이고 pane·lease·claim 을 만들지 않는다. 모르는 인자는 무시되지 않고 rc 2 다. 수동 기동은
   `herdr agent start <유일이름> --workspace <ws> --cwd <worktree> --no-focus -- <argv>` 이고, 디자인 세션은 쓰지 않는다(`wake` §On spawn failure).

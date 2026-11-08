@@ -171,10 +171,11 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    ```
    (`wt switch --create <slug>` also links `.env`; a raw worktree has none.) The worker is
    spawned with `-c` set to this worktree: mergewake reap finds a PR's worker by the pane's cwd.
-3. **Brief.** Copy §Worker brief to `~/work/herdr-inbox/jobs/<job>/brief.md`, fill it following
-   §Brief rules, put it in hk, and spawn from the same file:
+3. **Brief.** Copy §Worker brief to a scratch file anywhere outside the worktree, fill it
+   following §Brief rules, put it in hk, and spawn from the hk document. The scratch file is not
+   the record; hk is:
    ```sh
-   handoffkeep doc put --key brief/<date>/<job> --kind note --file ~/work/herdr-inbox/jobs/<job>/brief.md
+   handoffkeep doc put --key brief/<date>/<job> --kind brief --task <id> --file <scratch file>
    ```
 4. **Model and host are panewire's.** With `-m auto` panewire filters the quota catalog by the
    task's grade, role and tags, orders pools by hk `policy/quota-stop` and admits the first candidate
@@ -187,7 +188,7 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    Omit `-w` to use the executing host's configured workspace. `-w <label|id>` remains an
    optional override, resolved on that host; it does not select the model or quota pool.
    ```sh
-   panewire spawn -c ~/work/<repo>.<slug> -m auto -p ~/work/herdr-inbox/jobs/<job>/brief.md \
+   panewire spawn -c ~/work/<repo>.<slug> -m auto -p hk:doc/brief/<date>/<job> \
      -l <job> --t <T> --task <id> --role worker --owner <design-session lane> --host auto [--tags unity] \
      --report ~/work/herdr-inbox/jobs/<job>/report.md --dry-run
    ```
@@ -240,9 +241,10 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    A session that needs the merged state — to spawn a blocked ticket, for example — reads it from hk
    or the PR. A later fix or a mergewake branch update moves the head, so read the merged head from
    the PR. Then check the report exists at its path outside the worktree
-   (harvest it from the pane first if not — a closed pane loses it); once it exists, close
+   (harvest it from the pane first if not — a closed pane loses it); the record is hk document
+   `reports/<job>/report.md`, read with `handoffkeep doc get reports/<job>/report.md`. Once it exists, close
    the hk task. The mergewake daemon reaps the worker pane once it is `idle`/`done` and its
-   job dir exists (last screen to `~/work/herdr-inbox/jobs/<job>/pane-screen.txt`), and removes
+   job dir exists (last screen to hk document `screens/<job>/pane-screen.txt`; the job dir copy is scratch), and removes
    the worktree and branch after `worktree_after` — do not close or remove them by hand.
    `mergewake reap --repo <owner>/<repo> --pr <n> --dry-run` shows what it will do; a pane it
    keeps as `not-a-job` or protected is the spawner's to reap (`ops` reap). Deploys of the repo are
@@ -571,8 +573,10 @@ contract. Do not widen scope to answer a finding.
 ## Done
 Write ~/work/herdr-inbox/jobs/<job>/report.md — outside the worktree, so it does not affect
 `git status`; do not delete it: PR URL, head SHA (`git ls-remote`), tests run with output,
-each finding and its disposition (fix, dismiss, defer). Then emit exactly once:
-panewire emit --kind lane.event --lane <parent-lane> --type ready --event-id <job>-ready --text '[<job>] READY | <pr> | ~/work/herdr-inbox/jobs/<job>/report.md'
+each finding and its disposition (fix, dismiss, defer). Then upload it with
+`panewire done <job> --report ~/work/herdr-inbox/jobs/<job>/report.md`: the record is hk document
+`reports/<job>/report.md`, not the local file. Then emit exactly once:
+panewire emit --kind lane.event --lane <parent-lane> --type ready --event-id <job>-ready --text '[<job>] READY | <pr> | hk:doc/reports/<job>/report.md'
 After READY you are still the PR's author (`wake` §READY): fix the findings sent to you and stay
 in the pane until mergewake merges the PR and reaps it, or the desk says you are done.
 ````
