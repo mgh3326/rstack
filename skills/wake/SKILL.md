@@ -171,10 +171,11 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    ```
    (`wt switch --create <slug>` also links `.env`; a raw worktree has none.) The worker is
    spawned with `-c` set to this worktree: mergewake reap finds a PR's worker by the pane's cwd.
-3. **Brief.** Copy §Worker brief to `~/work/herdr-inbox/jobs/<job>/brief.md`, fill it following
-   §Brief rules, put it in hk, and spawn from the same file:
+3. **Brief.** Copy §Worker brief to a scratch file anywhere outside the worktree, fill it
+   following §Brief rules, put it in hk, and spawn from the hk document. The scratch file is not
+   the record; hk is:
    ```sh
-   handoffkeep doc put --key brief/<date>/<job> --kind note --file ~/work/herdr-inbox/jobs/<job>/brief.md
+   handoffkeep doc put --key brief/<date>/<job> --kind brief --task <id> --file <scratch file>
    ```
 4. **Model and host are panewire's.** With `-m auto` panewire filters the quota catalog by the
    task's grade, role and tags, orders pools by hk `policy/quota-stop` and admits the first candidate
@@ -187,7 +188,7 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    Omit `-w` to use the executing host's configured workspace. `-w <label|id>` remains an
    optional override, resolved on that host; it does not select the model or quota pool.
    ```sh
-   panewire spawn -c ~/work/<repo>.<slug> -m auto -p ~/work/herdr-inbox/jobs/<job>/brief.md \
+   panewire spawn -c ~/work/<repo>.<slug> -m auto -p hk:doc/brief/<date>/<job> \
      -l <job> --t <T> --task <id> --role worker --owner <design-session lane> --host auto [--tags unity] \
      --report ~/work/herdr-inbox/jobs/<job>/report.md --dry-run
    ```
@@ -240,9 +241,15 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    A session that needs the merged state — to spawn a blocked ticket, for example — reads it from hk
    or the PR. A later fix or a mergewake branch update moves the head, so read the merged head from
    the PR. Then check the report exists at its path outside the worktree
-   (harvest it from the pane first if not — a closed pane loses it); once it exists, close
+   (harvest it from the pane first if not — a closed pane loses it); the record is hk. A follow-up
+   round is stored as `report-r<N>.md`. **Newest-round rule (the one statement; other files point here):**
+   first, if the READY or `[consult-done]` notice names a local path with `(hk upload failed)`, do not select from hk: read that
+   local path on the worker's/answerer's own host if you are there, else report the answer unavailable and ask the sender to re-run
+   `panewire done` — never substitute an older hk round. Otherwise list `handoffkeep doc list --prefix reports/<job>/`, keep only keys that start with the literal `reports/<job>/` and have no
+   further `/` (the prefix is a SQL LIKE, so `_` also matches another job's `-`), take the highest `-rN`, else the base name, and read it with
+   `handoffkeep doc get <key>`. Once it exists, close
    the hk task. The mergewake daemon reaps the worker pane once it is `idle`/`done` and its
-   job dir exists (last screen to `~/work/herdr-inbox/jobs/<job>/pane-screen.txt`), and removes
+   job dir exists (last screen to hk document `screens/<job>/pane-screen.txt`; the job dir copy is scratch), and removes
    the worktree and branch after `worktree_after` — do not close or remove them by hand.
    `mergewake reap --repo <owner>/<repo> --pr <n> --dry-run` shows what it will do; a pane it
    keeps as `not-a-job` or protected is the spawner's to reap (`ops` reap). Deploys of the repo are
@@ -571,8 +578,18 @@ contract. Do not widen scope to answer a finding.
 ## Done
 Write ~/work/herdr-inbox/jobs/<job>/report.md — outside the worktree, so it does not affect
 `git status`; do not delete it: PR URL, head SHA (`git ls-remote`), tests run with output,
-each finding and its disposition (fix, dismiss, defer). Then emit exactly once:
-panewire emit --kind lane.event --lane <parent-lane> --type ready --event-id <job>-ready --text '[<job>] READY | <pr> | ~/work/herdr-inbox/jobs/<job>/report.md'
+each finding and its disposition (fix, dismiss, defer). Then upload it with
+`panewire done <job> --report ~/work/herdr-inbox/jobs/<job>/report.md`: the record is the hk document
+under `reports/<job>/`, not the local file (after a fix round it is stored as `report-r<N>.md`). Do not derive a key
+from what `done` prints: it can print the supplied path on a duplicate or a failed upload. Then prove hk holds this report,
+not an older round: list `handoffkeep doc list --prefix reports/<job>/`, pick the newest round by the newest-round rule, and compare
+`handoffkeep doc get <that key> | jq -r .sha256` with `shasum -a 256 ~/work/herdr-inbox/jobs/<job>/report.md`. If the two sha256
+are equal, name the prefix. Then emit exactly once:
+panewire emit --kind lane.event --lane <parent-lane> --type ready --event-id <job>-ready --text '[<job>] READY | <pr> | hk:doc/reports/<job>/'
+If they differ, the list is empty, or any command fails (an upload warning, a failed later round, or a duplicate retry after a failed
+upload), emit READY with the local path `~/work/herdr-inbox/jobs/<job>/report.md` and append `(hk upload failed)`.
+Never name the hk prefix unless the newest round's sha256 matched the local report.
+Readers pick the round by the newest-round rule in `wake` loop step 8.
 After READY you are still the PR's author (`wake` §READY): fix the findings sent to you and stay
 in the pane until mergewake merges the PR and reaps it, or the desk says you are done.
 ````
