@@ -64,7 +64,7 @@ panewire spawn -c <dir> -m <프로필> -p <질문패킷파일> -w <ws> -l consul
   `panewire done`, so without this step the answer stays only in the job dir on the answerer's host.
   A follow-up round runs it again; a changed answer at the same path is stored as `answer-r<N>.md`.
 - **The asking session reads the answer from hk:** find the newest with `handoffkeep doc list --prefix reports/<consult job>/`
-  (highest `-rN`, else the base name; a follow-up is stored as `answer-r<N>.md`) and `handoffkeep doc get <key>`,
+  (newest-round rule, `wake` loop step 8: highest `-rN`, else the base name; a follow-up is stored as `answer-r<N>.md`) and `handoffkeep doc get <key>`,
   after the inbox item arrives (design and desk lanes are inbox-only, `watching.md` §Inbox wake line).
 - 자문자는 답변 파일을 작성한 직후 §2 의 `[consult-done]` 통지를 실행한다(`panewire emit`).
   대기·기한 후 확인·착지 확인 분기는 **`relay.md` §3-1 정본**을 따른다.

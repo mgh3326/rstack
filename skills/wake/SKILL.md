@@ -242,9 +242,9 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    or the PR. A later fix or a mergewake branch update moves the head, so read the merged head from
    the PR. Then check the report exists at its path outside the worktree
    (harvest it from the pane first if not — a closed pane loses it); the record is hk. A follow-up
-   round is stored as `report-r<N>.md`, so find the newest upload with
-   `handoffkeep doc list --prefix reports/<job>/` (highest `-rN`, else `report.md`) and read it with
-   `handoffkeep doc get <key>`, or read the key READY named. Once it exists, close
+   round is stored as `report-r<N>.md`. **Newest-round rule (the one statement; other files point here):**
+   list `handoffkeep doc list --prefix reports/<job>/`, take the highest `-rN`, else the base name, and read it with
+   `handoffkeep doc get <key>`. Once it exists, close
    the hk task. The mergewake daemon reaps the worker pane once it is `idle`/`done` and its
    job dir exists (last screen to hk document `screens/<job>/pane-screen.txt`; the job dir copy is scratch), and removes
    the worktree and branch after `worktree_after` — do not close or remove them by hand.
@@ -577,11 +577,13 @@ Write ~/work/herdr-inbox/jobs/<job>/report.md — outside the worktree, so it do
 `git status`; do not delete it: PR URL, head SHA (`git ls-remote`), tests run with output,
 each finding and its disposition (fix, dismiss, defer). Then upload it with
 `panewire done <job> --report ~/work/herdr-inbox/jobs/<job>/report.md`: the record is the hk document
-`reports/<job>/<basename of the report= path done prints>`, not the local file (after a fix round the
-basename is `report-r<N>.md`). Then emit exactly once:
-panewire emit --kind lane.event --lane <parent-lane> --type ready --event-id <job>-ready --text '[<job>] READY | <pr> | hk:doc/reports/<job>/<basename>'
-If `done` printed `report upload failed`, nothing was uploaded: emit READY with the local path
-`~/work/herdr-inbox/jobs/<job>/report.md` and append `(hk upload failed)`. Never name an hk key that was not uploaded.
+under `reports/<job>/`, not the local file (after a fix round it is stored as `report-r<N>.md`). Do not derive a key
+from what `done` prints: it can print the supplied path on a duplicate or a failed upload. Then check what hk holds:
+`handoffkeep doc list --prefix reports/<job>/`. If it shows at least one doc, name the prefix. Then emit exactly once:
+panewire emit --kind lane.event --lane <parent-lane> --type ready --event-id <job>-ready --text '[<job>] READY | <pr> | hk:doc/reports/<job>/'
+If the list is empty or fails (an upload warning, or a duplicate retry after a failed upload), emit READY with the local path
+`~/work/herdr-inbox/jobs/<job>/report.md` and append `(hk upload failed)`. Never name the hk prefix unless the list showed a doc.
+Readers pick the round by the newest-round rule in `wake` loop step 8.
 After READY you are still the PR's author (`wake` §READY): fix the findings sent to you and stay
 in the pane until mergewake merges the PR and reaps it, or the desk says you are done.
 ````
