@@ -1,0 +1,69 @@
+name: Deploy CI
+on:
+  workflow_run:
+    workflows: ["Post CI"]
+    types: [completed]
+    branches: [main]
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        required: false
+permissions:
+  contents: read
+concurrency:
+  group: deploy-${{ github.repository }}
+  cancel-in-progress: false
+jobs:
+  deploy-macos:
+    if: ${{ !github.event.workflow_run || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push') }}
+    runs-on: macos-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || inputs.ref }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Full suite on the deploy target platform
+        run: bash tests/run-all.sh
+  install-smoke:
+    if: ${{ !github.event.workflow_run || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || inputs.ref }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install the full set into a temporary HOME and check the expected skill dirs
+        run: python3 tests/test-install.py
+  deploy-ok:
+    # The any-ref caller posts deploy-ok itself, so this job only reports a workflow_run.
+    if: ${{ github.event.workflow_run && always() && !cancelled() && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' }}
+    needs: [deploy-macos, install-smoke]
+    runs-on: ubuntu-latest
+    permissions:
+      statuses: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TARGET_SHA: ${{ github.event.workflow_run.head_sha || inputs.ref }}
+      MACOS_RESULT: ${{ needs.deploy-macos.result }}
+      SMOKE_RESULT: ${{ needs.install-smoke.result }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - name: Post the deploy-ok commit status with candidate evidence
+        run: |
+          if [[ "$MACOS_RESULT" == success && "$SMOKE_RESULT" == success ]]; then
+            STATE=success
+          else
+            STATE=failure
+          fi
+          gh api "repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
+            -f state="$STATE" -f context=deploy-ok -f target_url="$RUN_URL" \
+            -f description="suite=deploy result=$STATE run_id=${GITHUB_RUN_ID} policy_revision=n/a artifact_digest=n/a"

@@ -26,21 +26,9 @@ jobs:
           python-version: '3.12'
       - name: Install tests and moved contracts
         run: bash tests/run-all.sh
-  contracts-macos:
-    if: ${{ github.ref == 'refs/heads/main' }}
-    runs-on: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.PANEWIRE_POST_MAC_RUNNER) || 'macos-latest' }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.ref || github.sha }}
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Install tests and moved contracts
-        run: bash tests/run-all.sh
   post-ok:
     if: ${{ github.ref == 'refs/heads/main' && always() && (contains(needs.*.result, 'failure') || !contains(needs.*.result, 'cancelled')) }}
-    needs: [contracts, contracts-macos]
+    needs: [contracts]
     runs-on: ubuntu-latest
     steps:
-      - run: test '${{ needs.contracts.result }}' = success && test '${{ needs.contracts-macos.result }}' = success
+      - run: test '${{ needs.contracts.result }}' = success
