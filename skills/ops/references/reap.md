@@ -39,8 +39,8 @@ herdr pane close <pane_id>                 # 회수
 ### 6-2. 회수 조건 — 모두 만족할 때만
 
 1. **job 이 terminal** — 머지·close·escalation **완료**. 이건 네 판단이다.
-2. **산출물이 hk 에 확보** — job 기록의 `report_doc` 이 채워졌고 `handoffkeep doc get reports/<job>/report.md`
-   가 읽힌다(상속 스폰이면 부모 잡의 문서일 수 있다). 화면과 로컬 파일에만 있으면 닫는 순간
+2. **산출물이 hk 에 확보** — job 기록의 `report_doc` 이 채워졌고 `handoffkeep doc list --prefix reports/<job>/`
+   가 문서를 하나 이상 보여 준다(basename 은 `report.md`·`answer.md`·`-rN` 무엇이든 된다)(상속 스폰이면 부모 잡의 문서일 수 있다). 화면과 로컬 파일에만 있으면 닫는 순간
    증거가 소실된다.
 3. **pane 이 비-working**.
 

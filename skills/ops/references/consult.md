@@ -63,7 +63,8 @@ panewire spawn -c <dir> -m <프로필> -p <질문패킷파일> -w <ws> -l consul
   `reports/<consult job>/<file name>` and sets the job record's `report_doc`. The emit alone runs no
   `panewire done`, so without this step the answer stays only in the job dir on the answerer's host.
   A follow-up round runs it again; a changed answer at the same path is stored as `answer-r<N>.md`.
-- **The asking session reads the answer from hk:** `handoffkeep doc get reports/<consult job>/<file name>`,
+- **The asking session reads the answer from hk:** find the newest with `handoffkeep doc list --prefix reports/<consult job>/`
+  (highest `-rN`, else the base name; a follow-up is stored as `answer-r<N>.md`) and `handoffkeep doc get <key>`,
   after the inbox item arrives (design and desk lanes are inbox-only, `watching.md` §Inbox wake line).
 - 자문자는 답변 파일을 작성한 직후 §2 의 `[consult-done]` 통지를 실행한다(`panewire emit`).
   대기·기한 후 확인·착지 확인 분기는 **`relay.md` §3-1 정본**을 따른다.
@@ -85,7 +86,8 @@ panewire spawn -c <dir> -m <프로필> -p <질문패킷파일> -w <ws> -l consul
 
 - 자문 답변은 스폰 때 정한 `--report` 경로(`~/work/herdr-inbox/jobs/consult-<주제>/answer.md`)에
   쓰고(`panewire done --report` 의 입력이자 scratch), `panewire done` 으로 hk `reports/<consult job>/` 에 올린다(§3).
-  정본은 hk 이고 `handoffkeep doc get reports/consult-<주제>/answer.md` 로 읽는다.
+  정본은 hk 이고 `handoffkeep doc list --prefix reports/consult-<주제>/` 로 가장 높은 `-rN`(없으면 기본 이름)을 찾아
+  `handoffkeep doc get <key>` 로 읽는다.
   스폰 없는 상존 세션 질의는 `session-questions.md` §1 경로를 쓴다.
 - 보고: 질문 요지 / 자문처(모델·계열·pane) / 핵심 답변 / 교차 자문 시 일치 여부 / **채택·
   기각과 그 이유는 질의 세션이 별도로 판단해 기록**.

@@ -241,8 +241,10 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    A session that needs the merged state — to spawn a blocked ticket, for example — reads it from hk
    or the PR. A later fix or a mergewake branch update moves the head, so read the merged head from
    the PR. Then check the report exists at its path outside the worktree
-   (harvest it from the pane first if not — a closed pane loses it); the record is hk document
-   `reports/<job>/report.md`, read with `handoffkeep doc get reports/<job>/report.md`. Once it exists, close
+   (harvest it from the pane first if not — a closed pane loses it); the record is hk. A follow-up
+   round is stored as `report-r<N>.md`, so find the newest upload with
+   `handoffkeep doc list --prefix reports/<job>/` (highest `-rN`, else `report.md`) and read it with
+   `handoffkeep doc get <key>`, or read the key READY named. Once it exists, close
    the hk task. The mergewake daemon reaps the worker pane once it is `idle`/`done` and its
    job dir exists (last screen to hk document `screens/<job>/pane-screen.txt`; the job dir copy is scratch), and removes
    the worktree and branch after `worktree_after` — do not close or remove them by hand.
@@ -574,9 +576,12 @@ contract. Do not widen scope to answer a finding.
 Write ~/work/herdr-inbox/jobs/<job>/report.md — outside the worktree, so it does not affect
 `git status`; do not delete it: PR URL, head SHA (`git ls-remote`), tests run with output,
 each finding and its disposition (fix, dismiss, defer). Then upload it with
-`panewire done <job> --report ~/work/herdr-inbox/jobs/<job>/report.md`: the record is hk document
-`reports/<job>/report.md`, not the local file. Then emit exactly once:
-panewire emit --kind lane.event --lane <parent-lane> --type ready --event-id <job>-ready --text '[<job>] READY | <pr> | hk:doc/reports/<job>/report.md'
+`panewire done <job> --report ~/work/herdr-inbox/jobs/<job>/report.md`: the record is the hk document
+`reports/<job>/<basename of the report= path done prints>`, not the local file (after a fix round the
+basename is `report-r<N>.md`). Then emit exactly once:
+panewire emit --kind lane.event --lane <parent-lane> --type ready --event-id <job>-ready --text '[<job>] READY | <pr> | hk:doc/reports/<job>/<basename>'
+If `done` printed `report upload failed`, nothing was uploaded: emit READY with the local path
+`~/work/herdr-inbox/jobs/<job>/report.md` and append `(hk upload failed)`. Never name an hk key that was not uploaded.
 After READY you are still the PR's author (`wake` §READY): fix the findings sent to you and stay
 in the pane until mergewake merges the PR and reaps it, or the desk says you are done.
 ````
