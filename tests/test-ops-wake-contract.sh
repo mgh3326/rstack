@@ -109,7 +109,7 @@ REQUIRED = [
     ("wake", "## Settle before spawning", "settle-edges", r"\*\*Blocking edges only where one ticket truly gates another\.\*\*"),
     ("wake", "## Settle before spawning", "settle-ticket-fields", r"Current, Desired, Key interfaces, Acceptance, Out of scope and pinned Evidence \(`<repo>@<sha> <path>:<line>`\)"),
     ("wake", "## Settle before spawning", "settle-provenance", r"mattpocock/skills.{0,80}\(MIT, Copyright \(c\) 2026 Matt Pocock"),
-    ("wake", "## The loop", "brief-in-hk", r"handoffkeep doc put --key brief/<date>/<job> --kind note"),
+    ("wake", "## The loop", "brief-in-hk", r"handoffkeep doc put --key brief/<date>/<job> --kind brief"),
     ("wake", "## The loop", "spawn-owner-host", r"--role worker --owner <design-session lane> --host auto"),
     ("wake", "## The loop", "owner-work-sentence", r"`-m auto --host auto --role worker --owner <design-session lane>` flags does the same"),
     ("wake", "## The loop", "owner-why", r"panewire records it at spawn and it stays for the job's life: closing the session does not move it\."),
