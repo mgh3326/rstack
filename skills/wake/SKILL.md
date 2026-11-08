@@ -35,10 +35,10 @@ operator-desk; `ops` deploy), or decisions (ask the operator).
   a feature PR**: mergewake merges on review pass and reaps merged PRs' workers, and only a lead
   merges directly (`lead` §Ledger). It judges the PRs mergewake holds for its own repo — accept,
   dismiss a finding with evidence, or send it back for review — and it merges the revert PR mergewake
-  `watch` opens for its own repo. It sends the desk no approval request; only before touching a
-  target several projects share (a shared server, the hub, the Cloudflare account) it sends the desk
-  lane one line (`--type info`, no reply needed), and results go to hk. Before it closes it records
-  its open work in hk and hands the desk lane one line naming its lane and open jobs; its jobs keep
+  `watch` opens for its own repo. It sends the desk no approval request and no notice before a
+  change, even to a target several projects share (a shared server, the hub, the Cloudflare account;
+  hk:doc `decision/2026-11-08/design-session-no-desk-notice`); results go to hk. Before it closes it
+  records its open work in hk and hands the desk lane one line naming its lane and open jobs; its jobs keep
   that lane as owner (§The loop step 5).
 - **Worker:** implements and reports. It never merges, deploys, or touches
   brokers, live servers, secrets or migrations.
@@ -390,9 +390,8 @@ original guards. A temporary observation uses `panewire wait --agent NAME --stat
 
 - Decisions (scope, trade-offs, anything irreversible) go to the operator directly from the
   design session. Workers escalate to their parent lane and wait; they do not guess.
-- From a design session, the desk lane gets only two one-line notices: the `--type info` line before
-  touching a target several projects share, and the close hand-off (§Authority). ESC decisions, spawn
-  failures and merge holds stay with the session. There is no success notify: mergewake already
+- From a design session, the desk lane gets one one-line notice: the close hand-off (§Authority).
+  ESC decisions, spawn failures and merge holds stay with the session. There is no success notify: mergewake already
   notifies the owner lane.
 - **Never ask a question in a pane** — no confirmation prompt ("proceed?") and no interactive
   chooser (AskUserQuestion or any picker). Nobody but the operator sees a pane, and it blocks
