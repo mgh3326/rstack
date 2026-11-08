@@ -42,18 +42,25 @@ for path in sorted((root / "skills").rglob("*.md")):
 
 # Worker READY text names the hk key and the worker ends with panewire done.
 done = flat(section(wake, "## Done"))
-assert "hk:doc/reports/<job>/report.md" in done, "READY text must name hk:doc/reports/<job>/report.md"
+assert "hk:doc/reports/<job>/<basename>" in done, "READY text must name hk:doc/reports/<job>/<basename> from done's report= path"
+assert "report upload failed" in done and "(hk upload failed)" in done, "READY must name the failed-upload fallback"
+assert "Never name an hk key that was not uploaded" in done
 assert "panewire done <job> --report" in done, "the worker must end with panewire done <job> --report"
 assert not re.search(r"READY \| <pr> \| ~/work/herdr-inbox/jobs", done), "READY must not name the local report path"
 
 # reap.md: job dirs are scratch; the hk job record is the record.
 r = flat(reap)
 assert re.search(r"job 디렉터리는 scratch|job dir[^.]*scratch|scratch", r), "reap.md must say job dirs are scratch"
+assert "doc list --prefix reports/<job>/" in r, "reap.md must check uploads with doc list --prefix reports/<job>/"
+assert "doc get reports/<job>/report.md" not in r, "reap.md must not require a literal report.md"
 assert "report_doc" in r and "screens/<job>/pane-screen.txt" in r, (
     "reap.md must name the hk job record (report_doc) and the hk pane-screen doc")
 
 # consult.md: the answer is read back from hk.
-assert "handoffkeep doc get reports/consult-" in flat(consult), (
-    "consult.md must read the answer with handoffkeep doc get reports/consult-<...>/answer.md")
+assert "doc list --prefix reports/consult-" in flat(consult), "consult.md must list uploads by prefix"
+assert "doc list --prefix reports/<consult job>/" in flat(consult)
+assert "doc get reports/consult-" not in flat(consult), "consult.md must not read a fixed answer.md"
+assert "doc list --prefix reports/<job>/" in flat(wake), "wake readers must list uploads by prefix"
+assert "doc get reports/<job>/report.md" not in flat(wake), "wake must not read a fixed report.md"
 print("PASS hk brief/report paths")
 PY
