@@ -85,5 +85,14 @@ readers = [l for l in consult.splitlines() if "doc list --prefix reports/<consul
 assert readers, "consult.md must have doc list readers"
 for l in readers:
     assert ("literal" in l or "리터럴" in l) and "step 8" in l, "consult reader must point to wake step 8 and its literal-prefix filter: " + l.strip()
+# Failure marker: readers must honor "(hk upload failed)" before selecting from hk (step 8 is the one statement).
+i8 = fw.find("Newest-round rule")
+r8 = fw[i8:i8 + 2400]
+assert "(hk upload failed)" in r8 and "older" in r8, "step 8 must make readers honor (hk upload failed) and never substitute an older round"
+cl = consult.splitlines()
+for n, l in enumerate(cl):
+    if "doc list --prefix reports/<consult job>/" in l and "reports/<consult job>/` (" in l or "정본은 hk" in l:
+        w = " ".join(cl[max(0, n - 1):n + 4])
+        assert "failure-marker" in w or "실패 표지" in w, "consult reader must mention the failure marker check: " + l.strip()
 print("PASS hk brief/report paths")
 PY
