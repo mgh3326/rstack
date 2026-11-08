@@ -123,7 +123,7 @@ REQUIRED = [
     ("wake", "## The loop", "loop8-no-merge-notice", r"No session waits for a merge notice: mergewake sets the hk task to `merged`\."),
     ("wake", "## The loop", "loop8-merged-state-from-hk", r"A session that needs the merged state — to spawn a blocked ticket, for example — reads it from hk or the PR\."),
     ("wake", "## The loop", "loop8-deploy-owner", r"Deploys of the repo are its design session's \(§Authority\)\."),
-    ("wake", "## Escalation and notifications", "desk-gets-two-notices", r"the desk lane gets only two one-line notices: the `--type info` line before touching a target several projects share, and the close hand-off"),
+    ("wake", "## Escalation and notifications", "desk-gets-close-notice-only", r"the desk lane gets one one-line notice: the close hand-off \(§Authority\)"),
     ("wake", "## Escalation and notifications", "deploy-owner-rule", r"Deploys and infra of the repo are its design session's \(§Authority\); operator-desk takes them only while that repo has no design session open\."),
     ("wake", "## Escalation and notifications", "worker-parent-owner-lane", r"A worker's READY/ESC reach its parent lane — the owner lane: the design session's lane for its worker, else `operator-desk`\."),
     ("wake", "## Brief rules", "parent-lane-owner", r"`<parent-lane>` in a worker brief is the owner lane: the design session's lane, else `operator-desk`"),
@@ -151,7 +151,7 @@ REQUIRED = [
     ("wake", "## Authority", "design-judges-held-prs", r"It judges the PRs mergewake holds for its own repo .{0,40}accept, dismiss a finding with evidence, or send it back for review"),
     ("wake", "## Authority", "design-merges-revert", r"it merges the revert PR mergewake `watch` opens for its own repo"),
     ("wake", "## Authority", "design-no-approval-request", r"It sends the desk no approval request"),
-    ("wake", "## Authority", "shared-target-notice", r"only before touching a target several projects share \(a shared server, the hub, the Cloudflare account\) it sends the desk lane one line \(`--type info`, no reply needed\)"),
+    ("wake", "## Authority", "no-shared-target-notice", r"It sends the desk no approval request and no notice before a change, even to a target several projects share \(a shared server, the hub, the Cloudflare account; hk:doc `decision/2026-11-08/design-session-no-desk-notice`\)"),
     ("wake", "## Authority", "close-handoff", r"Before it closes it records its open work in hk and hands the desk lane one line naming its lane and open jobs; its jobs keep that lane as owner"),
     ("wake", "## Authority", "lead-never-deploys", r"It never deploys"),
     ("wake", "## Authority", "workers-never-merge", r"\*\*Worker:\*\* implements and reports\. It never merges, deploys"),
@@ -236,6 +236,8 @@ FORBIDDEN = [
     ("wake", None, "deploys-go-to-desk", r"Deploys go to operator-desk"),
     ("wake", None, "owner-flag-desk-only", r"--owner operator-desk"),
     ("ops", None, "installer-desk-only", r"spawned by and reporting only to operator-desk"),
+    # r3 (hk:doc decision/2026-11-08/design-session-no-desk-notice): no desk notice before a shared target.
+    ("wake", None, "shared-target-desk-notice", r"(?i)before touching a target several projects share"),
 ]
 
 # wake never tells a session to merge a feature PR or to wait on CI before a merge, and never
@@ -381,6 +383,8 @@ injections = [
     ("wake-deploys-go-to-desk-readded", "wake", "## The loop\n", "## The loop\n\nDeploys go to operator-desk.\n"),
     ("wake-owner-desk-readded", "wake", "## The loop\n", "## The loop\n\nUse `--owner operator-desk` for every spawn.\n"),
     ("ops-installer-desk-only-readded", "ops", "## Routing table\n", "## Routing table\n\n- installer seat, spawned by and reporting only to operator-desk.\n"),
+    # r3: the shared-target desk notice must not come back.
+    ("wake-shared-target-notice-readded", "wake", "## Escalation and notifications\n", "## Escalation and notifications\n\n- Send the desk a `--type info` line before touching a target several projects share.\n"),
 ]
 for label, doc, anchor, new in injections:
     assert docs[doc].count(anchor) == 1, f"fixture: anchor {anchor!r} not unique in {doc}"
