@@ -80,6 +80,31 @@ attempt를 먼저 대조한다. 새 워커 재시도 루프를 만들지 않는�
   공백을 브리프·보고서에 명시하고, 임시 수단은 위 §감시 정책의
   "공백 신호" 규칙(단발 조회, 잡별 루프 금지)을 따른다. 커버 범위는
   `panewire-events.md` 표가 정본이다.
+- design·desk 레인의 세션은 알림 본문 대신 `[inbox]` 기상 줄로 깨어난다 — 처리는 아래
+  §Inbox wake line.
+
+## Inbox wake line — design and desk lanes
+
+Design lanes (`*-design`) and desk lanes (`operator-desk`, `*-operator-desk`) are inbox-only
+since panewire#352 (deployed v0.0.195).
+
+- **These lanes no longer receive bodies.** ESC/decision, blocked, findings, `SPAWN_FAILED`,
+  consult answers and READY are filed in the hub inbox and never typed into the pane.
+  A session that ignores the wake line misses its ESCs and findings.
+- The pane gets one line instead:
+  `[inbox] <lane>: N unread (most urgent: <kind>) | panewire inbox list --lane <lane>`.
+  The first comes at once, then at most one per 5-minute window. Info-only items never wake.
+  A hub restart owes each lane with unread items one line.
+- **On an `[inbox] <lane>: N unread …` line, run `panewire inbox list --lane <lane>`.**
+  For each item, run `panewire inbox read <id>`, act on it, then `panewire inbox ack <id>`.
+- **Work in "most urgent" order:** decision, blocked, automation-failed (`SPAWN_FAILED`),
+  findings, ready, info.
+- **An `[inbox]` line is a wake, not content.** Never act on the line itself; act on the items
+  you read.
+- Ready, decision, blocked and findings items stay unread until `panewire inbox ack <id>`.
+  Ack an item only after you acted on it.
+- Worker lanes keep body injection. Operator chat and operator HTTP ingress still type into
+  the pane.
 
 ## 이벤트 모양 (panewire R19a)
 

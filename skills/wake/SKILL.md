@@ -408,8 +408,13 @@ original guards. A temporary observation uses `panewire wait --agent NAME --stat
 - Deploys and infra of the repo are its design session's (§Authority); operator-desk takes them only
   while that repo has no design session open.
 - A worker's READY/ESC reach its parent lane — the owner lane: the design session's lane for its
-  worker, else `operator-desk`. Inbox-capable CLIs may block on
-  `panewire inbox wait` once shipped; otherwise the message arrives as pane text.
+  worker, else `operator-desk`.
+- **Design and desk lanes are inbox-only** (panewire#352): ESC, blocked, findings, `SPAWN_FAILED`,
+  consult answers and READY are filed in the lane's inbox, never typed into the pane. The pane gets
+  only `[inbox] <lane>: N unread (most urgent: <kind>) | panewire inbox list --lane <lane>`.
+  **On that line, run `panewire inbox list --lane <lane>`, then `panewire inbox read <id>`, act, and
+  `panewire inbox ack <id>`, most urgent first; the line is a wake, not content** (`ops`
+  `watching.md` §Inbox wake line). A session that ignores it misses its ESCs and findings.
 - **READY to a design-session lane is recorded, not delivered** (panewire hk 3426): it stays in the job
   record and `panewire inbox list`. ESC (`--type decision`), `SPAWN_FAILED` and failures that need action
   still reach the owner lane. The desk still receives READY from a worker it owns.

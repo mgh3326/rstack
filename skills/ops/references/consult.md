@@ -33,7 +33,8 @@
 ①배경 2~5줄(자문자가 모르는 전제) ②구체 질문(판정 형식 지정: 선택지/근거/확신도)
 ③근거 자료 — 파일 경로 + 핵심 발췌 병기(자문 세션 cwd에서 접근 가능한지 확인)
 ④"모르면 '모름'과 근거 — 추측 금지" ⑤시크릿·credential 값 제외 ⑥답변자는 답변 파일
-작성 직후 아래 통지를 반드시 실행한다. 수신 하네스가 달라도 경로는 하나다(`relay.md` §3-1):
+작성 직후 §3 의 `panewire done` 으로 답을 hk 에 올리고(스폰된 자문 잡이면 패킷에 잡 id 를 적는다),
+이어서 아래 통지를 반드시 실행한다. 수신 하네스가 달라도 경로는 하나다(`relay.md` §3-1):
 
 ```bash
 panewire emit --kind lane.event --lane <요청자 레인> --type ready --event-id <고유id> --text '[consult-done] <1줄 요지> | <답변 파일 경로>'
@@ -56,6 +57,14 @@ panewire spawn -c <dir> -m <프로필> -p <질문패킷파일> -w <ws> -l consul
   요청자가 직접 닫는다.
 - 주입·제출검증 = **`relay.md` §3**, 완료 통지·배달 확인의 정본과
   답변 회수 분기는 **`relay.md` §3-1** 및 **session-questions.md §1**(답변 파일 계약)를 따른다.
+- **Store the answer in hk before the notice.** The answerer runs `panewire done <consult job> --report <answer file>`
+  right after writing the answer, then the `[consult-done]` emit. `<consult job>` is the spawn's job id
+  (the `-l consult-<주제>` label unless `--job` was given). This uploads the file to hk as
+  `reports/<consult job>/<file name>` and sets the job record's `report_doc`. The emit alone runs no
+  `panewire done`, so without this step the answer stays only in the job dir on the answerer's host.
+  A follow-up round runs it again; a changed answer at the same path is stored as `answer-r<N>.md`.
+- **The asking session reads the answer from hk:** `handoffkeep doc get reports/<consult job>/<file name>`,
+  after the inbox item arrives (design and desk lanes are inbox-only, `watching.md` §Inbox wake line).
 - 자문자는 답변 파일을 작성한 직후 §2 의 `[consult-done]` 통지를 실행한다(`panewire emit`).
   대기·기한 후 확인·착지 확인 분기는 **`relay.md` §3-1 정본**을 따른다.
 - 이벤트 수신 뒤 파일이 없으면 ①`herdr agent read <target> --lines 40`으로
@@ -75,7 +84,8 @@ panewire spawn -c <dir> -m <프로필> -p <질문패킷파일> -w <ws> -l consul
 ## 4. 회수·기록·채택
 
 - 자문 답변은 스폰 때 정한 `--report` 경로(`~/work/herdr-inbox/jobs/consult-<주제>/answer.md`)에
-  보존한다(질의 패킷과 쌍). 스폰 없는 상존 세션 질의는 `session-questions.md` §1 경로를 쓴다.
+  보존하고(질의 패킷과 쌍), `panewire done` 으로 hk `reports/<consult job>/` 에도 올린다(§3).
+  스폰 없는 상존 세션 질의는 `session-questions.md` §1 경로를 쓴다.
 - 보고: 질문 요지 / 자문처(모델·계열·pane) / 핵심 답변 / 교차 자문 시 일치 여부 / **채택·
   기각과 그 이유는 질의 세션이 별도로 판단해 기록**.
 - 자문 결과로 승인 범위 밖 행동이 필요해지면 → 실행하지 말고 운영자에게 결정 요청.
