@@ -34,7 +34,9 @@
 ③근거 자료 — 파일 경로 + 핵심 발췌 병기(자문 세션 cwd에서 접근 가능한지 확인)
 ④"모르면 '모름'과 근거 — 추측 금지" ⑤시크릿·credential 값 제외 ⑥답변자는 답변 파일
 작성 직후 §3 의 `panewire done` 으로 답을 hk 에 올리고(스폰된 자문 잡이면 패킷에 잡 id 를 적는다),
-이어서 아래 통지를 반드시 실행한다. 수신 하네스가 달라도 경로는 하나다(`relay.md` §3-1):
+이어서 아래 통지를 반드시 실행한다(스폰된 자문 잡이면 통지 전에 아래 sha 확인을 한다: 일치하면 그대로,
+불일치·빈 목록·명령 실패면 `<답변 파일 경로>` 는 로컬 경로를 쓰고 끝에 `(hk upload failed)` 를 붙인다).
+수신 하네스가 달라도 경로는 하나다(`relay.md` §3-1):
 
 ```bash
 panewire emit --kind lane.event --lane <요청자 레인> --type ready --event-id <고유id> --text '[consult-done] <1줄 요지> | <답변 파일 경로>'
@@ -63,6 +65,10 @@ panewire spawn -c <dir> -m <프로필> -p <질문패킷파일> -w <ws> -l consul
   `reports/<consult job>/<file name>` and sets the job record's `report_doc`. The emit alone runs no
   `panewire done`, so without this step the answer stays only in the job dir on the answerer's host.
   A follow-up round runs it again; a changed answer at the same path is stored as `answer-r<N>.md`.
+- **Confirm the sha before `[consult-done]`.** Same check as `wake` §Done: newest round by the newest-round rule, then
+  `handoffkeep doc get <that key> | jq -r .sha256` against `shasum -a 256 <answer file>`. On a match the notice is unchanged;
+  on a mismatch, an empty list or any failure (a failed follow-up upload leaves an older round), the notice names the local
+  answer path and appends `(hk upload failed)`.
 - **The asking session reads the answer from hk:** find the newest with `handoffkeep doc list --prefix reports/<consult job>/`
   (newest-round rule, `wake` loop step 8: highest `-rN`, else the base name; a follow-up is stored as `answer-r<N>.md`) and `handoffkeep doc get <key>`,
   after the inbox item arrives (design and desk lanes are inbox-only, `watching.md` §Inbox wake line).

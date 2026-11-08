@@ -71,5 +71,14 @@ assert "doc list --prefix reports/<consult job>/" in flat(consult)
 assert "doc get reports/consult-" not in flat(consult), "consult.md must not read a fixed answer.md"
 assert "doc list --prefix reports/<job>/" in flat(wake), "wake readers must list uploads by prefix"
 assert "doc get reports/<job>/report.md" not in flat(wake), "wake must not read a fixed report.md"
+fw = flat(wake)
+assert "start with the literal `reports/<job>/`" in fw and "no further `/`" in fw, "wake step 8 must state the literal-prefix filter"
+fc = flat(consult)
+i = fc.find("Confirm the sha before `[consult-done]`")
+assert i >= 0, "consult must have a sha-confirm step before [consult-done]"
+cn = fc[i:fc.find("The asking session reads", i)]
+assert "jq -r .sha256" in cn and "shasum -a 256" in cn, "consult sha step must name the sha check"
+assert "(hk upload failed)" in cn and "local answer path" in cn, "consult sha step must name the (hk upload failed) fallback"
+assert "newest-round rule" in cn, "consult sha step must point to the newest-round rule"
 print("PASS hk brief/report paths")
 PY
