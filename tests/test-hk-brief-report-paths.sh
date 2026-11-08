@@ -47,7 +47,9 @@ assert "hk:doc/reports/<job>/<basename>" not in done, "READY must not name a der
 assert done.find("handoffkeep doc list --prefix reports/<job>/") >= 0, "Done must check hk with doc list --prefix before READY"
 assert done.find("doc list --prefix reports/<job>/") < done.find("--type ready"), "the doc list check must come before the READY emit"
 assert "(hk upload failed)" in done and "local path" in done, "READY must name the local-path fallback with (hk upload failed)"
-assert "Never name the hk prefix unless the list showed a doc" in done
+assert "Never name the hk prefix unless the newest round's sha256 matched the local report" in done
+assert "jq -r .sha256" in done and "shasum -a 256" in done, "READY condition must compare doc get sha256 with shasum of the local report"
+assert done.find("shasum -a 256") < done.find("--type ready"), "the sha256 comparison must come before the READY emit"
 assert not re.search(r"report= path|from the printed|basename of the", done), "no report= derivation rule may remain in Done"
 for name, text in (("wake", flat(wake)), ("consult", flat(consult)), ("reap", flat(reap))):
     assert "key READY named" not in text, f"{name}: readers must not read the key READY named"
@@ -64,7 +66,7 @@ assert "report_doc" in r and "screens/<job>/pane-screen.txt" in r, (
     "reap.md must name the hk job record (report_doc) and the hk pane-screen doc")
 
 # consult.md: the answer is read back from hk.
-assert "doc list --prefix reports/consult-" in flat(consult), "consult.md must list uploads by prefix"
+assert "reports/consult-<" not in flat(consult), "consult.md must read by the consult job id, not a label path"
 assert "doc list --prefix reports/<consult job>/" in flat(consult)
 assert "doc get reports/consult-" not in flat(consult), "consult.md must not read a fixed answer.md"
 assert "doc list --prefix reports/<job>/" in flat(wake), "wake readers must list uploads by prefix"

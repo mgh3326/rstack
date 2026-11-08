@@ -86,7 +86,7 @@ panewire spawn -c <dir> -m <프로필> -p <질문패킷파일> -w <ws> -l consul
 
 - 자문 답변은 스폰 때 정한 `--report` 경로(`~/work/herdr-inbox/jobs/consult-<주제>/answer.md`)에
   쓰고(`panewire done --report` 의 입력이자 scratch), `panewire done` 으로 hk `reports/<consult job>/` 에 올린다(§3).
-  정본은 hk 이고 `handoffkeep doc list --prefix reports/consult-<주제>/` 로 가장 높은 `-rN`(없으면 기본 이름)을 찾아
+  정본은 hk 이고 `handoffkeep doc list --prefix reports/<consult job>/` 로 가장 높은 `-rN`(없으면 기본 이름)을 찾아
   `handoffkeep doc get <key>` 로 읽는다.
   스폰 없는 상존 세션 질의는 `session-questions.md` §1 경로를 쓴다.
 - 보고: 질문 요지 / 자문처(모델·계열·pane) / 핵심 답변 / 교차 자문 시 일치 여부 / **채택·

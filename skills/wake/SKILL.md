@@ -578,11 +578,14 @@ Write ~/work/herdr-inbox/jobs/<job>/report.md — outside the worktree, so it do
 each finding and its disposition (fix, dismiss, defer). Then upload it with
 `panewire done <job> --report ~/work/herdr-inbox/jobs/<job>/report.md`: the record is the hk document
 under `reports/<job>/`, not the local file (after a fix round it is stored as `report-r<N>.md`). Do not derive a key
-from what `done` prints: it can print the supplied path on a duplicate or a failed upload. Then check what hk holds:
-`handoffkeep doc list --prefix reports/<job>/`. If it shows at least one doc, name the prefix. Then emit exactly once:
+from what `done` prints: it can print the supplied path on a duplicate or a failed upload. Then prove hk holds this report,
+not an older round: list `handoffkeep doc list --prefix reports/<job>/`, pick the newest round by the newest-round rule, and compare
+`handoffkeep doc get <that key> | jq -r .sha256` with `shasum -a 256 ~/work/herdr-inbox/jobs/<job>/report.md`. If the two sha256
+are equal, name the prefix. Then emit exactly once:
 panewire emit --kind lane.event --lane <parent-lane> --type ready --event-id <job>-ready --text '[<job>] READY | <pr> | hk:doc/reports/<job>/'
-If the list is empty or fails (an upload warning, or a duplicate retry after a failed upload), emit READY with the local path
-`~/work/herdr-inbox/jobs/<job>/report.md` and append `(hk upload failed)`. Never name the hk prefix unless the list showed a doc.
+If they differ, the list is empty, or any command fails (an upload warning, a failed later round, or a duplicate retry after a failed
+upload), emit READY with the local path `~/work/herdr-inbox/jobs/<job>/report.md` and append `(hk upload failed)`.
+Never name the hk prefix unless the newest round's sha256 matched the local report.
 Readers pick the round by the newest-round rule in `wake` loop step 8.
 After READY you are still the PR's author (`wake` §READY): fix the findings sent to you and stay
 in the pane until mergewake merges the PR and reaps it, or the desk says you are done.
