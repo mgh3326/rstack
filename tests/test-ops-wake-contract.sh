@@ -53,7 +53,9 @@ refs = {p.name: p.read_text(encoding="utf-8") for p in sorted(refs_dir.glob("*.m
 docs["consult"] = refs["consult.md"]
 docs["spawn"] = refs["spawn.md"]
 docs["watching"] = refs["watching.md"]
+docs["reap"] = refs["reap.md"]
 docs["desk"] = Path(os.environ.get("DESK_SKILL", root / "skills/desk/SKILL.md")).read_text(encoding="utf-8")
+docs["robin"] = Path(os.environ.get("ROBIN_SKILL", root / "skills/robin-mode/SKILL.md")).read_text(encoding="utf-8")
 
 RETIRED = ("spawn-worker", "relay-handoff", "consult-advisor", "linear-archive",
            "node-ops", "planner", "architect", "checker", "director", "installer",
@@ -84,6 +86,11 @@ REQUIRED = [
      r"\*\*테스트 호스트 규칙은 `ops` §Invariants 를 따른다\.\*\* Implementer 와 verifier 는 lead 의 호스트에서 `go test` 패키지 테스트를 하지 않는다\. 예외는 단일 테스트 하나뿐이다\..{0,160}테스트마다 red/green 예상"),
     # READY contract (operator 2026-11-01, hk task 2485).
     ("wake", "## READY", "ready-keeps-author", r"\*\*the author stays the PR owner until merge, an explicit hand-off, or abandonment\*\*"),
+    ("wake", "## READY", "ready-explicit-handoff", r"명시적 인계\*\*는 새 담당자를 이름으로 적은 같은 `hk task` 의 comment 와, 그 task 에서 수신자가 남긴 수락 comment 둘 다를 뜻한다\. 수신자가 같은 task 에서 수락하기 전까지 PR 작성자가 소유권을 유지한다\."),
+    ("robin", None, "robin-handoff-points-to-ready-definition", r"An explicit hand-off requires the hk task comment and receiver acceptance defined in `wake` §READY\."),
+    ("reap", "### 6-1. 그 밖의 pane — 스폰한 주체가 거둔다", "reap-open-pr-author-never", r"열린 PR 의 작성자 pane 은 \*\*절대 회수하지 않는다\.\*\*"),
+    ("reap", "### 6-6. `panewire reap` — 끝난 pane 일괄 회수", "reap-apply-pr-state-gate", r"`--apply` 전에 미리보기의 각 job 에 연결된 PR 번호로 `gh pr view <n> --json state` 를 확인한다\. PR 이 `OPEN` 이면 그 job 을 적용 대상에서 빼고 pane 을 회수하지 않는다\. PR 이 `MERGED` 또는 `CLOSED` 인 job 만 계속 검토한다\."),
+    ("reap", "### 6-6. `panewire reap` — 끝난 pane 일괄 회수", "reap-open-pr-author-protected", r"열린 PR 의 작성자 pane 은 언제나 제외한다\."),
     ("wake", "### Preservation evidence (refactors)", "preservation-template", r"\| Existing invariant \| Production entry point \| Executed evidence \|"),
     ("wake", "## BLOCKED", "no-fix-worker-while-alive", r"Do not spawn a fix worker while that attempt is alive"),
     ("wake", "## Rules", "brief-preservation-ref", r"preservation table \(`wake`\s+§READY, Preservation evidence\)"),
@@ -268,6 +275,7 @@ FORBIDDEN = [
     ("wake", None, "shared-target-desk-notice", r"(?i)before touching a target several projects share"),
     # hk 3613 (panewire#352): a design or desk lane never gets a notification body as pane text.
     ("wake", None, "design-lane-pane-text", r"otherwise the message arrives as pane text"),
+    ("reap", "### 6-1. 그 밖의 pane — 스폰한 주체가 거둔다", "reap-old-open-pr-author-rule", r"자문·머지 안 된 PR·실패 잡의 pane 은 \*\*만든 곳이 회수한다\.\*\*"),
 ]
 
 # wake never tells a session to merge a feature PR or to wait on CI before a merge, and never
@@ -388,6 +396,7 @@ for doc, heading, row, pattern in REQUIRED:
     count += 1
 
 injections = [
+    ("reap-open-pr-author-reapable", "reap", "### 6-1. 그 밖의 pane — 스폰한 주체가 거둔다\n", "### 6-1. 그 밖의 pane — 스폰한 주체가 거둔다\n\n자문·머지 안 된 PR·실패 잡의 pane 은 **만든 곳이 회수한다.**\n"),
     ("wake-old-dotfiles", "wake", "## Rules\n", "## Rules\n\nnever read real agent " + "dotfiles\n"),
     ("wake-routes-to-spawn-worker", "wake", "## Brief rules\n", "## Brief rules\n\n- See `spawn-worker` §3.\n"),
     ("wake-routes-to-director", "wake", "## Authority\n", "## Authority\n\nThe director merges.\n"),
