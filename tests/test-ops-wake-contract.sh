@@ -55,6 +55,8 @@ refs = {p.name: p.read_text(encoding="utf-8") for p in sorted(refs_dir.glob("*.m
 docs["consult"] = refs["consult.md"]
 docs["spawn"] = refs["spawn.md"]
 docs["watching"] = refs["watching.md"]
+docs["relay"] = refs["relay.md"]
+docs["events"] = refs["panewire-events.md"]
 docs["reap"] = refs["reap.md"]
 docs["desk"] = Path(os.environ.get("DESK_SKILL", root / "skills/desk/SKILL.md")).read_text(encoding="utf-8")
 docs["robin"] = Path(os.environ.get("ROBIN_SKILL", root / "skills/robin-mode/SKILL.md")).read_text(encoding="utf-8")
@@ -84,6 +86,8 @@ REQUIRED = [
     ("wake", "### T3 split — by invariant impact, not by file type", "reclassify", r"A peripheral PR that touches core is reclassified T3\."),
     # Subagents.
     ("wake", "## Subagent vs worker", "subagent-rule-home", r"`robin-mode` \(rstack\)\s+§Subagents versus spawned workers"),
+    ("lead", "## Subagents", "lead-test-host-rule-pointer",
+     r"\*\*테스트 호스트 규칙은 `ops` §Invariants 를 따른다\.\*\* Implementer 와 verifier 는 lead 의 호스트 \(현재 lead pane 이 실행되는 호스트\)에서 `go test` 패키지 테스트를 하지 않는다\. 예외는 단일 테스트 하나뿐이다\..{0,160}테스트마다 red/green 예상"),
     # READY contract (operator 2026-11-01, hk task 2485).
     ("wake", "## READY", "ready-keeps-author", r"\*\*the author stays the PR owner until merge, an explicit hand-off, or abandonment\*\*"),
     ("wake", "## READY", "ready-explicit-handoff", r"명시적 인계\*\*는 새 담당자를 이름으로 적은 같은 `hk task` 의 comment 와, 그 task 에서 수신자가 남긴 수락 comment 둘 다를 뜻한다\. 수신자가 같은 task 에서 수락하기 전까지 PR 작성자가 소유권을 유지한다\."),
@@ -201,7 +205,7 @@ REQUIRED = [
     ("ops", "## Escalate a decision", "ops-never-interactive", r"\*\*never opens an interactive question\*\* — no confirmation prompt and no chooser \(AskUserQuestion"),
     ("ops", "## Escalate a decision", "ops-esc-command", r"panewire emit --kind lane\.event --lane <parent-lane> --type decision"),
     ("wake", "## Escalation and notifications", "esc-question-job-stays", r"\*\*ESC is a question; the job stays open\.\*\* The lane event records `job\.waiting_decision`"),
-    ("wake", "## Escalation and notifications", "esc-answer-resumes", r"The answer resumes the job when it arrives by `panewire prompt --uptake status-transition` or a relay to the pane's lane"),
+    ("wake", "## Escalation and notifications", "esc-answer-resumes", r"The answer resumes the job when it arrives by `panewire prompt --from <sender-lane> --to <agent-name> --file <prompt-file> --uptake status-transition --timeout 60s` or a relay to the pane's lane"),
     ("wake", "## Escalation and notifications", "esc-unanswered-lost", r"unanswered decision becomes `lost` \(`decision_unanswered`\) after the decision timeout \(`PANEWIRE_DECISION_TIMEOUT_S`, six hours by default\) unless a later lane event from the pane resumes the job first"),
     ("wake", "## Escalation and notifications", "esc-only-ready-done-complete", r"Only READY or DONE, with a stable report, completes a job"),
     ("wake", "## Escalation and notifications", "esc-give-up-escalate", r"To give up, run `panewire escalate <job> --question '<why>'`"),
@@ -210,7 +214,11 @@ REQUIRED = [
     ("wake", "## Rules", "brief-esc-stay-in-pane", r"After an ESC, stay in the pane and wait for the answer; the job is not over\. To give up, run `panewire escalate <job> --question '<why>'`\."),
     ("ops", "## Escalate a decision", "ops-escalate-only-give-up", r"`panewire escalate <job> --question '<text>'` is only for giving up: it stops the job as escalated"),
     ("ops", "## Escalate a decision", "ops-esc-question-job-stays", r"\*\*An ESC is a question, and the job stays open\*\* \(`job\.waiting_decision`\)"),
-    ("ops", "## Escalate a decision", "ops-esc-answer-resumes", r"The answer resumes it when delivered by `panewire prompt --uptake status-transition` \(`relay\.md` §3-3\) or a relay to the pane's lane"),
+    ("ops", "## Escalate a decision", "ops-esc-answer-resumes", r"The answer resumes it when delivered by `panewire prompt --from <sender-lane> --to <agent-name> --file <prompt-file> --uptake status-transition --timeout 60s` \(`relay\.md` §3-3\) or a relay to the pane's lane"),
+    ("relay", None, "relay-report-parent-lane-event", r"에이전트→디자인 세션 방향 보고는 send 금지.{0,180}부모 레인으로 `panewire emit --kind lane\.event --lane <parent-lane> --type report --text '<report summary>'`"),
+    ("events", "## 3. CI·PR 대기", "events-ci-pr-event-unknown", r"\| CI 결과·PR 상태 변화 이벤트 \| — \| \*\*미확인\*\* \| panewire main 코드는 handoffkeep/mergewake snapshot을 동기 조회.{0,220}panewire@a702d068db071d7685d417401023b3c276089012 `pr_status_cli\.go:20-24,121-140`"),
+    ("events", "## 3. CI·PR 대기", "events-pr-status-query", r"\| PR 상태·finding 조회 \| `panewire pr status <owner/repo> <n>` / `panewire pr findings <owner/repo> <n>` \| \*\*소스에 CLI 조회 있음\*\* \| panewire@a702d068db071d7685d417401023b3c276089012"),
+    ("events", "## 4. 기타", "events-prompt-from-source-pin", r"\| 프롬프트 착지 증명 \| `panewire prompt --from <sender-lane> --to <agent-name> --file <prompt-file> --uptake status-transition --timeout 60s`.*panewire@a702d068db071d7685d417401023b3c276089012 `cli\.go:182-196`"),
     ("ops", "## Escalate a decision", "ops-esc-unanswered-lost", r"unanswered decision becomes `lost` after the decision timeout \(`PANEWIRE_DECISION_TIMEOUT_S`, six hours by default\) unless a later lane event from the pane resumes the job first"),
     ("ops", "## Escalate a decision", "ops-esc-only-ready-done", r"Only READY or DONE completes a job"),
     ("ops", "## Escalate a decision", "ops-esc-give-up-escalate", r"Giving up is `panewire escalate <job> --question '<why>'`, not an ESC"),
@@ -239,6 +247,8 @@ REQUIRED = [
     ("ops", "## Invariants (all references)", "one-launcher", r"\*\*One launcher per task\.\*\*"),
     ("ops", "## Invariants (all references)", "emit-carries-type", r"\*\*Every `panewire emit` between sessions carries `--type`\.\*\* A notice, receipt or handoff note that needs no reply is `info` or `ack`.{0,80}Only what needs action now is `decision`, `blocked` or `order`"),
     ("ops", "## Invariants (all references)", "no-polling", r"\*\*No polling loops\.\*\*"),
+    ("ops", "## Invariants (all references)", "test-host-rule",
+     r"\*\*테스트 호스트 규칙:\*\* spawn preamble 이 허용한 호스트에서 변경한 항목만 테스트한다\..{0,180}`remote-gotest` 가 있으면 이를 사용한다\..{0,180}DB 테스트와 전체 스위트는 CI 에서 `ci-any-ref` 로 실행한다\..{0,100}Brief 는 호스트 규칙을 추가하지 않는다\. 로컬에서 macOS 의 Go 테스트를 실행할 때는 `-p 2` 를 유지한다"),
     # consult §1 (hk 2898): resolve has no --builder-family; the questioner checks the family by hand.
     ("consult", "## 1. 자문처 결정", "consult-resolve-command", r"`panewire resolve --role consult`"),
     ("consult", "## 1. 자문처 결정", "consult-family-check", r"질문자는 계열도 직접 확인한다"),
@@ -268,6 +278,7 @@ FORBIDDEN = [
     ("wake", None, "owner-moves-on-close", r"(?i)`?operator-desk`? once it has closed"),
     ("wake", None, "esc-ends-job", r"(?i)ESC (?:ends|completes|closes) the (?:current )?job"),
     ("ops", None, "ops-esc-ends-job", r"(?i)ESC (?:ends|completes|closes) the (?:current )?job"),
+    ("ops", None, "test-any-host", r"(?i)test only what you changed, on any host"),
     # hk 3000: quota guidance goes through `panewire quota`; `pacelever reps` and the real-HOME lines stay.
     ("wake", None, "wake-no-pacelever-quota", r"pacelever (?:--json|refresh)"),
     ("spawn", None, "spawn-no-pacelever-quota", r"pacelever (?:--json|refresh)"),
@@ -287,6 +298,8 @@ FORBIDDEN = [
     # hk 3750: pending post-merge CI does not block a merge, but an already-failed required check does.
     ("wake", "## Merge gate", "old-ci-not-a-merge-requirement", r"CI is not a merge requirement"),
     ("reap", "### 6-1. 그 밖의 pane — 스폰한 주체가 거둔다", "reap-old-open-pr-author-rule", r"자문·머지 안 된 PR·실패 잡의 pane 은 \*\*만든 곳이 회수한다\.\*\*"),
+    ("relay", None, "relay-file-inbox-fallback-removed", r"에이전트→디자인 세션 방향 보고는 send 금지.{0,180}파일 인박스"),
+    ("events", "## 3. CI·PR 대기", "events-no-github-ci-integration-removed", r"panewire 소스에 GitHub/CI 통합 없음"),
 ]
 
 # wake never tells a design session to merge a feature PR or names the removed repo-session lane as a worker's owner.
@@ -426,6 +439,7 @@ injections = [
     ("wake-emit-untyped", "wake", "## Brief rules\n", "## Brief rules\n\n- Notify with `panewire emit --kind lane.event --lane <parent-lane> --event-id x --text '[x] note'`.\n"),
     ("wake-esc-ends-job", "wake", "## Escalation and notifications\n", "## Escalation and notifications\n\n- ESC ends the job.\n"),
     ("ops-esc-completes-job", "ops", "## Escalate a decision\n", "## Escalate a decision\n\nAn ESC completes the job.\n"),
+    ("ops-test-any-host-restored", "ops", "## Invariants (all references)\n", "## Invariants (all references)\n\n- Test only what you changed, on any host.\n"),
     ("wake-pacelever-json-readded", "wake", "## The loop\n", "## The loop\n\nRun `pacelever --json` for quota.\n"),
     ("spawn-pacelever-refresh-readded", "spawn", "## 4. 기동·주입·감시\n", "## 4. 기동·주입·감시\n\n- 낡은 풀은 `pacelever refresh <풀>`.\n"),
     ("wake-role-builder-readded", "wake", "## Rules\n", "## Rules\n\nSpawn with `panewire spawn --role builder --lane x`.\n"),
@@ -454,6 +468,24 @@ for label, doc, anchor, new in injections:
     mutated[doc] = docs[doc].replace(anchor, new, 1)
     expect_red(label, mutated, refs)
     count += 1
+
+# Injected mutants for the retired relay fallback and stale CI/PR claim.
+old_file_fallback = docs["relay"].replace(
+    "— 부모 레인으로 `panewire emit --kind lane.event --lane <parent-lane> --type report --text '<report summary>'` 를 보낸다",
+    "— 파일 인박스 `~/work/herdr-inbox/` 사용",
+    1,
+)
+assert old_file_fallback != docs["relay"], "fixture: parent lane event not found"
+expect_red("relay-file-inbox-fallback-injected", {**docs, "relay": old_file_fallback}, refs)
+count += 1
+old_ci_claim = docs["events"].replace(
+    "## 3. CI·PR 대기\n",
+    "## 3. CI·PR 대기\n\npanewire 소스에 GitHub/CI 통합 없음\n",
+    1,
+)
+assert old_ci_claim != docs["events"], "fixture: CI/PR section not found"
+expect_red("events-no-github-ci-integration-injected", {**docs, "events": old_ci_claim}, refs)
+count += 1
 
 # The named mutations from hk 2783 and r2: the owner is the design-session lane while it is open,
 # `operator-desk` once it has closed.
