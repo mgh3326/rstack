@@ -8,8 +8,10 @@
 #   2. asker (consult.md §3 and §4, wake loop step 8): an `hk:doc/<key>` notice
 #      is read with `handoffkeep doc get <key>`, with no prefix listing and no
 #      newest-round selection; a failed get or another job's doc is
-#      unavailable, never an older round; the prefix listing survives only
-#      as the labelled legacy fallback.
+#      unavailable, never an older round, and wake does not close the task
+#      on it; the prefix listing survives only as the labelled legacy fallback.
+#   3. the answerer's sha lookup reads the key the newest-round rule chose,
+#      the same key the notice names (hk 3714 fix r1, rstack#58).
 # Every required row has a deletion mutant, and the load-bearing tokens have
 # substitution or injection mutants; each must go RED by assertion.
 set -euo pipefail
@@ -45,6 +47,9 @@ REQUIRED = [
      L("불일치·빈 목록·명령 실패면 `hk:doc/<확인한 키>` 대신 로컬 답변 파일 경로를 쓰고 끝에 `(hk upload failed)` 를 붙인다")),
     ("consult", None, "sha-match-names-key",
      L("On a match the notice names that exact key as `hk:doc/<key>`")),
+    # The sha lookup reads the key the newest-round rule chose, the same key the notice then names.
+    ("consult", None, "sha-reads-selected-key",
+     L("newest round by the newest-round rule, then `handoffkeep doc get <that key> | jq -r .sha256` against `shasum -a 256 <answer file>`. On a match the notice names that exact key")),
     ("consult", None, "sha-mismatch-local-marker",
      L("on a mismatch, an empty list or any failure (a failed follow-up upload leaves an older round), the notice names the local answer path and appends `(hk upload failed)`")),
     # Asker (§3): get the named key; nothing is selected.
@@ -66,6 +71,8 @@ REQUIRED = [
     # wake step 8: the newest-round rule knows the hk:doc notice.
     ("wake", "## The loop", "wake-hk-doc-selects-nothing",
      L("A `[consult-done]` notice that names `hk:doc/<key>` selects nothing: read that key with `handoffkeep doc get <key>`")),
+    ("wake", "## The loop", "wake-hk-doc-get-fails-unavailable",
+     L("if that get fails or its `job` field is not the consult job, the answer is unavailable: ask for a new `panewire done`, never an older round, and do not close the task")),
     ("wake", "## The loop", "wake-legacy-labelled",
      L("Otherwise (READY, or a legacy `[consult-done]` naming a local path without the marker) list `handoffkeep doc list --prefix reports/<job>/`")),
 ]
@@ -120,6 +127,10 @@ SUBSTITUTED = [
     ("legacy-unlabelled", "consult", "**Legacy fallback** (a notice that names a local path without the marker, from an answerer on an older install): ", "Otherwise: "),
     ("collect-lists-prefix", "consult", "로 바로 읽고(prefix 나열·최신 라운드 선택 없음,", "로 읽되 `handoffkeep doc list --prefix reports/<consult job>/` 로 최신 라운드를 고르고(,"),
     ("collect-legacy-unlabelled", "consult", "마커 없이 로컬 경로만 적은 레거시 통지면", "그 밖에는"),
+    ("sha-reads-fixed-basename", "consult", "`handoffkeep doc get <that key> | jq -r .sha256`", "`handoffkeep doc get reports/<consult job>/answer.md | jq -r .sha256`"),
+    ("wake-no-job-check", "wake", "if that get fails or its `job` field is not the consult job,", "if that get fails,"),
+    ("wake-unavailable-used", "wake", "the answer is unavailable: ask", "use it anyway, or ask"),
+    ("wake-closes-task", "wake", "never an older round, and do not close the task", "never an older round, then close the task"),
     ("wake-no-hk-doc", "wake", "A `[consult-done]` notice that names `hk:doc/<key>` selects nothing: read that key", "A `[consult-done]` notice selects as below"),
     ("wake-legacy-unlabelled", "wake", "Otherwise (READY, or a legacy `[consult-done]` naming a local path without the marker) list", "Otherwise list"),
 ]
