@@ -42,13 +42,15 @@ from contract import delete_row, expect_red as _expect_red, flat, section  # noq
 
 wake_path = Path(os.environ.get("WAKE_SKILL", root / "skills/wake/SKILL.md"))
 ops_path = Path(os.environ.get("OPS_SKILL", root / "skills/ops/SKILL.md"))
+lead_path = Path(os.environ.get("LEAD_SKILL", root / "skills/lead/SKILL.md"))
 refs_dir = Path(os.environ.get("OPS_REFERENCES", root / "skills/ops/references"))
 
 docs = {
     "wake": wake_path.read_text(encoding="utf-8"),
     "ops": ops_path.read_text(encoding="utf-8"),
-    "lead": Path(os.environ.get("LEAD_SKILL", root / "skills/lead/SKILL.md")).read_text(encoding="utf-8"),
+    "lead": lead_path.read_text(encoding="utf-8"),
 }
+all_skill_docs = {str(p.relative_to(root)): p.read_text(encoding="utf-8") for p in sorted((root / "skills").rglob("*.md"))}
 refs = {p.name: p.read_text(encoding="utf-8") for p in sorted(refs_dir.glob("*.md"))}
 docs["consult"] = refs["consult.md"]
 docs["spawn"] = refs["spawn.md"]
@@ -154,7 +156,12 @@ REQUIRED = [
     ("wake", "## On spawn failure", "failure-esc-owner-lane", r"Emit ESC `--type decision` to the owner lane\*\* — the job's recorded `--owner`: the design session's lane, or `operator-desk` for a job the desk spawned"),
     ("wake", "## Merge gate", "gate-done-marker", r"lists `…/<reviewed head>-done`"),
     ("wake", "## Merge gate", "gate-no-critical-high", r"\*\*No unresolved critical/high finding\.\*\*"),
-    ("wake", "## Merge gate", "gate-no-ci", r"\*\*CI is not a merge requirement\.\*\* CI runs after the merge, and a red main is reverted"),
+    ("wake", "## Merge gate", "gate-no-pending-post-merge-ci", r"Sessions do not wait for pending post-merge CI before merging"),
+    ("wake", "## Merge gate", "gate-failed-required-check-blocks", r"A required check that has already failed on `\$H` blocks any merge, including a lead merge"),
+    ("lead", "## Ledger", "ledger-failed-required-check-blocks", r"A required check that has already failed on `\$H` blocks any merge, including the lead's"),
+    ("lead", "## Ledger", "ledger-bounded-wait-and-outcomes", r"\*\*The lead never ends a turn on “waiting for X\.\”\*\* For a pending ledger run, keep one bounded blocking wait in the background: `timeout 20m gh run watch <id> --exit-status` or `timeout 20m gh pr checks <n> --watch`\. On success, record it in the ledger; on failure, record the failure and do not merge; on timeout, record the next action, owner and trigger on the hk task \(`desk` §Commitments\)"),
+    ("lead", "## Subagents", "lead-points-to-covering-ci-flags-rule", r"Test flags and timeout selection follows `ops` §Invariants"),
+    ("ops", "## Invariants (all references)", "covering-ci-flags-and-timeout", r"\*\*A local or remote test run uses the flags of the CI job that covers it, including `-timeout`\.\*\* If a CI limit is too short, fix the repo's workflow; never use a longer flag on a local or remote run"),
     ("wake", "## Merge gate", "gate-revert-actor", r"mergewake's `watch` opens one revert PR and never merges it"),
     ("wake", "## Merge gate", "gate-slice-5", r"hk 2788 slice 5 may remove this check"),
     ("wake", "## BLOCKED", "blocked-live-author", r"The fix goes to the PR's \*\*live author\*\*"),
@@ -282,11 +289,12 @@ FORBIDDEN = [
     ("wake", None, "shared-target-desk-notice", r"(?i)before touching a target several projects share"),
     # hk 3613 (panewire#352): a design or desk lane never gets a notification body as pane text.
     ("wake", None, "design-lane-pane-text", r"otherwise the message arrives as pane text"),
+    # hk 3750: pending post-merge CI does not block a merge, but an already-failed required check does.
+    ("wake", "## Merge gate", "old-ci-not-a-merge-requirement", r"CI is not a merge requirement"),
     ("reap", "### 6-1. 그 밖의 pane — 스폰한 주체가 거둔다", "reap-old-open-pr-author-rule", r"자문·머지 안 된 PR·실패 잡의 pane 은 \*\*만든 곳이 회수한다\.\*\*"),
 ]
 
-# wake never tells a session to merge a feature PR or to wait on CI before a merge, and never
-# names the removed repo-session lane as a worker's owner.
+# wake never tells a design session to merge a feature PR or names the removed repo-session lane as a worker's owner.
 WAKE_FORBIDDEN = re.compile(r"gh pr merge|gh pr checks|ci-any-ref|--owner <repo-session-lane>|curl[^\n]*/v1/spawns|\(operator credential\)|operator (?:credential|token)s? to|(?:source|cat|\. ) ?[~\w/.-]*(?:\.env|token|credential)")
 
 
@@ -356,6 +364,14 @@ def check_rows(d: dict) -> None:
         assert not re.search(pattern, scope), f"{doc}: forbidden row '{row}' present"
 
 
+def check_covering_ci_rule_has_one_home(d: dict) -> None:
+    rule = r"A local or remote test run uses the flags of the CI job that covers it, including `-timeout`"
+    skill_docs = dict(all_skill_docs)
+    skill_docs.update({f"skills/{name}/SKILL.md": d[name] for name in ("wake", "ops", "lead")})
+    homes = [name for name, body in skill_docs.items() if re.search(rule, flat(body))]
+    assert homes == ["skills/ops/SKILL.md"], f"covering-CI-flags rule must live only in ops/SKILL.md, found {homes}"
+
+
 # Operator 2026-11-05: every emit command line names its --type (inbox vs interrupt).
 # A command is a backticked span or a code line that starts with `panewire emit --kind`.
 EMIT_CMD = re.compile(r"`panewire emit --kind[^`]*`|^\s*panewire emit --kind.*$", re.M)
@@ -383,6 +399,7 @@ def check(d: dict, ref_texts: dict) -> None:
     check_design_session(d["wake"])
     check_done_ready(d["wake"])
     check_rows(d)
+    check_covering_ci_rule_has_one_home(d)
     assert "never read real agent dotfiles" not in d["wake"], "wake: old agent dotfiles prohibition restored"
 
 
@@ -405,6 +422,8 @@ for doc, heading, row, pattern in REQUIRED:
 injections = [
     ("reap-open-pr-author-reapable", "reap", "### 6-1. 그 밖의 pane — 스폰한 주체가 거둔다\n", "### 6-1. 그 밖의 pane — 스폰한 주체가 거둔다\n\n자문·머지 안 된 PR·실패 잡의 pane 은 **만든 곳이 회수한다.**\n"),
     ("wake-old-dotfiles", "wake", "## Rules\n", "## Rules\n\nnever read real agent " + "dotfiles\n"),
+    ("wake-old-ci-no-requirement-readded", "wake", "## Merge gate\n", "## Merge gate\n\nCI is not a merge requirement.\n"),
+    ("lead-covering-ci-rule-duplicated", "lead", "## Subagents\n", "## Subagents\n\nA local or remote test run uses the flags of the CI job that covers it, including `-timeout`.\n"),
     ("wake-routes-to-spawn-worker", "wake", "## Brief rules\n", "## Brief rules\n\n- See `spawn-worker` §3.\n"),
     ("wake-routes-to-director", "wake", "## Authority\n", "## Authority\n\nThe director merges.\n"),
     ("ops-routes-to-relay-handoff", "ops", "## Routing table\n", "## Routing table\n\nSee relay-handoff §3.\n"),
