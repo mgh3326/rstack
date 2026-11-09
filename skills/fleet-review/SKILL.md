@@ -56,7 +56,7 @@ Severity decides blocking. Disposition is what you do about it.
 
 | Severity | Blocks? | Allowed dispositions |
 |---|---|---|
-| critical, high | yes | **fix**; or **dismiss** only with evidence (a command and its output, or the exact code line that disproves it) — on a lead's own PR, the lead judges and records the evidence in its ledger; on every other PR, the repo's design session, else operator-desk, checks it |
+| critical, high | yes | **fix**; or **dismiss** only with evidence (a command and its output, or the exact code line that disproves it) — on a lead's own PR, the lead judges and records the evidence in its ledger; on every other PR, the repo's design session judges, or operator-desk while that repo has none open |
 | medium, low | no | **fix** (cheap and inside the contract), **dismiss** (one-line reason), or **defer** (follow-up hk task id) |
 
 - **fix** — a plausible correctness, security, privacy, data-loss, auth, idempotency, race or

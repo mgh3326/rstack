@@ -93,7 +93,7 @@ REQUIRED = [
     ("lead", "## Store", "unit-is-task", r"\*\*A unit is an hk task\*\*, one PR each"),
     ("lead", "## Store", "standing-orders-docs", r"\*\*Standing orders are hk decision docs\.\*\*"),
     ("lead", "## Store", "ledger-in-comments", r"\*\*The ledger lives in task comments\*\*, and in hk reviews once hk 3037 ships"),
-    ("lead", "## Store", "stuck-line", r"\*\*A step with no progress for over 30 minutes, or the same failure twice, gets one line to handoffkeep-design:\*\* `\[lead\] STUCK \| <what> \| <tried> \| <alternative A/B>`; then proceed on an alternative \(operator 2026-11-09\)"),
+    ("lead", "## Store", "stuck-event-receiver", r"A step with no progress for over 30 minutes, or the same failure twice, gets one blocked event to the repo's design session, else operator-desk"),
     ("lead", "## Store", "no-orchestrate-dir", r"There is no `~/\.claude/orchestrate/` directory"),
     # Bug and incident loop.
     ("lead", "## Bug and incident loop", "reproduce-first", r"1\. \*\*Reproduce first\*\*"),

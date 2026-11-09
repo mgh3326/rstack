@@ -21,9 +21,9 @@ PATHS = {
 docs = {k: p.read_text(encoding="utf-8") for k, p in PATHS.items()}
 # (doc, name, required regex on flattened document)
 REQUIRED = [
-    ("fleet", "receiver-context", r"worker- and repo-design-session-side half \(operator-desk while that repo has no design session open\)"),
+    ("fleet", "receiver-context", r"worker-, lead-, and repo-design-session-side half \(operator-desk while that repo has no design session open\)"),
     ("fleet", "triage-receiver", r"repo's design session, else operator-desk, applies it by hand when it reads the merge gate"),
-    ("fleet", "critical-high-receiver", r"repo's design session, else operator-desk, checks it"),
+    ("fleet", "critical-high-receiver", r"on every other PR, the repo's design session judges, or operator-desk while that repo has none open"),
     ("fleet", "escalation-receiver", r"ESC to the repo's design session, else operator-desk"),
     ("fleet", "round-receiver", r"repo's design session, else operator-desk, decides"),
     ("fleet", "reviewer-family-receiver", r"checks them all, the repo's design session, else operator-desk, does"),
@@ -33,7 +33,7 @@ REQUIRED = [
     ("roles", "lead-excluded-from-self-fallback", r"This fallback does not apply to a lead, which writes no product code"),
     ("lead", "stuck-event-design", r"panewire emit --kind lane\.event --lane <repo>-design --type blocked --event-id <repo>-lead-stuck-<unique-id> --text '\[lead\] STUCK \| <what> \| <tried> \| <alternative A/B>'"),
     ("lead", "stuck-event-fallback", r"panewire emit --kind lane\.event --lane operator-desk --type blocked --event-id <repo>-lead-stuck-<unique-id> --text '\[lead\] STUCK \| <what> \| <tried> \| <alternative A/B>'"),
-    ("lead", "stuck-decision-source", r"decision/2026-11-10/lead-direct-merge"),
+    ("lead", "stuck-design-lane-source", r"The repo's design session uses `<repo>-design` \(default per `decision/2026-11-10/lead-direct-merge`\)"),
     ("lead", "trailers-command", r"bin/pr-trailers --task <id> --family <family> --profile <profile> --lane lead"),
 ]
 FORBIDDEN = [
