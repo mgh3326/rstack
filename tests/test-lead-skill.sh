@@ -165,6 +165,8 @@ FORBIDDEN = {
     "never-runs-t3-work": re.compile(r"(?i)never runs T3 work"),
     "never-merges-deploy-approval": re.compile(r"(?i)never merges a PR that touches a `deploy_approval` path"),
     "watch-revert-merged-by-desk": re.compile(r"(?i)(?:revert PR|revert that .*watch).{0,100}merged by the desk"),
+}
+FLEET_FORBIDDEN = {
     "never-skip-medium-low-self-dismiss": re.compile(r"(?i)medium or low findings in this list (?:can be|may be) self-dismissed"),
 }
 
@@ -178,6 +180,10 @@ def check(d):
     for name, pattern in FORBIDDEN.items():
         m = pattern.search(flat(lead))
         assert not m, f"lead: forbidden rule '{name}' present: {m.group(0)!r}"
+    fleet = flat(d["fleet"])
+    for name, pattern in FLEET_FORBIDDEN.items():
+        m = pattern.search(fleet)
+        assert not m, f"fleet: forbidden rule '{name}' present: {m.group(0)!r}"
 
 
 check(docs)
@@ -204,11 +210,14 @@ for name, injected in [
     ("never-runs-t3-work-injected", "- The lead never runs T3 work.\n"),
     ("never-merges-deploy-approval-injected", "- The lead never merges a PR that touches a `deploy_approval` path.\n"),
     ("watch-revert-merged-by-desk-injected", "- A revert PR that `watch` opens is merged by the desk.\n"),
-    ("never-skip-medium-low-self-dismiss-injected", "- Medium or low findings in this list may be self-dismissed.\n"),
 ]:
     expect_red(name, check,
                {**docs, "lead": docs["lead"].replace("## Store", injected + "\n## Store", 1)})
     count += 1
+
+expect_red("never-skip-medium-low-self-dismiss-injected-in-fleet", check,
+           {**docs, "fleet": docs["fleet"] + "\n- Medium or low findings in this list may be self-dismissed.\n"})
+count += 1
 
 # Substitution mutants (hk 3656 round 1): a deletion removes a whole pinned sentence, so each
 # load-bearing token is also swapped for the weaker text a reviewer flagged, and the doc must go RED.
