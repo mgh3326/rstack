@@ -51,7 +51,7 @@ A rule with no marker is permanent. When the condition is met, delete the rule a
 
 ## Work boundary
 
-A request has one accountable owner. A separate worker exists only for a PR that is accepted and merged on its own, and a child never repeats its lead's triage. A coordinating task may own several PRs; an implementation task owns exactly one. When a hand-off is accepted and when it ends is `wake` §READY.
+A request has one accountable owner. A separate worker exists only for a PR that is accepted and merged on its own, and a child never repeats its lead's triage. A coordinating task may own several PRs; an implementation task owns exactly one. An explicit hand-off requires the hk task comment and receiver acceptance defined in `wake` §READY.
 
 ## Subagents versus spawned workers
 

@@ -42,8 +42,10 @@ operator-desk; `ops` deploy), or decisions (ask the operator).
   that lane as owner (§The loop step 5).
 - **Worker:** implements and reports. It never merges, deploys, or touches
   brokers, live servers, secrets or migrations.
-- **Lead** (opened by the operator, follows the `lead` skill): the only session that merges directly,
-  under `lead` §Ledger. It never deploys and never merges a T3 or `deploy_approval` PR.
+- **Lead** (opened by the operator, follows the `lead` skill): the only session that directly merges
+  its own PRs, under `lead` §Ledger, including T3 and `deploy_approval` PRs. It never deploys or
+  performs the live mutation. The repo's design session orders the rollout, or operator-desk while
+  that repo has no design session open.
 - **operator-desk:** receives a project's ESC decisions, spawn failures, merge holds and deploys
   only while that project has no design session open, and registers lane routes. It is not in the
   dispatch path.
@@ -334,6 +336,8 @@ operator, and main stays red until then. If `watch` is not running, nothing open
 authorship: **the author stays the PR owner until merge, an explicit hand-off, or abandonment**,
 and findings go to the current author attempt (§BLOCKED). One logical task may run several
 attempts, but only one writes to the branch at a time.
+
+**명시적 인계**는 새 담당자를 이름으로 적은 같은 `hk task` 의 comment 와, 그 task 에서 수신자가 남긴 수락 comment 둘 다를 뜻한다. 수신자가 같은 task 에서 수락하기 전까지 PR 작성자가 소유권을 유지한다.
 
 ### Preservation evidence (refactors)
 

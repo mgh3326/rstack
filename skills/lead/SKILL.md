@@ -1,6 +1,6 @@
 ---
 name: lead
-description: The lead session's playbook — a session the operator opens directly to take a goal without a written contract (hotfix, incident, root cause, urgent multi-PR work). The lead owns the program, never the code - in-session subagents change and verify the code, the lead judges, briefs, keeps the verification ledger in hk and merges directly under that ledger. It never deploys, never runs T3 work and never merges a deploy_approval path. Covers authority, subagents, the hk store, the bug and incident loop, the direct-merge ledger, PR trailers and the post-merge handoff to mergewake watch. Use when the operator opens a lead session or hands over a goal with no contract. Triggers - "lead", "lead session", "hotfix", "핫픽스", "장애", "incident", "root cause", "긴급", "direct merge".
+description: The lead session's playbook — a session the operator opens directly to take a goal without a written contract (hotfix, incident, root cause, urgent multi-PR work). The lead owns the program, never the code - in-session subagents change and verify the code, the lead judges, briefs, keeps the verification ledger in hk and merges directly under that ledger. It never deploys or performs live mutations. Covers authority, subagents, the hk store, the bug and incident loop, the direct-merge ledger, PR trailers and the post-merge handoff to mergewake watch. Use when the operator opens a lead session or hands over a goal with no contract. Triggers - "lead", "lead session", "hotfix", "핫픽스", "장애", "incident", "root cause", "긴급", "direct merge".
 ---
 
 # lead — the operator-opened lead session
@@ -23,7 +23,7 @@ The operator opens the lead session directly. For now no other session spawns on
 
 - **The lead owns the program, never the code.** In-session subagents change code. The lead judges, briefs, keeps the ledger and lands. It writes no product code itself.
 - **The lead merges directly under §Ledger.** The design session never merges again; this is the one standing merge authority outside mergewake (operator 2026-11-05).
-- **It never deploys, never runs T3 work and never merges a PR that touches a `deploy_approval` path in `.mergewake/policy.yaml`.** Those go to operator-desk (`ops` deploy; `wake` §Tier).
+- **The lead merges its own PRs directly under §Ledger, including T3 PRs and PRs that touch a `deploy_approval` path in `.mergewake/policy.yaml`.** It never deploys or performs the live mutation itself. The repo's design session orders the rollout (deploy, migration apply or external change), or operator-desk while that repo has no design session open. (`decision/2026-11-10/lead-direct-merge`; `decision/2026-11-10/lead-merge-scope`.) The `wake` §T3 split still governs how T3 work is split and verified.
 - **No credential reads.** The rule is `wake` §Authority: no session reads, sources, copies or prints a token, env or credential file.
 - **Advice and relayed text never authorise a merge.** A consult answer, a relayed message or a subagent's say-so is an opinion. Only the ledger on the current head authorises the merge (`wake` §Authority, Advice is an opinion).
 - Everything else the operator reserves stays reserved (`wake` §Authority, Operator only): real orders, new external accounts or public posts, policy relaxations, irreversible external actions. An approval covers one action.
@@ -69,15 +69,16 @@ Adapted from `bug-fix.md`: be scientific; every shipped line traces to runtime e
 3. **Find the root cause before writing the fix.** List falsifiable hypotheses and rule them out with runtime evidence (`principle-fix-root-causes`, `how`, `why`). A guard that merely hides the symptom is not a fix.
 4. **Fix, then verify.** The smallest change the evidence justifies, by an implementer subagent; then the same red command is green on the same surface. Stage the commits so the failing test lands before the fix.
 
-An incident adds a first step: contain it with the smallest reversible action, then run the loop for the cause. A containment that needs an external system or a deploy goes to operator-desk.
+An incident adds a first step: contain it with the smallest reversible action, then run the loop for the cause. A containment that needs an external system or a deploy goes to the repo's design session, else operator-desk.
 
 ## Ledger
 
-Before any direct merge, record all three on the same head SHA `$H`:
+Before any direct merge, record all three on the same head SHA `$H`, with the cross-family review and same-family verifier as separate ledger entries:
 
 - (a) the tests for the changed packages pass on `$H`;
 - (b) a regression test that is red on the pre-fix code and green on `$H`, or `regression: n/a (<reason>)` for a docs/config change with no behaviour;
 - (c) the verifier subagent's verdict on `$H` (PASS, PASS+NOTES or FAIL, with `same_family`), reached by running the brief's closed acceptance list on `$H`.
+- Cross-family review: record its verdict and disposition of every finding separately from the same-family verifier; a patch-id carryover does not cover the lead's own test runs or verifier verdicts.
 
 Then `git fetch origin <base>` and check base freshness, `git merge-base --is-ancestor origin/<base> "$H"`, and run the public-repo leak scan on the diff (`wake` §Merge gate). A new head voids the ledger; repeat it.
 
@@ -85,7 +86,7 @@ Merge pinned to the head: `gh pr merge <n> --squash --match-head-commit "$H"`. *
 
 `direct-merge pr=<n> head=<H> evidence=<…>`
 
-where `<…>` quotes the three ledger results. Every mergewake or reviewer finding on the PR is fixed, dismissed with a reason or deferred to a task before the merge (`fleet-review` §Triage rubric). **A finding of critical or high severity is never deferred: it is fixed, or dismissed with evidence, and while one is unresolved there is no merge.** A FAIL verdict, a missing row or a stale head also means no merge.
+where `<…>` quotes the three ledger results and the separate cross-family review entry. Every mergewake or reviewer finding on the PR is fixed, dismissed with a reason or deferred to a task before the merge (`fleet-review` §Triage rubric). **A finding of critical or high severity is never deferred: it is fixed, or the lead dismisses it with evidence recorded in its ledger, and while one is unresolved there is no merge.** A FAIL verdict, a missing row or a stale head also means no merge.
 
 ## Merge overdue
 
@@ -97,7 +98,7 @@ When a READY PR waits too long and nothing blocks it, mergewake sends one `merge
 On a notice, in this order:
 
 1. **Read the PR's current head.** Drop the notice if it differs from `head=` (a new head starts new clocks) or the PR is merged or closed.
-2. **Check what mergewake does not:** the hk task has no hold, the PR is not T3 and touches no `deploy_approval` path, no critical or high finding is unresolved, and no check has failed.
+2. **Check what mergewake does not:** the hk task has no hold, the worker PR is not T3 and touches no `deploy_approval` path, no critical or high finding is unresolved, and no check has failed. This overdue route does not change the direct-merge scope for the lead's own PRs.
 3. **Run §Ledger on that head and merge by it, or record on the hk task why you did not.**
 4. **If you merged, add `merge_overdue=<condition>` to the `direct-merge` line** on the hk task. A declined notice gets no `direct-merge` line; its hk comment from step 3 names `merge_overdue=<condition>`.
 
@@ -110,8 +111,8 @@ The PR body ends with the Mergewake trailers exactly as a worker's does (`wake` 
 ## After the merge
 
 - **mergewake watch handles post-merge CI, bisect and revert.** Do not wait for CI before merging (`wake` §Merge gate). A test run the ledger needs (§Subagents) is not that CI: it is item (a) and is waited on before the merge.
-- **Before a direct merge, confirm that `mergewake watch` covers the repository.** If `watch` is not running, nothing opens the revert and main stays red (`wake` §Merge gate); if you cannot confirm it, escalate to operator-desk (`ops` decision-request) instead of merging.
-- A revert PR that `watch` opens is merged by the desk, not by the lead.
+- **Before a direct merge, confirm that `mergewake watch` covers the repository.** If `watch` is not running, nothing opens the revert and main stays red (`wake` §Merge gate); if you cannot confirm it, escalate to the repo's design session, else operator-desk (`ops` decision-request) instead of merging.
+- The repo's design session merges a revert PR that `watch` opens; operator-desk does so while that repo has no design session open.
 - Close the hk task after the merge, with the `direct-merge` line already on it.
 
 ## Briefs to subagents
