@@ -7,7 +7,10 @@ description: Lane mechanics every session needs whatever method it runs — spaw
 
 How to do the things every lane needs. This file is a routing table and the rules
 that hold everywhere; each procedure lives in one reference file, read on demand.
-Deciding *what* to build is the `wake` skill's job, not this one; mergewake merges.
+Deciding *what* to build is the `wake` skill's job, not this one; mergewake merges worker PRs, and
+the lead merges its own PRs directly under `lead` §Ledger, including T3 and `deploy_approval` PRs.
+The repo's design session orders the rollout, or operator-desk while that repo has no design session
+open; the lead never deploys or performs the live mutation.
 
 Domain overlay: if `$AGENT_SKILLS_DOMAIN/ops.md` exists, read it before applying
 anything here. Unset or missing is normal — the abstract rules below apply alone.
@@ -105,7 +108,8 @@ panewire emit --kind lane.event --lane <parent-lane> --type decision \
 
 ## Who does what
 
-Authority of the design session, workers, operator-desk and the operator is
+Authority of the design session, lead, workers, operator-desk and the operator is
 `wake` §Authority; what READY means is `wake` §READY. The repo's design session spawns the installer seat,
 or operator-desk when that repo has none open; the **Installer** executes one deploy and judges
-nothing (`deploy.md`).
+nothing (`deploy.md`). The lead merges its own PRs under `lead` §Ledger; its T3 and `deploy_approval`
+PRs are not routed to another merger, and the lead never deploys or performs the live mutation.
