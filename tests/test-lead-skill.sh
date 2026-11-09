@@ -51,6 +51,7 @@ REQUIRED = [
     # Authority.
     ("lead", "## Authority", "owns-program-not-code", r"\*\*The lead owns the program, never the code\.\*\* In-session subagents change code\. The lead judges, briefs, keeps the ledger and lands"),
     ("lead", "## Authority", "merges-directly", r"\*\*The lead merges directly under §Ledger\.\*\*"),
+    ("lead", "## Authority", "design-merges-watch-revert", r"The repo's design session does not merge the lead's PRs; it merges its own repo's `watch` revert PR \(`wake` §Authority\)"),
     ("lead", "## Authority", "own-prs-include-t3-deploy-approval", r"The lead merges its own PRs directly under §Ledger, including T3 PRs and PRs that touch a `deploy_approval` path"),
     ("lead", "## Authority", "own-prs-rollout-runbook", r"A lead PR that needs a rollout carries its runbook \(rollout, verification, rollback\) in the PR body"),
     ("lead", "## Authority", "own-prs-decisions-cited", r"`decision/2026-11-10/lead-direct-merge`; `decision/2026-11-10/lead-merge-scope`"),
@@ -89,6 +90,10 @@ REQUIRED = [
     ("lead", "## Subagents", "final-head-all-three", L("Ledger items (a) to (c) are still all recorded on the final head: the tests rerun and the same-family verifier runs there (operator 2026-11-09)")),
     # Fleet review rules for lead-owned PRs.
     ("fleet", "## Triage rubric", "lead-dismissal-judge", r"on a lead's own PR, the lead judges and records the evidence in its ledger; on every other PR, the repo's design session judges, or operator-desk while that repo has none open"),
+    ("fleet", "## Triage rubric", "lead-may-dismiss-never-skip-critical-high", r"On a lead's own PR, the lead may dismiss a critical or high finding in this list with direct evidence recorded in its ledger"),
+    ("fleet", "## Triage rubric", "lead-dismissal-bar-evidence-visible", r"For a finding that alleges a lowered test or enforcement bar, the ledger names the exact bar or threshold at issue and the evidence that disproves the finding; the lead shares that entry with the cross-family reviewer, whose visibility is not approval"),
+    ("fleet", "## Triage rubric", "never-skip-medium-low-never-dismiss", r"Medium or low findings in this list are never self-dismissed: fix them, or ESC to the repo's design session, else operator-desk"),
+    ("fleet", "## Triage rubric", "other-pr-never-dismiss", r"For every other PR, fix these findings or escalate them to the repo's design session; when none is open, use operator-desk\. They are never self-dismissed"),
     ("fleet", "## A verdict covers a patch, not a SHA", "lead-patch-id-limit", r"For the lead's own PRs, patch-id carryover covers only the cross-family review verdict and finding dispositions\. It never covers the lead's test runs or the same-family verifier verdict; record those separately on the final head in `lead` §Ledger"),
     # Store.
     ("lead", "## Store", "hk-replaces-store", r"hk replaces the orchestrate store"),
@@ -103,7 +108,7 @@ REQUIRED = [
     ("lead", "## Bug and incident loop", "root-cause-before-fix", r"3\. \*\*Find the root cause before writing the fix\.\*\*"),
     ("lead", "## Bug and incident loop", "fix-then-verify", r"4\. \*\*Fix, then verify\.\*\*"),
     # Ledger.
-    ("lead", "## Ledger", "same-head-all-three", r"Before any direct merge, record all three on the same head SHA `\$H`, with the cross-family review and same-family verifier as separate ledger entries"),
+    ("lead", "## Ledger", "same-head-all-three", r"Before any direct merge, record the three ledger results and the cross-family review as separate entries on the same head SHA `\$H`"),
     ("lead", "## Ledger", "cross-family-review-separate", r"Cross-family review: record its verdict and disposition of every finding separately from the same-family verifier"),
     ("lead", "## Ledger", "lead-dismisses-critical-high", r"the lead dismisses it with evidence recorded in its ledger"),
     ("lead", "## Ledger", "ledger-tests", r"\(a\) the tests for the changed packages pass on `\$H`"),
@@ -162,6 +167,9 @@ FORBIDDEN = {
     "never-merges-deploy-approval": re.compile(r"(?i)never merges a PR that touches a `deploy_approval` path"),
     "watch-revert-merged-by-desk": re.compile(r"(?i)(?:revert PR|revert that .*watch).{0,100}merged by the desk"),
 }
+FLEET_FORBIDDEN = {
+    "never-skip-medium-low-self-dismiss": re.compile(r"(?i)medium or low findings in this list (?:can be|may be) self-dismissed"),
+}
 
 
 def check(d):
@@ -173,6 +181,10 @@ def check(d):
     for name, pattern in FORBIDDEN.items():
         m = pattern.search(flat(lead))
         assert not m, f"lead: forbidden rule '{name}' present: {m.group(0)!r}"
+    fleet = flat(d["fleet"])
+    for name, pattern in FLEET_FORBIDDEN.items():
+        m = pattern.search(fleet)
+        assert not m, f"fleet: forbidden rule '{name}' present: {m.group(0)!r}"
 
 
 check(docs)
@@ -203,6 +215,10 @@ for name, injected in [
     expect_red(name, check,
                {**docs, "lead": docs["lead"].replace("## Store", injected + "\n## Store", 1)})
     count += 1
+
+expect_red("never-skip-medium-low-self-dismiss-injected-in-fleet", check,
+           {**docs, "fleet": docs["fleet"] + "\n- Medium or low findings in this list may be self-dismissed.\n"})
+count += 1
 
 # Substitution mutants (hk 3656 round 1): a deletion removes a whole pinned sentence, so each
 # load-bearing token is also swapped for the weaker text a reviewer flagged, and the doc must go RED.
