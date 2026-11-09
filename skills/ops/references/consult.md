@@ -34,12 +34,13 @@
 ③근거 자료 — 파일 경로 + 핵심 발췌 병기(자문 세션 cwd에서 접근 가능한지 확인)
 ④"모르면 '모름'과 근거 — 추측 금지" ⑤시크릿·credential 값 제외 ⑥답변자는 답변 파일
 작성 직후 §3 의 `panewire done` 으로 답을 hk 에 올리고(스폰된 자문 잡이면 패킷에 잡 id 를 적는다),
-이어서 아래 통지를 반드시 실행한다(스폰된 자문 잡이면 통지 전에 아래 sha 확인을 한다: 일치하면 그대로,
-불일치·빈 목록·명령 실패면 `<답변 파일 경로>` 는 로컬 경로를 쓰고 끝에 `(hk upload failed)` 를 붙인다).
+이어서 아래 통지를 반드시 실행한다(스폰된 자문 잡이면 통지 전에 아래 sha 확인을 한다: 일치하면 확인한 그 키를 `hk:doc/<확인한 키>` 로 적고
+(예: `hk:doc/reports/consult-r9-fable/answer-r2.md`), 불일치·빈 목록·명령 실패면 `hk:doc/<확인한 키>` 대신 로컬 답변 파일 경로를 쓰고 끝에 `(hk upload failed)` 를 붙인다.
+스폰 없는 질의는 로컬 답변 파일 경로를 쓴다 — operator 2026-11-09, hk 3714).
 수신 하네스가 달라도 경로는 하나다(`relay.md` §3-1):
 
 ```bash
-panewire emit --kind lane.event --lane <요청자 레인> --type ready --event-id <고유id> --text '[consult-done] <1줄 요지> | <답변 파일 경로>'
+panewire emit --kind lane.event --lane <요청자 레인> --type ready --event-id <고유id> --text '[consult-done] <1줄 요지> | hk:doc/<확인한 키>'
 ```
 
 ## 3. 실행 — 자문 pane 스폰 (기본)
@@ -66,13 +67,16 @@ panewire spawn -c <dir> -m <프로필> -p <질문패킷파일> -w <ws> -l consul
   `panewire done`, so without this step the answer stays only in the job dir on the answerer's host.
   A follow-up round runs it again; a changed answer at the same path is stored as `answer-r<N>.md`.
 - **Confirm the sha before `[consult-done]`.** Same check as `wake` §Done: newest round by the newest-round rule, then
-  `handoffkeep doc get <that key> | jq -r .sha256` against `shasum -a 256 <answer file>`. On a match the notice is unchanged;
+  `handoffkeep doc get <that key> | jq -r .sha256` against `shasum -a 256 <answer file>`. On a match the notice names that exact key as `hk:doc/<key>`
+  (for example `hk:doc/reports/consult-r9-fable/answer-r2.md`; operator 2026-11-09, hk 3714);
   on a mismatch, an empty list or any failure (a failed follow-up upload leaves an older round), the notice names the local
   answer path and appends `(hk upload failed)`.
-- **The asking session reads the answer from hk:** find the newest with `handoffkeep doc list --prefix reports/<consult job>/` (newest-round rule, `wake` loop step 8: highest `-rN`, else the base name, over only the keys starting with the literal `reports/<consult job>/`;
-  a follow-up is stored as `answer-r<N>.md`) and `handoffkeep doc get <key>`,
-  after the inbox item arrives (design and desk lanes are inbox-only, `watching.md` §Inbox wake line).
-  First do the failure-marker check in the newest-round rule: a `[consult-done]` notice with `(hk upload failed)` means do not read hk (never an older round).
+- **The asking session reads the answer from hk** after the inbox item arrives (design and desk lanes are inbox-only, `watching.md` §Inbox wake line).
+  A notice that names `hk:doc/<key>`: read that exact key with `handoffkeep doc get <key>` — no prefix listing, no newest-round selection.
+  If that get fails or its `job` field is not your consult job, the answer is unavailable: ask the answerer for a new `panewire done`, never an older round (operator 2026-11-09, hk 3714).
+  A notice with `(hk upload failed)` means do not read hk (never an older round): the failure-marker check in the newest-round rule.
+  **Legacy fallback** (a notice that names a local path without the marker, from an answerer on an older install): find the newest with `handoffkeep doc list --prefix reports/<consult job>/` (newest-round rule, `wake` loop step 8: highest `-rN`, else the base name, over only the keys starting with the literal `reports/<consult job>/`;
+  a follow-up is stored as `answer-r<N>.md`) and `handoffkeep doc get <key>`.
 - 자문자는 답변 파일을 작성한 직후 §2 의 `[consult-done]` 통지를 실행한다(`panewire emit`).
   대기·기한 후 확인·착지 확인 분기는 **`relay.md` §3-1 정본**을 따른다.
 - 이벤트 수신 뒤 파일이 없으면 ①`herdr agent read <target> --lines 40`으로
@@ -93,7 +97,9 @@ panewire spawn -c <dir> -m <프로필> -p <질문패킷파일> -w <ws> -l consul
 
 - 자문 답변은 스폰 때 정한 `--report` 경로(`~/work/herdr-inbox/jobs/consult-<주제>/answer.md`)에
   쓰고(`panewire done --report` 의 입력이자 scratch), `panewire done` 으로 hk `reports/<consult job>/` 에 올린다(§3).
-  정본은 hk 이되 통지에 `(hk upload failed)` 가 있으면 hk 를 읽지 않고(최신 라운드 규칙의 실패 표지 확인), `handoffkeep doc list --prefix reports/<consult job>/` 로 나온 키는 최신 라운드 규칙(`wake` loop step 8: 리터럴 `reports/<consult job>/` 로 시작하는 키만 남기고,
+  정본은 hk 다. 통지가 `hk:doc/<키>` 를 적었으면 그 키를 `handoffkeep doc get <키>` 로 바로 읽고(prefix 나열·최신 라운드 선택 없음,
+  get 실패나 다른 잡의 문서면 답 없음으로 보고 새 `panewire done` 을 요청한다 — 이전 라운드 금지), 통지에 `(hk upload failed)` 가 있으면 hk 를 읽지 않는다(최신 라운드 규칙의 실패 표지 확인).
+  마커 없이 로컬 경로만 적은 레거시 통지면 `handoffkeep doc list --prefix reports/<consult job>/` 로 나온 키를 최신 라운드 규칙(`wake` loop step 8: 리터럴 `reports/<consult job>/` 로 시작하는 키만 남기고,
   가장 높은 `-rN`, 없으면 기본 이름)으로만 골라
   `handoffkeep doc get <key>` 로 읽는다.
   스폰 없는 상존 세션 질의는 `session-questions.md` §1 경로를 쓴다.

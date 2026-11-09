@@ -245,7 +245,10 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    round is stored as `report-r<N>.md`. **Newest-round rule (the one statement; other files point here):**
    first, if the READY or `[consult-done]` notice names a local path with `(hk upload failed)`, do not select from hk: read that
    local path on the worker's/answerer's own host if you are there, else report the answer unavailable and ask the sender to re-run
-   `panewire done` — never substitute an older hk round. Otherwise list `handoffkeep doc list --prefix reports/<job>/`, keep only keys that start with the literal `reports/<job>/` and have no
+   `panewire done` — never substitute an older hk round. A `[consult-done]` notice that names `hk:doc/<key>` selects nothing: read that key
+   with `handoffkeep doc get <key>`; if that get fails or its `job` field is not the consult job, the answer is unavailable: ask for a new
+   `panewire done`, never an older round, and do not close the task (`ops` `consult.md` §3; operator 2026-11-09, hk 3714).
+   Otherwise (READY, or a legacy `[consult-done]` naming a local path without the marker) list `handoffkeep doc list --prefix reports/<job>/`, keep only keys that start with the literal `reports/<job>/` and have no
    further `/` (the prefix is a SQL LIKE, so `_` also matches another job's `-`), take the highest `-rN`, else the base name, and read it with
    `handoffkeep doc get <key>`. Once it exists, close
    the hk task. The mergewake daemon reaps the worker pane once it is `idle`/`done` and its
