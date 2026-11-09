@@ -85,7 +85,7 @@ REQUIRED = [
     # Subagents.
     ("wake", "## Subagent vs worker", "subagent-rule-home", r"`robin-mode` \(rstack\)\s+§Subagents versus spawned workers"),
     ("lead", "## Subagents", "lead-test-host-rule-pointer",
-     r"\*\*테스트 호스트 규칙은 `ops` §Invariants 를 따른다\.\*\* Implementer 와 verifier 는 lead 의 호스트 \(현재 lead pane 이 실행되는 호스트\)에서 `go test` 패키지 테스트를 하지 않는다\. 예외는 단일 테스트 하나뿐이다\..{0,160}테스트마다 red/green 예상"),
+     r"\*\*The test host rule is `ops` §Invariants\.\*\* \*\*Implementers and verifiers run no `go test` on the lead's host except one single test\.\*\*"),
     # READY contract (operator 2026-11-01, hk task 2485).
     ("wake", "## READY", "ready-keeps-author", r"\*\*the author stays the PR owner until merge, an explicit hand-off, or abandonment\*\*"),
     ("wake", "## READY", "ready-explicit-handoff", r"명시적 인계\*\*는 새 담당자를 이름으로 적은 같은 `hk task` 의 comment 와, 그 task 에서 수신자가 남긴 수락 comment 둘 다를 뜻한다\. 수신자가 같은 task 에서 수락하기 전까지 PR 작성자가 소유권을 유지한다\."),
@@ -242,7 +242,7 @@ REQUIRED = [
     ("ops", "## Invariants (all references)", "emit-carries-type", r"\*\*Every `panewire emit` between sessions carries `--type`\.\*\* A notice, receipt or handoff note that needs no reply is `info` or `ack`.{0,80}Only what needs action now is `decision`, `blocked` or `order`"),
     ("ops", "## Invariants (all references)", "no-polling", r"\*\*No polling loops\.\*\*"),
     ("ops", "## Invariants (all references)", "test-host-rule",
-     r"\*\*테스트 호스트 규칙:\*\* spawn preamble 이 허용한 호스트에서 변경한 항목만 테스트한다\..{0,180}`remote-gotest` 가 있으면 이를 사용한다\..{0,180}DB 테스트와 전체 스위트는 CI 에서 `ci-any-ref` 로 실행한다\..{0,100}Brief 는 호스트 규칙을 추가하지 않는다\. 로컬에서 macOS 의 Go 테스트를 실행할 때는 `-p 2` 를 유지한다"),
+     r"\*\*Test host rule \(the one home\)\.\*\* Test only what you changed, on a host the spawn preamble allows —.{0,120}Use `remote-gotest` where the repo has it\. DB and full suites run in CI \(`ci-any-ref`\)\. A brief adds no host rules of its own\. On macOS keep `-p 2`"),
     # consult §1 (hk 2898): resolve has no --builder-family; the questioner checks the family by hand.
     ("consult", "## 1. 자문처 결정", "consult-resolve-command", r"`panewire resolve --role consult`"),
     ("consult", "## 1. 자문처 결정", "consult-family-check", r"질문자는 계열도 직접 확인한다"),
