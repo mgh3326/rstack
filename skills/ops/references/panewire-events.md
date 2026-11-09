@@ -12,8 +12,8 @@
 | 대상 | 판 | 근거 |
 |---|---|---|
 | 허브 | `pw-e401923` (#64, 09-17 머지) | hk:doc `deploy/panewire-hub/20260923T033051Z` — 09-23 허브 실측(서비스 ExecStart 바이너리 `panewire version`, 기동 후 교체 없음). 허브 배포는 BLOCK-3 에 묶여 옛 판 |
-| 노드 (desktop) | `pw-05667f4` (#57, 09-14 머지) | 설치본 `panewire version` = `pw-05667f4` · 실행 중 데몬 argv 실측(`--inbox-root` 가 있고 `--hub-jobs-root`·`--checks-config`·`--stall-detect*` 없음 — jobsInboxRoot 는 inbox-root 기본값, cli.go:508-511 @05667f4). #574 카나리 대기로 옛 판 |
-| 노드 (mac 등 나머지) | **미측정** | desktop 에서 확인 수단 없음. 레인 pane 주입의 마지막 구간(허브→수신 노드→pane)은 수신 측 노드 판에 달린다 |
+| 노드 (측정 완료) | `pw-05667f4` (#57, 09-14 머지) | 설치본 `panewire version` = `pw-05667f4` · 실행 중 데몬 argv 실측(`--inbox-root` 가 있고 `--hub-jobs-root`·`--checks-config`·`--stall-detect*` 없음 — jobsInboxRoot 는 inbox-root 기본값, cli.go:508-511 @05667f4). #574 카나리 대기로 옛 판 |
+| 노드 (다른 macOS 노드) | **미측정** | 다른 노드에서 확인 수단 없음. 레인 pane 주입의 마지막 구간(허브→수신 노드→pane)은 수신 측 노드 판에 달린다 |
 | 소스 정본 | `origin/main` `c1b9c0e` | #80(#507)까지 머지 — 허브·노드 모두 미배포 |
 
 이벤트는 발생 측과 라우팅 측이 다른 판일 수 있다: 노드가 만들어 허브가 owner 레인으로
@@ -41,7 +41,7 @@
 | 감시하던 것 | panewire 이벤트 | 배포 판 | 근거 |
 |---|---|---|---|
 | 노드 다운·heartbeat stale | 허브 alert | **있음 — 경로는 Telegram**(레인 push 아님) | hub_alert.go @e401923: heartbeat 관측→alert 상태기계→`notifier.Send`(hub_tg.go). watched node-down 재알림 `cf58951` 두 판 모두 |
-| 커스텀 호스트 체크 결과 | `--checks-config` 체크 → heartbeat.checks → 허브 alert | **기능 있음 · desktop 미설정** | checks.go `LoadHubChecksConfig`·`runHubChecks`(두 판); 실행 중 desktop 데몬 argv 에 `--checks-config` 없음(실측) |
+| 커스텀 호스트 체크 결과 | `--checks-config` 체크 → heartbeat.checks → 허브 alert | **기능 있음 · 측정한 노드에 미설정** | checks.go `LoadHubChecksConfig`·`runHubChecks`(두 판); 실행 중 측정한 노드의 데몬 argv 에 `--checks-config` 없음(실측) |
 | syspolicyd 부재·크래시 .ips·exec 정지 등 mac 호스트 내부 신호 | — | **없음**(범위 3 — 노드 헬스 신호: 노드가 주기 측정하고 전이 시 1회 알림) | 해당 신호의 이벤트는 아직 존재하지 않음 — 별도 태스크·노드 배포 필요 |
 | 노드 자동업데이트(trial·overdue) | update 이벤트 | **미배포** | `b08ab5d`(#76) origin/main 만 — #574 카나리 대기와 같은 배포 단위 |
 
@@ -89,9 +89,9 @@ limit를 허브 수명에 묶어 허브 자체가 단일 장애점이 되고, �
   도 같다).
   `panewire spawn` 에 `--owner` 가 빠지면 `default` 로 들어가 push 는 오지
   않는다. 레인 pane 주입의 마지막 구간은 수신 측 노드(mac, 미측정)에 달렸다
-  — pane 주입 자체는 `panewire prompt` 경로로 매일 관측되는 구간이다. mac 노드
+  — pane 주입 자체는 `panewire prompt` 경로로 매일 관측되는 구간이다. 다른 macOS 노드
   판은 operator 자격이 있는 쪽에서 허브 `GET /v1/nodes` 로 측정할 수 있다
-  (desktop 에는 operator 토큰이 없어 미측정으로 둔다).
+  (현재 확인한 노드에는 operator 토큰이 없어 미측정으로 둔다).
 - push 알림이 와도 **소비는 받는 레인 세션의 생존에 달렸다**. 재부팅 내성이 있는 것은
   측정·전달이지 판정이 아니다.
 - 위 "미배포" 행들은 origin/main 에 존재하나 배포 판에 없다. 이 표를 근거로 해당

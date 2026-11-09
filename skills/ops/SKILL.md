@@ -58,8 +58,10 @@ anything here. Unset or missing is normal — the abstract rules below apply alo
   (`--body "… $(date '+%F %T %Z')"`) or is the record's own server timestamp. A relative time is
   computed: `date -v+30M '+%F %T %Z'` on macOS, `date -d '+30 min' '+%F %T %Z'` on Linux. Estimated times
   written into records were later read as fact (2026-11-03).
-- **Test only what you changed, on any host** — e.g. `go test -p 2 ./<changed pkg>/...` or the touched
-  pytest files; full suites are CI's job. On macOS keep `-p 2`: wider parallelism stalls in syspolicyd.
+- **테스트 호스트 규칙:** spawn preamble 이 허용한 호스트에서 변경한 항목만 테스트한다. 저장소에
+  `remote-gotest` 가 있으면 이를 사용한다. DB 테스트와 전체 스위트는 CI 에서 `ci-any-ref` 로 실행한다.
+  Brief 는 호스트 규칙을 추가하지 않는다. 로컬에서 macOS 의 Go 테스트를 실행할 때는 `-p 2` 를 유지한다:
+  더 넓은 병렬성은 `syspolicyd` 에서 멈출 수 있다.
 
 ## Routing table
 
