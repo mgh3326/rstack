@@ -32,10 +32,12 @@ PERMISSION = r"(내도|써도|써도 좋|자유롭게|허용한다|허용이다)
 
 
 def has_full_prompt_command(text: str) -> bool:
-    """Find a full command by its flag set, independent of flag order."""
+    """Find a full command with the required uptake mode, independent of flag order."""
     for tail in re.findall(r"\bpanewire\s+prompt([^`\n]*)", text):
         command = "panewire prompt" + tail
-        if all(re.search(rf"(?<!\S){flag}(?:=|\s)", command) for flag in REQUIRED_PROMPT_FLAGS):
+        if all(re.search(rf"(?<!\S){flag}(?:=|\s)", command) for flag in REQUIRED_PROMPT_FLAGS) and re.search(
+            r"(?<!\S)--uptake(?:=|\s+)status-transition(?:\s|$)", command
+        ):
             return True
     return False
 
@@ -182,6 +184,13 @@ assert injection_uptake_stripped != injection_text, (
     "fixture: --uptake status-transition not found to strip"
 )
 
+injection_uptake_changed = injection_text.replace(
+    "--uptake status-transition", "--uptake confirmed"
+)
+assert injection_uptake_changed != injection_text, (
+    "fixture: --uptake status-transition not found to change"
+)
+
 injection_sendban_removed = injection_text.replace(
     "**본문 주입 수단으로는 복구\n  목적 외에 금지**한다",
     "**언제든 허용**한다",
@@ -269,6 +278,10 @@ assertion_red_mutants = [
     (
         "relay-3-3-uptake-flag-stripped",
         lambda: check_injection(injection_uptake_stripped),
+    ),
+    (
+        "relay-3-3-uptake-mode-changed",
+        lambda: check_injection(injection_uptake_changed),
     ),
     (
         "relay-3-3-send-ban-weakened",
