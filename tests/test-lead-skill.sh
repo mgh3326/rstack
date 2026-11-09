@@ -89,7 +89,10 @@ REQUIRED = [
     ("lead", "## Subagents", "final-head-all-three", L("Ledger items (a) to (c) are still all recorded on the final head: the tests rerun and the same-family verifier runs there (operator 2026-11-09)")),
     # Fleet review rules for lead-owned PRs.
     ("fleet", "## Triage rubric", "lead-dismissal-judge", r"on a lead's own PR, the lead judges and records the evidence in its ledger; on every other PR, the repo's design session judges, or operator-desk while that repo has none open"),
-    ("fleet", "## Triage rubric", "lead-may-dismiss-never-skip", r"On a lead's own PR, the lead may dismiss these with direct evidence recorded in its ledger, under its authority in `lead` §Ledger\. On every other PR, these are fix, or ESC to the repo's design session, else operator-desk — never a self-dismiss\."),
+    ("fleet", "## Triage rubric", "lead-may-dismiss-never-skip-critical-high", r"On a lead's own PR, the lead may dismiss a critical or high finding in this list with direct evidence recorded in its ledger"),
+    ("fleet", "## Triage rubric", "lead-dismissal-bar-evidence-visible", r"For a finding that alleges a lowered test or enforcement bar, the ledger names the exact bar or threshold at issue and the evidence that disproves the finding; the lead shares that entry with the cross-family reviewer, whose visibility is not approval"),
+    ("fleet", "## Triage rubric", "never-skip-medium-low-never-dismiss", r"Medium or low findings in this list are never self-dismissed: fix them, or ESC to the repo's design session, else operator-desk"),
+    ("fleet", "## Triage rubric", "other-pr-never-dismiss", r"On every other PR, all findings in this list are fix, or ESC to the repo's design session, else operator-desk — never a self-dismiss"),
     ("fleet", "## A verdict covers a patch, not a SHA", "lead-patch-id-limit", r"For the lead's own PRs, patch-id carryover covers only the cross-family review verdict and finding dispositions\. It never covers the lead's test runs or the same-family verifier verdict; record those separately on the final head in `lead` §Ledger"),
     # Store.
     ("lead", "## Store", "hk-replaces-store", r"hk replaces the orchestrate store"),
@@ -162,6 +165,7 @@ FORBIDDEN = {
     "never-runs-t3-work": re.compile(r"(?i)never runs T3 work"),
     "never-merges-deploy-approval": re.compile(r"(?i)never merges a PR that touches a `deploy_approval` path"),
     "watch-revert-merged-by-desk": re.compile(r"(?i)(?:revert PR|revert that .*watch).{0,100}merged by the desk"),
+    "never-skip-medium-low-self-dismiss": re.compile(r"(?i)medium or low findings in this list (?:can be|may be) self-dismissed"),
 }
 
 
@@ -200,6 +204,7 @@ for name, injected in [
     ("never-runs-t3-work-injected", "- The lead never runs T3 work.\n"),
     ("never-merges-deploy-approval-injected", "- The lead never merges a PR that touches a `deploy_approval` path.\n"),
     ("watch-revert-merged-by-desk-injected", "- A revert PR that `watch` opens is merged by the desk.\n"),
+    ("never-skip-medium-low-self-dismiss-injected", "- Medium or low findings in this list may be self-dismissed.\n"),
 ]:
     expect_red(name, check,
                {**docs, "lead": docs["lead"].replace("## Store", injected + "\n## Store", 1)})
