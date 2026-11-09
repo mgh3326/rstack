@@ -87,6 +87,8 @@ REQUIRED = [
     ("robin", None, "robin-handoff-points-to-ready-definition", r"An explicit hand-off requires the hk task comment and receiver acceptance defined in `wake` §READY\."),
     ("reap", "### 6-1. 그 밖의 pane — 스폰한 주체가 거둔다", "reap-open-pr-author-never", r"열린 PR 의 작성자 pane 은 \*\*절대 회수하지 않는다\.\*\*"),
     ("reap", "### 6-6. `panewire reap` — 끝난 pane 일괄 회수", "reap-apply-pr-state-gate", r"`--apply` 전에 미리보기의 각 job 에 연결된 PR 번호로 `gh pr view <n> --json state` 를 확인한다\. PR 이 `OPEN` 이면 그 job 을 적용 대상에서 빼고 pane 을 회수하지 않는다\. PR 이 `MERGED` 또는 `CLOSED` 인 job 만 계속 검토한다\."),
+    ("reap", "### 6-6. `panewire reap` — 끝난 pane 일괄 회수", "reap-no-pr-uses-existing-criteria", r"연결된 PR 이 없는 job 은 기존 회수 조건으로 계속 검토한다\."),
+    ("reap", "### 6-6. `panewire reap` — 끝난 pane 일괄 회수", "reap-uncertain-pr-state-keeps-pane", r"조회가 실패하거나 state 를 판독할 수 없으면 해당 job 을 적용 대상에서 빼고 pane 을 남긴다\."),
     ("reap", "### 6-6. `panewire reap` — 끝난 pane 일괄 회수", "reap-open-pr-author-protected", r"열린 PR 의 작성자 pane 은 언제나 제외한다\."),
     ("wake", "### Preservation evidence (refactors)", "preservation-template", r"\| Existing invariant \| Production entry point \| Executed evidence \|"),
     ("wake", "## BLOCKED", "no-fix-worker-while-alive", r"Do not spawn a fix worker while that attempt is alive"),
