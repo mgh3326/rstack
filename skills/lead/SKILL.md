@@ -34,7 +34,11 @@ The operator opens the lead session directly. For now no other session spawns on
 - **The verifier is a different subagent from the implementer**, started with a fresh context, and of the same family as the lead for now. Record that as `same_family` in the verdict.
 - **Spawned workers used as subagents (quota through panewire) are a later experiment. They are not allowed yet.** `panewire spawn` stays the design session's tool (`wake` §The loop).
 - **Model choice follows `robin-mode` `roles.md` §Models and effort for in-session subagents** (`panewire resolve`); never pick a substitute when it refuses.
+- **Implementers and verifiers run no `go test` on mbp.** Locally they run only `go build`, `go vet`, gofmt and at most one `-run '^TestX$' -p 1`. The lead pushes, then runs package, race and mutant tests with `remote-gotest m1b|desktop <repo> <sha>`, or `ci-any-ref` for full or DB suites; run Linux and macOS in parallel when platform behaviour matters. The implementer hands back a red/green prediction per test, the remote commands and the mutant diffs (operator 2026-11-09).
 - A subagent returns an answer or a diff in its own worktree; its output is input to the lead's judgement, never a verdict by itself. The verifier never edits code (`roles.md` Rules).
+- **Review order: cheap cross-family review first.** Round 1 reviews the full PR; after a fix only the interdiff. Remote tests may run beside it.
+- **The heavy same-family verifier (no tests; it reads the remote logs) starts only on a head the cross-family review passed.** Never start a verifier on a head that may still change (rstack#55: 6 rounds and 5 discarded verifiers, against 1-2 rounds and 0 in the 2026-11-09 trial).
+- **Round cap is 2.** After round 2 the remaining findings become follow-up tasks; P0/P1 and critical/high are never deferred (§Ledger). A fix that touches only P3 wording or docs gets no re-review, but the tests rerun on the new head (operator 2026-11-09).
 
 ## Store
 
@@ -45,6 +49,7 @@ hk replaces the orchestrate store. There is no `~/.claude/orchestrate/` director
 - **The ledger lives in task comments**, and in hk reviews once hk 3037 ships.
 - State is read from hk, `gh` and git, not from the chat: after a restart, re-read the open tasks, their ledgers and the open PRs, and reattach by PR and branch.
 - Report to the operator in the operator's channel; park a decision you cannot default as a decision request (`ops` decision-request), never as a question in a pane.
+- **A step with no progress for over 30 minutes, or the same failure twice, gets one line to handoffkeep-design:** `[lead] STUCK | <what> | <tried> | <alternative A/B>`; then proceed on an alternative (operator 2026-11-09).
 
 ## Bug and incident loop
 
@@ -67,7 +72,7 @@ Before any direct merge, record all three on the same head SHA `$H`:
 
 Then `git fetch origin <base>` and check base freshness, `git merge-base --is-ancestor origin/<base> "$H"`, and run the public-repo leak scan on the diff (`wake` §Merge gate). A new head voids the ledger; repeat it.
 
-Merge pinned to the head: `gh pr merge <n> --squash --match-head-commit "$H"`. Record on the hk task:
+Merge pinned to the head: `gh pr merge <n> --squash --match-head-commit "$H"`. **Gate the merge in the command.** Chain `git fetch`, the ancestor check, the leak scan, `gh pr ready` and `gh pr merge --match-head-commit` with `&&` only, never `;` (panewire#360, where a `;` chain merged past a failed freshness check). Record on the hk task:
 
 `direct-merge pr=<n> head=<H> evidence=<…>`
 
@@ -115,6 +120,7 @@ The brief is the product. A subagent cannot ask the lead a question, and a vague
 
 - **Standing orders go in verbatim** at every spawn and every resume.
 - **The acceptance list is closed.** Anything the lead wants checked goes in before the brief is sent.
+- **Design attack before the brief.** For a unit that deletes code, removes a fallback or changes a contract, give the cross-family reviewer the scope and code areas (no diff) before writing the brief. Ask it to list every way the change could read a wrong or stale result, delete what is still needed, or break a caller. Its list becomes the brief's red tests; if it breaks the unit's premise, re-plan before implementing (hk 3652, where "fallback audit = 0" did not prove the fallback unused; hk 3640).
 - Size the brief to the unit: a one-command unit gets a paragraph that still names goal, scope, the verify command and the report shape.
 - Never resume-chain a brief; start a fresh subagent with consolidated scope.
 - Dropped from `orchestrate.md`: the `orch` CLI, the `~/.claude/orchestrate/` store, babysit, swarm, arena and the sub-coordinator layer.
