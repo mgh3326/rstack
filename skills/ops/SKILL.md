@@ -19,6 +19,8 @@ anything here. Unset or missing is normal — the abstract rules below apply alo
 
 - Follow hk:doc `policy/operator-facing-korean`: operator-facing text is Korean; identifiers, code and commands stay as they are; English-only text gets a stored Korean translation.
 
+- **A local or remote test run uses the flags of the CI job that covers it, including `-timeout`.** If a CI limit is too short, fix the repo's workflow; never use a longer flag on a local or remote run.
+
 - Record and check operational stopgaps as specified in `desk` §Containment.
 
 - **A delivery claim is not delivery evidence.** A normal reply from an injection or
