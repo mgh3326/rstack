@@ -34,12 +34,15 @@ The operator opens the lead session directly. For now no other session spawns on
 - **The verifier is a different subagent from the implementer**, started with a fresh context, and of the same family as the lead for now. Record that as `same_family` in the verdict.
 - **Spawned workers used as subagents (quota through panewire) are a later experiment. They are not allowed yet.** `panewire spawn` stays the design session's tool (`wake` §The loop).
 - **Model choice follows `robin-mode` `roles.md` §Models and effort for in-session subagents** (`panewire resolve`); never pick a substitute when it refuses.
-- **테스트 호스트 규칙은 `ops` §Invariants 를 따른다.** Implementer 와 verifier 는 lead 의 호스트에서
+- **테스트 호스트 규칙은 `ops` §Invariants 를 따른다.** Implementer 와 verifier 는 lead 의 호스트
+  (현재 lead pane 이 실행되는 호스트)에서
   `go test` 패키지 테스트를 하지 않는다. 예외는 단일 테스트 하나뿐이다. 로컬에서는 `go build`,
   `go vet`, gofmt 및 최대 하나의 `go test -run '^TestX$' -p 1 <pkg>` 만 실행한다. Implementer 는
   테스트마다 red/green 예상, 원격 명령과 mutant diff 를 전달한다 (operator 2026-11-09).
-- **Lead 는 push 한 뒤 원격 테스트를 실행한다.** Package 와 race 테스트는 저장소에 `remote-gotest` 가
-  있으면 `remote-gotest <host> <repo> <sha> -race -count=3 -run '<tests>' <pkgs>` 로 실행한다.
+- **Lead 는 push 한 뒤 spawn preamble 과 `ops` §Invariants 가 허용한 원격 호스트에서 테스트를 실행한다.**
+  Package 와 race 테스트는 저장소에 `remote-gotest` 가 있으면 반드시
+  `remote-gotest <host> <repo> <sha> -race -count=3 -run '<tests>' <pkgs>` 로 실행한다. 저장소에
+  `remote-gotest` 가 없으면 같은 허용 호스트의 checkout 에서 `ssh <host> 'git -C ~/work/<repo> fetch origin <branch> && git -C ~/work/<repo> checkout --detach <sha> && cd ~/work/<repo> && go test -race -count=3 -run "<tests>" <pkgs>'` 로 실행하고 호스트, sha, 정확한 명령을 기록한다.
   플랫폼 동작이 중요하면 Linux 와 macOS 에서 병렬 실행한다. Red 확인은 push 한 test-only commit 의 sha
   에서 새 테스트를 실행한다. Mutant 는 각 diff 를 해당 호스트의 `$H` 기반 throwaway worktree 에 적용해
   이름이 지정된 테스트를 실행하고, `$H` 의 green 결과와 별도로 잡힌 mutant 를 기록한다. 전체 또는 DB

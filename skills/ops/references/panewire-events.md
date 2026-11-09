@@ -12,8 +12,8 @@
 | 대상 | 판 | 근거 |
 |---|---|---|
 | 허브 | `pw-e401923` (#64, 09-17 머지) | hk:doc `deploy/panewire-hub/20260923T033051Z` — 09-23 허브 실측(서비스 ExecStart 바이너리 `panewire version`, 기동 후 교체 없음). 허브 배포는 BLOCK-3 에 묶여 옛 판 |
-| 노드 (측정 완료) | `pw-05667f4` (#57, 09-14 머지) | 설치본 `panewire version` = `pw-05667f4` · 실행 중 데몬 argv 실측(`--inbox-root` 가 있고 `--hub-jobs-root`·`--checks-config`·`--stall-detect*` 없음 — jobsInboxRoot 는 inbox-root 기본값, cli.go:508-511 @05667f4). #574 카나리 대기로 옛 판 |
-| 노드 (다른 macOS 노드) | **미측정** | 다른 노드에서 확인 수단 없음. 레인 pane 주입의 마지막 구간(허브→수신 노드→pane)은 수신 측 노드 판에 달린다 |
+| 노드 (hk:doc `deploy/panewire-node/20260924T071217Z`) | `pw-05667f4` (#57, 09-14 머지) | hk:doc `deploy/panewire-node/20260924T071217Z` 에 기록된 노드의 설치본 `panewire version` = `pw-05667f4` · 실행 중 데몬 argv 실측(`--inbox-root` 가 있고 `--hub-jobs-root`·`--checks-config`·`--stall-detect*` 없음 — jobsInboxRoot 는 inbox-root 기본값, cli.go:508-511 @05667f4). #574 카나리 대기로 옛 판 |
+| 다른 macOS 노드 | **미측정** | 위 hk 기록의 노드 외에는 확인 수단 없음. 레인 pane 주입의 마지막 구간(허브→수신 노드→pane)은 수신 측 노드 판에 달린다 |
 | 소스 정본 | `origin/main` `c1b9c0e` | #80(#507)까지 머지 — 허브·노드 모두 미배포 |
 
 이벤트는 발생 측과 라우팅 측이 다른 판일 수 있다: 노드가 만들어 허브가 owner 레인으로

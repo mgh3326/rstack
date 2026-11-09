@@ -83,7 +83,7 @@ REQUIRED = [
     # Subagents.
     ("wake", "## Subagent vs worker", "subagent-rule-home", r"`robin-mode` \(rstack\)\s+§Subagents versus spawned workers"),
     ("lead", "## Subagents", "lead-test-host-rule-pointer",
-     r"\*\*테스트 호스트 규칙은 `ops` §Invariants 를 따른다\.\*\* Implementer 와 verifier 는 lead 의 호스트에서 `go test` 패키지 테스트를 하지 않는다\. 예외는 단일 테스트 하나뿐이다\..{0,160}테스트마다 red/green 예상"),
+     r"\*\*테스트 호스트 규칙은 `ops` §Invariants 를 따른다\.\*\* Implementer 와 verifier 는 lead 의 호스트 \(현재 lead pane 이 실행되는 호스트\)에서 `go test` 패키지 테스트를 하지 않는다\. 예외는 단일 테스트 하나뿐이다\..{0,160}테스트마다 red/green 예상"),
     # READY contract (operator 2026-11-01, hk task 2485).
     ("wake", "## READY", "ready-keeps-author", r"\*\*the author stays the PR owner until merge, an explicit hand-off, or abandonment\*\*"),
     ("wake", "## READY", "ready-explicit-handoff", r"명시적 인계\*\*는 새 담당자를 이름으로 적은 같은 `hk task` 의 comment 와, 그 task 에서 수신자가 남긴 수락 comment 둘 다를 뜻한다\. 수신자가 같은 task 에서 수락하기 전까지 PR 작성자가 소유권을 유지한다\."),
