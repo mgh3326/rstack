@@ -42,8 +42,10 @@ operator-desk; `ops` deploy), or decisions (ask the operator).
   that lane as owner (§The loop step 5).
 - **Worker:** implements and reports. It never merges, deploys, or touches
   brokers, live servers, secrets or migrations.
-- **Lead** (opened by the operator, follows the `lead` skill): the only session that merges directly,
-  under `lead` §Ledger. It never deploys and never merges a T3 or `deploy_approval` PR.
+- **Lead** (opened by the operator, follows the `lead` skill): the only session that directly merges
+  its own PRs, under `lead` §Ledger, including T3 and `deploy_approval` PRs. It never deploys or
+  performs the live mutation. The repo's design session orders the rollout, or operator-desk while
+  that repo has no design session open.
 - **operator-desk:** receives a project's ESC decisions, spawn failures, merge holds and deploys
   only while that project has no design session open, and registers lane routes. It is not in the
   dispatch path.
