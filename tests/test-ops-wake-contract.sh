@@ -216,7 +216,7 @@ REQUIRED = [
     ("relay", None, "relay-report-parent-lane-event", r"에이전트→디자인 세션 방향 보고는 send 금지.{0,180}부모 레인으로 `panewire emit --kind lane\.event --lane <parent-lane> --type report --text '<report summary>'`"),
     ("events", "## 3. CI·PR 대기", "events-ci-pr-event-unknown", r"\| CI 결과·PR 상태 변화 이벤트 \| — \| \*\*미확인\*\* \| panewire main 코드는 handoffkeep/mergewake snapshot을 동기 조회.{0,220}panewire@a702d068db071d7685d417401023b3c276089012 `pr_status_cli\.go:20-24,121-140`"),
     ("events", "## 3. CI·PR 대기", "events-pr-status-query", r"\| PR 상태·finding 조회 \| `panewire pr status <owner/repo> <n>` / `panewire pr findings <owner/repo> <n>` \| \*\*소스에 CLI 조회 있음\*\* \| panewire@a702d068db071d7685d417401023b3c276089012"),
-    ("events", "## 4. 기타", "events-prompt-from-source-pin", r"\| 프롬프트 착지 증명 \| `panewire prompt --from <sender-lane> --to <agent-name> --file <prompt-file> --uptake status-transition`.*panewire@a702d068db071d7685d417401023b3c276089012 `cli\.go:182-196`"),
+    ("events", "## 4. 기타", "events-prompt-from-source-pin", r"\| 프롬프트 착지 증명 \| `panewire prompt --from <sender-lane> --to <agent-name> --file <prompt-file> --uptake status-transition --timeout 60s`.*panewire@a702d068db071d7685d417401023b3c276089012 `cli\.go:182-196`"),
     ("ops", "## Escalate a decision", "ops-esc-unanswered-lost", r"unanswered decision becomes `lost` after the decision timeout \(`PANEWIRE_DECISION_TIMEOUT_S`, six hours by default\) unless a later lane event from the pane resumes the job first"),
     ("ops", "## Escalate a decision", "ops-esc-only-ready-done", r"Only READY or DONE completes a job"),
     ("ops", "## Escalate a decision", "ops-esc-give-up-escalate", r"Giving up is `panewire escalate <job> --question '<why>'`, not an ESC"),

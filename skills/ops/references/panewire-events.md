@@ -56,7 +56,7 @@
 
 | 감시하던 것 | panewire 이벤트 | 배포 판 | 근거 |
 |---|---|---|---|
-| 프롬프트 착지 증명 | `panewire prompt --from <sender-lane> --to <agent-name> --file <prompt-file> --uptake status-transition` 관측(confirmed/unproven/composer_residue) | **소스 인터페이스 있음; 배포 미확인** | panewire@a702d068db071d7685d417401023b3c276089012 `cli.go:182-196`; `prompt.go:65-73`; 하네스별 제출 증거 차이는 `relay.md` §3-2 참조 |
+| 프롬프트 착지 증명 | `panewire prompt --from <sender-lane> --to <agent-name> --file <prompt-file> --uptake status-transition --timeout 60s` 관측(confirmed/unproven/composer_residue) | **소스 인터페이스 있음; 배포 미확인** | panewire@a702d068db071d7685d417401023b3c276089012 `cli.go:182-196`; `prompt.go:65-73`; 하네스별 제출 증거 차이는 `relay.md` §3-2 참조 |
 | 스폰 요청·결과 | `SPAWNED` / `SPAWN_FAILED`를 담은 owner/parent `lane.event` + hk job 이벤트 | **흡수 컷오버(#155/#157) 배포 후 사용** | `/v1/spawns`의 durable 예약 뒤 비동기 결과를 outbox로 전달한다. `ACCEPTED`는 착지 증거가 아니다. bounded `inbox wait`와 실패 처리는 `watching.md` §스폰 후 대기. 기존 저수준 `spawn.requested`·`spawn.result` broadcast는 세션 알림 경로가 아니다. |
 | 레인 라우트 변경 | `lanes.changed` 허브 broadcast | **있음 — 허브 내부/UI** | lanes_write.go @e401923 |
 | 릴레이 진단 | `relay.unrouted`·`rejected`·`truncated`·`unconfirmed` 등 | **있음 — 허브 내부/UI** | relay.go·relay_ack.go @e401923 |

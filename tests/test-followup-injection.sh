@@ -27,7 +27,17 @@ injection_text = relay_text
 
 INJECTION_HEADING = "### 3-3. 후속 라운드·보충 지시의 주입"
 TOOL = "panewire prompt --from <sender-lane> --to <agent-name> --file <prompt-file> --uptake status-transition --timeout 60s"
+REQUIRED_PROMPT_FLAGS = ("--from", "--to", "--file", "--uptake", "--timeout")
 PERMISSION = r"(내도|써도|써도 좋|자유롭게|허용한다|허용이다)"
+
+
+def has_full_prompt_command(text: str) -> bool:
+    """Find a full command by its flag set, independent of flag order."""
+    for tail in re.findall(r"\bpanewire\s+prompt([^`\n]*)", text):
+        command = "panewire prompt" + tail
+        if all(re.search(rf"(?<!\S){flag}(?:=|\s)", command) for flag in REQUIRED_PROMPT_FLAGS):
+            return True
+    return False
 
 
 def no_permission_near_banned(sec: str) -> None:
@@ -49,7 +59,9 @@ def check_injection(text: str) -> None:
     assert re.search(r"후속 라운드·보충 지시의 주입은.{0,60}panewire prompt", sec), (
         "follow-up injection designation for panewire prompt missing"
     )
-    assert TOOL in sec, "--uptake status-transition flag missing"
+    assert has_full_prompt_command(sec), (
+        "complete panewire prompt command or a required flag is missing"
+    )
     assert "send-text" in sec and "send-keys" in sec and re.search(
         r"복구\s*목적 외에 금지", sec
     ), "send-text/send-keys recovery-only ban missing"
@@ -58,7 +70,7 @@ def check_injection(text: str) -> None:
         "rc!=0 -> check screen before resend rule missing"
     )
     assert "확인하지 않고" not in sec, "negated screen-check rule present"
-    assert re.search(r"panewire prompt --from.{0,80}--to.{0,80}--file", sec), (
+    assert all(flag in sec for flag in ("--from", "--to", "--file")), (
         "command shape (--from/--to/--file) missing"
     )
     assert "--timeout" in sec and "rc=3" in sec, (
@@ -102,7 +114,7 @@ def check_spawn_worker(text: str) -> None:
     start = text.rindex("\n- ", 0, idx) + 1
     nxt = text.find("\n- ", idx)
     blk = flat(text[start : nxt if nxt != -1 else len(text)])
-    assert TOOL in blk, (
+    assert has_full_prompt_command(blk), (
         f"spawn.md must designate {TOOL} for follow-up injection"
     )
     assert re.search(r"`relay\.md` §3-3 후속 라운드", blk), (
@@ -122,7 +134,7 @@ def check_relay_handoff(text: str) -> None:
     """§3-1 must carve out follow-up/supplementary instructions to panewire
     (direction pinned), and §3-2 must defer submit-timing to §3-3."""
     sec = flat(section(text, "### 3-1. 완료 통지·pane kind 분기 정본"))
-    assert re.search(r"herdr agent prompt.{0,10}가 아니라.{0,40}" + re.escape(TOOL), sec), (
+    assert re.search(r"herdr agent prompt.{0,10}가 아니라.{0,40}panewire prompt", sec) and has_full_prompt_command(sec), (
         f"relay.md §3-1 must pin the direction: NOT herdr agent prompt but {TOOL}"
     )
     assert "정본은 §3-3 후속 라운드" in sec, (
@@ -154,7 +166,7 @@ for name, text in (
     ("spawn.md", spawn_text),
     ("relay.md", relay_text),
 ):
-    assert TOOL in flat(text), f"{name}: does not name '{TOOL}'"
+    assert has_full_prompt_command(flat(text)), f"{name}: does not name a complete panewire prompt command"
 print("PASS cross-file same-tool=2/2")
 
 
@@ -211,8 +223,7 @@ assert injection_harness_inverted != injection_text, (
 )
 
 spawn_tool_reverted = spawn_text.replace(
-    f"후속 라운드·보충 지시의 주입은\n  `{TOOL}` "
-    "으로 한다",
+    re.search(r"후속 라운드·보충 지시의 주입은\n  `panewire prompt[^`]+` 으로 한다", spawn_text).group(0),
     "후속 라운드·보충 지시의 주입은\n  `herdr agent prompt` 로 한다",
     1,
 )
@@ -240,10 +251,11 @@ assert relay_carveout_removed != relay_text, (
     "fixture: relay.md carve-out paragraph not found to remove"
 )
 
-relay_carveout_inverted = relay_text.replace(
-    f"`herdr agent prompt` 가 아니라 `{TOOL}` 이다",
+relay_carveout_inverted = re.sub(
+    r"`herdr agent prompt` 가 아니라 `panewire prompt[^`]+` 이다",
     f"`{TOOL}` 가 아니라 `herdr agent prompt` 이다",
-    1,
+    relay_text,
+    count=1,
 )
 assert relay_carveout_inverted != relay_text, (
     "fixture: relay.md carve-out direction not found to invert"

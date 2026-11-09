@@ -15,8 +15,25 @@ docs = {str(path.relative_to(root)): path.read_text(encoding="utf-8")
         for path in sorted((root / "skills").rglob("*.md"))}
 
 
-def command_lines(text):
+def logical_lines(text):
+    pending = []
+    start = 1
     for number, line in enumerate(text.splitlines(), 1):
+        if not pending:
+            start = number
+        stripped = line.rstrip()
+        if stripped.endswith("\\"):
+            pending.append(stripped[:-1])
+            continue
+        pending.append(line)
+        yield start, " ".join(part.strip() for part in pending)
+        pending = []
+    if pending:
+        yield start, " ".join(part.strip() for part in pending)
+
+
+def command_lines(text):
+    for number, line in logical_lines(text):
         if "panewire prompt" in line and re.search(r"\s--[a-z][a-z-]*", line):
             yield number, line
 
@@ -45,8 +62,9 @@ print(f"PASS panewire-prompt-from required={len(REQUIRED)} forbidden={len(FORBID
 # Deletion mutant: remove --from from one real command; the scan must reject it.
 mutated = dict(docs)
 for path, body in docs.items():
-    if "panewire prompt --from " in body:
-        mutated[path] = body.replace("panewire prompt --from ", "panewire prompt ", 1)
+    if "panewire prompt" in body and re.search(r"--from(?:=|\s)", body):
+        mutated[path], count = re.subn(r"--from(?:=|\s+)<[^>]+>", "", body, count=1)
+        assert count == 1, "fixture: --from flag not deleted"
         break
 else:
     raise AssertionError("fixture: no full panewire prompt command to mutate")
@@ -57,5 +75,13 @@ injected = dict(docs)
 first = next(iter(injected))
 injected[first] += "\n`panewire prompt --uptake status-transition`\n"
 expect_red("prompt-from-forbidden-injected", FORBIDDEN[0][1], injected)
-print("PASS mutants assertion-red=2/2")
+
+# Continuation fixture: options on later shell lines form the same command.
+continued = {"skills/fixture.md": "`panewire prompt \\\n  --from <sender-lane> \\\n  --to <agent-name> --file <prompt-file> --uptake status-transition --timeout 60s`\n"}
+check(continued)
+continued_missing_from = {
+    "skills/fixture.md": continued["skills/fixture.md"].replace("--from <sender-lane> \\\n  ", "", 1)
+}
+expect_red("prompt-from-continued-deleted", REQUIRED[0][1], continued_missing_from)
+print("PASS mutants assertion-red=3/3; continued-command=1/1")
 PY
