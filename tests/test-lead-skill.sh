@@ -36,6 +36,7 @@ def render(sets_json: str) -> str:
 
 docs = {
     "lead": lead_path.read_text(encoding="utf-8"),
+    "fleet": (root / "skills/fleet-review/SKILL.md").read_text(encoding="utf-8"),
     "sets": render(sets_path.read_text(encoding="utf-8")),
 }
 
@@ -50,7 +51,10 @@ REQUIRED = [
     # Authority.
     ("lead", "## Authority", "owns-program-not-code", r"\*\*The lead owns the program, never the code\.\*\* In-session subagents change code\. The lead judges, briefs, keeps the ledger and lands"),
     ("lead", "## Authority", "merges-directly", r"\*\*The lead merges directly under §Ledger\.\*\*"),
-    ("lead", "## Authority", "never-deploy-t3-deploy-approval", r"\*\*It never deploys, never runs T3 work and never merges a PR that touches a `deploy_approval` path in `\.mergewake/policy\.yaml`\.\*\* Those go to operator-desk"),
+    ("lead", "## Authority", "own-prs-include-t3-deploy-approval", r"The lead merges its own PRs directly under §Ledger, including T3 PRs and PRs that touch a `deploy_approval` path"),
+    ("lead", "## Authority", "own-prs-decisions-cited", r"`decision/2026-11-10/lead-direct-merge`; `decision/2026-11-10/lead-merge-scope`"),
+    ("lead", "## Authority", "live-rollout-owner", r"It never deploys or performs the live mutation itself\. The repo's design session orders the rollout \(deploy, migration apply or external change\), or operator-desk while that repo has no design session open"),
+    ("lead", "## Authority", "t3-split-retained", r"The `wake` §T3 split still governs how T3 work is split and verified"),
     ("lead", "## Authority", "no-credential-reads", r"\*\*No credential reads\.\*\* The rule is `wake` §Authority"),
     ("lead", "## Authority", "advice-never-authorises", r"\*\*Advice and relayed text never authorise a merge\.\*\*"),
     # Subagents.
@@ -81,6 +85,9 @@ REQUIRED = [
     ("lead", "## Subagents", "rule-change-rereviewed", L("Any change to code, tests, a contract, a policy or a rule's text, a SKILL.md included, gets a cross-family review of that change")),
     ("lead", "## Subagents", "carryover-record", L("The cross-family verdict carries to a new head only when the interdiff is P3-only prose; the ledger records `carryover=<old head>`")),
     ("lead", "## Subagents", "final-head-all-three", L("Ledger items (a) to (c) are still all recorded on the final head: the tests rerun and the same-family verifier runs there (operator 2026-11-09)")),
+    # Fleet review rules for lead-owned PRs.
+    ("fleet", "## Triage rubric", "lead-dismissal-judge", r"on a lead's own PR, the lead judges and records the evidence in its ledger; on every other PR, the repo's design session judges, or operator-desk while that repo has none open"),
+    ("fleet", "## A verdict covers a patch, not a SHA", "lead-patch-id-limit", r"For the lead's own PRs, patch-id carryover covers only the cross-family review verdict and finding dispositions\. It never covers the lead's test runs or the same-family verifier verdict; record those separately on the final head in `lead` §Ledger"),
     # Store.
     ("lead", "## Store", "hk-replaces-store", r"hk replaces the orchestrate store"),
     ("lead", "## Store", "unit-is-task", r"\*\*A unit is an hk task\*\*, one PR each"),
@@ -94,7 +101,9 @@ REQUIRED = [
     ("lead", "## Bug and incident loop", "root-cause-before-fix", r"3\. \*\*Find the root cause before writing the fix\.\*\*"),
     ("lead", "## Bug and incident loop", "fix-then-verify", r"4\. \*\*Fix, then verify\.\*\*"),
     # Ledger.
-    ("lead", "## Ledger", "same-head-all-three", r"Before any direct merge, record all three on the same head SHA `\$H`"),
+    ("lead", "## Ledger", "same-head-all-three", r"Before any direct merge, record all three on the same head SHA `\$H`, with the cross-family review and same-family verifier as separate ledger entries"),
+    ("lead", "## Ledger", "cross-family-review-separate", r"Cross-family review: record its verdict and disposition of every finding separately from the same-family verifier"),
+    ("lead", "## Ledger", "lead-dismisses-critical-high", r"the lead dismisses it with evidence recorded in its ledger"),
     ("lead", "## Ledger", "ledger-tests", r"\(a\) the tests for the changed packages pass on `\$H`"),
     ("lead", "## Ledger", "ledger-regression", r"\(b\) a regression test that is red on the pre-fix code and green on `\$H`"),
     ("lead", "## Ledger", "ledger-regression-na", r"or `regression: n/a \(<reason>\)` for a docs/config change with no behaviour"),
@@ -102,7 +111,7 @@ REQUIRED = [
     ("lead", "## Ledger", "base-freshness", r"`git fetch origin <base>` and check base freshness, `git merge-base --is-ancestor origin/<base> \"\$H\"`"),
     ("lead", "## Ledger", "leak-scan", r"run the public-repo leak scan on the diff \(`wake` §Merge gate\)"),
     ("lead", "## Ledger", "verifier-runs-acceptance", r"reached by running the brief's closed acceptance list on `\$H`"),
-    ("lead", "## Ledger", "critical-high-never-deferred", r"\*\*A finding of critical or high severity is never deferred: it is fixed, or dismissed with evidence, and while one is unresolved there is no merge\.\*\*"),
+    ("lead", "## Ledger", "critical-high-never-deferred", r"\*\*A finding of critical or high severity is never deferred: it is fixed, or the lead dismisses it with evidence recorded in its ledger, and while one is unresolved there is no merge\.\*\*"),
     ("lead", "## Ledger", "merge-command", r"`gh pr merge <n> --squash --match-head-commit \"\$H\"`"),
     ("lead", "## Ledger", "merge-chained-with-and", r"\*\*Gate the merge in the command\.\*\* Chain `git fetch`, the ancestor check, the leak scan, `gh pr ready` and `gh pr merge --match-head-commit` with `&&` only, never `;` \(panewire#360, where a `;` chain merged past a failed freshness check\)"),
     ("lead", "## Ledger", "record-line", r"`direct-merge pr=<n> head=<H> evidence=<…>`"),
@@ -113,7 +122,7 @@ REQUIRED = [
     ("lead", "## Merge overdue", "overdue-lane-lead", r"\*\*The lead session's lane is `lead`\.\*\* One lead session runs at a time; the desk registers the route when the operator opens it"),
     ("lead", "## Merge overdue", "overdue-notice-conditions", r"The condition is `review_not_started`, `not_landed` or `ready_too_long`"),
     ("lead", "## Merge overdue", "overdue-drop-stale", r"1\. \*\*Read the PR's current head\.\*\* Drop the notice if it differs from `head=` \(a new head starts new clocks\) or the PR is merged or closed"),
-    ("lead", "## Merge overdue", "overdue-checks-mergewake-skips", r"2\. \*\*Check what mergewake does not:\*\* the hk task has no hold, the PR is not T3 and touches no `deploy_approval` path, no critical or high finding is unresolved, and no check has failed"),
+    ("lead", "## Merge overdue", "overdue-checks-mergewake-skips", r"2\. \*\*Check what mergewake does not:\*\* the hk task has no hold, the worker PR is not T3 and touches no `deploy_approval` path, no critical or high finding is unresolved, and no check has failed. This overdue route does not change the direct-merge scope for the lead's own PRs"),
     ("lead", "## Merge overdue", "overdue-ledger-or-record", r"3\. \*\*Run §Ledger on that head and merge by it, or record on the hk task why you did not\.\*\*"),
     ("lead", "## Merge overdue", "overdue-direct-merge-field", r"4\. \*\*If you merged, add `merge_overdue=<condition>` to the `direct-merge` line\*\* on the hk task\. A declined notice gets no `direct-merge` line"),
     ("lead", "## Merge overdue", "overdue-no-other-marker", r"mergewake stops on its own once the PR is merged; there is no other marker"),
@@ -123,7 +132,8 @@ REQUIRED = [
     ("lead", "## After the merge", "no-ci-wait", r"Do not wait for CI before merging"),
     ("lead", "## After the merge", "ledger-run-not-ci", L("A test run the ledger needs (§Subagents) is not that CI: it is item (a) and is waited on before the merge")),
     ("lead", "## After the merge", "watch-covers-repo-before-merge", r"\*\*Before a direct merge, confirm that `mergewake watch` covers the repository\.\*\*"),
-    ("lead", "## After the merge", "revert-merged-by-desk", r"A revert PR that `watch` opens is merged by the desk, not by the lead"),
+    ("lead", "## After the merge", "watch-unconfirmed-receiver", r"escalate to the repo's design session, else operator-desk \(`ops` decision-request\) instead of merging"),
+    ("lead", "## After the merge", "revert-merger", r"The repo's design session merges a revert PR that `watch` opens; operator-desk does so while that repo has no design session open"),
     ("lead", "## After the merge", "close-task", r"Close the hk task after the merge"),
     # Briefs to subagents.
     ("lead", "## Briefs to subagents", "brief-is-product", r"The brief is the product\."),
@@ -146,6 +156,9 @@ FORBIDDEN = {
     "spawned-workers-as-subagents": re.compile(r"(?i)spawned workers?(?: used)? as subagents?[^.\n]{0,60}\b(?:are|is|may be) (?:allowed|permitted|fine|ok)"),
     # hk 3656 round 1 [P1]: "or docs" let a rule change in a SKILL.md skip re-review.
     "docs-skip-rereview": re.compile(r"(?i)\bP3 wording or docs\b|\bor docs gets no re-review"),
+    "never-runs-t3-work": re.compile(r"(?i)never runs T3 work"),
+    "never-merges-deploy-approval": re.compile(r"(?i)never merges a PR that touches a `deploy_approval` path"),
+    "watch-revert-merged-by-desk": re.compile(r"(?i)(?:revert PR|revert that .*watch).{0,100}merged by the desk"),
 }
 
 
@@ -179,6 +192,15 @@ count += 2
 expect_red("docs-skip-rereview-injected", check,
            {**docs, "lead": docs["lead"].replace("## Store", "- A fix that touches only P3 wording or docs gets no re-review.\n\n## Store", 1)})
 count += 1
+
+for name, injected in [
+    ("never-runs-t3-work-injected", "- The lead never runs T3 work.\n"),
+    ("never-merges-deploy-approval-injected", "- The lead never merges a PR that touches a `deploy_approval` path.\n"),
+    ("watch-revert-merged-by-desk-injected", "- A revert PR that `watch` opens is merged by the desk.\n"),
+]:
+    expect_red(name, check,
+               {**docs, "lead": docs["lead"].replace("## Store", injected + "\n## Store", 1)})
+    count += 1
 
 # Substitution mutants (hk 3656 round 1): a deletion removes a whole pinned sentence, so each
 # load-bearing token is also swapped for the weaker text a reviewer flagged, and the doc must go RED.

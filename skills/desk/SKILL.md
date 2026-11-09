@@ -99,8 +99,10 @@ done | jq -r '.tasks[] | select(.title | test("<keyword>"; "i")) | "\(.id) \(.st
 with the result written to an hk doc** (`handoffkeep doc put --key research/<date>/<slug> --file <path>`).
 Read the doc, not the raw evidence, and judge from there.
 
-The desk keeps deploy orders, operator decisions, spawn-failure handling and revert merges wherever
-no design session is open for that project. mergewake reviews and merges PRs, and design sessions
+The desk keeps deploy orders, operator decisions and spawn-failure handling wherever no design
+session is open for that project. The repo's design session merges its `watch` revert PR, or the desk
+while that repo has none open. The lead merges its own PRs directly under `lead` §Ledger; do not send
+those PRs to the desk or another merger. mergewake reviews and merges worker PRs, and design sessions
 spawn their own workers (`wake`). If a problem is inside a tool, its fix belongs to that tool's task
 (§Spawn failure).
 
