@@ -93,7 +93,7 @@ REQUIRED = [
     ("fleet", "## Triage rubric", "lead-may-dismiss-never-skip-critical-high", r"On a lead's own PR, the lead may dismiss a critical or high finding in this list with direct evidence recorded in its ledger"),
     ("fleet", "## Triage rubric", "lead-dismissal-bar-evidence-visible", r"For a finding that alleges a lowered test or enforcement bar, the ledger names the exact bar or threshold at issue and the evidence that disproves the finding; the lead shares that entry with the cross-family reviewer, whose visibility is not approval"),
     ("fleet", "## Triage rubric", "never-skip-medium-low-never-dismiss", r"Medium or low findings in this list are never self-dismissed: fix them, or ESC to the repo's design session, else operator-desk"),
-    ("fleet", "## Triage rubric", "other-pr-never-dismiss", r"On every other PR, all findings in this list are fix, or ESC to the repo's design session, else operator-desk — never a self-dismiss"),
+    ("fleet", "## Triage rubric", "other-pr-never-dismiss", r"For every other PR, fix these findings or escalate them to the repo's design session; when none is open, use operator-desk\. They are never self-dismissed"),
     ("fleet", "## A verdict covers a patch, not a SHA", "lead-patch-id-limit", r"For the lead's own PRs, patch-id carryover covers only the cross-family review verdict and finding dispositions\. It never covers the lead's test runs or the same-family verifier verdict; record those separately on the final head in `lead` §Ledger"),
     # Store.
     ("lead", "## Store", "hk-replaces-store", r"hk replaces the orchestrate store"),
