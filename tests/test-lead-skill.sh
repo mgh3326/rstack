@@ -54,11 +54,19 @@ REQUIRED = [
     ("lead", "## Subagents", "verifier-distinct-same-family", r"\*\*The verifier is a different subagent from the implementer\*\*, started with a fresh context, and of the same family as the lead for now\. Record that as `same_family`"),
     ("lead", "## Subagents", "spawned-workers-later", r"\*\*Spawned workers used as subagents \(quota through panewire\) are a later experiment\. They are not allowed yet\.\*\*"),
     ("lead", "## Subagents", "model-choice-home", r"\*\*Model choice follows `robin-mode` `roles\.md` §Models and effort for in-session subagents\*\*"),
+    ("lead", "## Subagents", "no-local-go-test", r"\*\*Implementers and verifiers run no `go test` on mbp\.\*\* Locally they run only `go build`, `go vet`, gofmt and at most one `-run '\^TestX\$' -p 1`"),
+    ("lead", "## Subagents", "remote-gotest-ci-any-ref", r"The lead pushes, then runs package, race and mutant tests with `remote-gotest m1b\|desktop <repo> <sha>`, or `ci-any-ref` for full or DB suites; run Linux and macOS in parallel when platform behaviour matters"),
+    ("lead", "## Subagents", "implementer-hands-back-predictions", r"The implementer hands back a red/green prediction per test, the remote commands and the mutant diffs \(operator 2026-11-09\)"),
+    ("lead", "## Subagents", "cheap-review-first", r"\*\*Review order: cheap cross-family review first\.\*\* Round 1 reviews the full PR; after a fix only the interdiff\. Remote tests may run beside it"),
+    ("lead", "## Subagents", "verifier-only-on-passed-head", r"\*\*The heavy same-family verifier \(no tests; it reads the remote logs\) starts only on a head the cross-family review passed\.\*\* Never start a verifier on a head that may still change \(rstack#55: 6 rounds and 5 discarded verifiers, against 1-2 rounds and 0 in the 2026-11-09 trial\)"),
+    ("lead", "## Subagents", "round-cap-two", r"\*\*Round cap is 2\.\*\* After round 2 the remaining findings become follow-up tasks; P0/P1 and critical/high are never deferred"),
+    ("lead", "## Subagents", "p3-docs-no-rereview", r"A fix that touches only P3 wording or docs gets no re-review, but the tests rerun on the new head"),
     # Store.
     ("lead", "## Store", "hk-replaces-store", r"hk replaces the orchestrate store"),
     ("lead", "## Store", "unit-is-task", r"\*\*A unit is an hk task\*\*, one PR each"),
     ("lead", "## Store", "standing-orders-docs", r"\*\*Standing orders are hk decision docs\.\*\*"),
     ("lead", "## Store", "ledger-in-comments", r"\*\*The ledger lives in task comments\*\*, and in hk reviews once hk 3037 ships"),
+    ("lead", "## Store", "stuck-line", r"\*\*A step with no progress for over 30 minutes, or the same failure twice, gets one line to handoffkeep-design:\*\* `\[lead\] STUCK \| <what> \| <tried> \| <alternative A/B>`; then proceed on an alternative \(operator 2026-11-09\)"),
     ("lead", "## Store", "no-orchestrate-dir", r"There is no `~/\.claude/orchestrate/` directory"),
     # Bug and incident loop.
     ("lead", "## Bug and incident loop", "reproduce-first", r"1\. \*\*Reproduce first\*\*"),
@@ -76,6 +84,7 @@ REQUIRED = [
     ("lead", "## Ledger", "verifier-runs-acceptance", r"reached by running the brief's closed acceptance list on `\$H`"),
     ("lead", "## Ledger", "critical-high-never-deferred", r"\*\*A finding of critical or high severity is never deferred: it is fixed, or dismissed with evidence, and while one is unresolved there is no merge\.\*\*"),
     ("lead", "## Ledger", "merge-command", r"`gh pr merge <n> --squash --match-head-commit \"\$H\"`"),
+    ("lead", "## Ledger", "merge-chained-with-and", r"\*\*Gate the merge in the command\.\*\* Chain `git fetch`, the ancestor check, the leak scan, `gh pr ready` and `gh pr merge --match-head-commit` with `&&` only, never `;` \(panewire#360, where a `;` chain merged past a failed freshness check\)"),
     ("lead", "## Ledger", "record-line", r"`direct-merge pr=<n> head=<H> evidence=<…>`"),
     # PR trailers.
     ("lead", "## PR trailers", "trailers-home", r"The PR body ends with the Mergewake trailers exactly as a worker's does \(`wake` §Worker brief Rules\)"),
@@ -100,6 +109,8 @@ REQUIRED = [
     ("lead", "## Briefs to subagents", "worker-brief-fields", r"Write each one to the `wake` §Worker brief fields"),
     ("lead", "## Briefs to subagents", "standing-orders-verbatim", r"\*\*Standing orders go in verbatim\*\* at every spawn and every resume"),
     ("lead", "## Briefs to subagents", "closed-acceptance", r"\*\*The acceptance list is closed\.\*\*"),
+    ("lead", "## Briefs to subagents", "design-attack-before-brief", r"\*\*Design attack before the brief\.\*\* For a unit that deletes code, removes a fallback or changes a contract, give the cross-family reviewer the scope and code areas \(no diff\) before writing the brief"),
+    ("lead", "## Briefs to subagents", "design-attack-list-becomes-red-tests", r"Ask it to list every way the change could read a wrong or stale result, delete what is still needed, or break a caller\. Its list becomes the brief's red tests; if it breaks the unit's premise, re-plan before implementing \(hk 3652, where \"fallback audit = 0\" did not prove the fallback unused; hk 3640\)"),
     ("lead", "## Briefs to subagents", "dropped-machinery", r"Dropped from `orchestrate\.md`: the `orch` CLI, the `~/\.claude/orchestrate/` store, babysit, swarm, arena and the sub-coordinator layer"),
     # Provenance.
     ("lead", None, "provenance", r"Provenance: adapted from the vendored pstack `skills/poteto-mode/playbooks/orchestrate\.md` \(Coordinator\) and `skills/poteto-mode/playbooks/bug-fix\.md`, pinned in `third_party/pstack/PINNED` \(commit [0-9a-f]{7}, MIT"),
