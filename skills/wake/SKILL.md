@@ -336,6 +336,8 @@ authorship: **the author stays the PR owner until merge, an explicit hand-off, o
 and findings go to the current author attempt (§BLOCKED). One logical task may run several
 attempts, but only one writes to the branch at a time.
 
+**명시적 인계**는 새 담당자를 이름으로 적은 같은 `hk task` 의 comment 와, 그 task 에서 수신자가 남긴 수락 comment 둘 다를 뜻한다. 수신자가 같은 task 에서 수락하기 전까지 PR 작성자가 소유권을 유지한다.
+
 ### Preservation evidence (refactors)
 
 **Before the first READY, a refactor that moves or replaces existing checks** (guards,
