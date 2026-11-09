@@ -80,7 +80,7 @@ mergewake reap 이 한다.
   `panewire emit --kind lane.event --type <type>` 가 claude·codex·devin·grok·omp·cmd pane 으로
   릴레이된다.
   **후속 라운드·보충 지시의 주입은
-  `panewire prompt --uptake status-transition` 으로 한다** — `relay.md`
+  `panewire prompt --from <sender-lane> --to <agent-name> --file <prompt-file> --uptake status-transition --timeout 60s` 으로 한다** — `relay.md`
   §3-3 후속 라운드·보충 지시의 주입이 정본이고, 하네스별 제출 증명 차이
   (claude·codex 만 증명 가능, 그 외 하네스는 `unproven`)와 rc≠0 처리도 그 절을
   따른다. `herdr pane send-text`·`send-keys`는 복구 목적 외에 금지한다 — 제출도
