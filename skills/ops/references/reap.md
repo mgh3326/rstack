@@ -91,6 +91,8 @@ panewire reap --lane <내 레인> --apply      # 실제 회수
   `job.reaped` 를 남긴다.
 - `--apply` 전에 미리보기의 각 job 에 연결된 PR 번호로 `gh pr view <n> --json state` 를 확인한다.
   PR 이 `OPEN` 이면 그 job 을 적용 대상에서 빼고 pane 을 회수하지 않는다. PR 이 `MERGED` 또는 `CLOSED` 인 job 만 계속 검토한다.
+  연결된 PR 이 없는 job 은 기존 회수 조건으로 계속 검토한다.
+  조회가 실패하거나 state 를 판독할 수 없으면 해당 job 을 적용 대상에서 빼고 pane 을 남긴다.
 - `--worktrees` 는 깨끗하고 origin/main 에
   머지된 linked worktree 만 force 없이 지운다(branch 는 남는다).
 - 🔴 panewire 는 `--apply` 에 `--lane` 을 강제하지 않는다 — 전역 회수는 금지이므로 항상
