@@ -31,7 +31,8 @@ REQUIRED = [
     ("wake", "ready-receiver", r"repo's design session, else operator-desk, says you are done"),
     ("roles", "lead-in-session-only", r"A lead uses in-session subagents only, as `lead` §Subagents specifies; it never delegates or spawns workers"),
     ("roles", "lead-excluded-from-self-fallback", r"This fallback does not apply to a lead, which writes no product code"),
-    ("lead", "stuck-event", r"panewire emit --kind lane\.event --lane <repo>-design --type blocked --event-id <repo>-lead-stuck-<unique-id> --text '\[lead\] STUCK \| <what> \| <tried> \| <alternative A/B>'"),
+    ("lead", "stuck-event-design", r"panewire emit --kind lane\.event --lane <repo>-design --type blocked --event-id <repo>-lead-stuck-<unique-id> --text '\[lead\] STUCK \| <what> \| <tried> \| <alternative A/B>'"),
+    ("lead", "stuck-event-fallback", r"panewire emit --kind lane\.event --lane operator-desk --type blocked --event-id <repo>-lead-stuck-<unique-id> --text '\[lead\] STUCK \| <what> \| <tried> \| <alternative A/B>'"),
     ("lead", "stuck-decision-source", r"decision/2026-11-10/lead-direct-merge"),
     ("lead", "trailers-command", r"bin/pr-trailers --task <id> --family <family> --profile <profile> --lane lead"),
 ]

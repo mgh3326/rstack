@@ -197,7 +197,7 @@ installer_mutants = [
         installer_text, "7. **체크포인트 기록** — 단계별 진행 상태를 기록한다.\n", "",
     )),
 ]
-checklist_line = "`<operator-desk로 전달한 경로/시각,"
+checklist_line = "`<레포 디자인 세션, 없으면 operator-desk로 전달한 경로/시각,"
 checklist_mutants = [
     ("checklist-receiver-dropped", mutate(
         checklist_text, checklist_line, "`<전달한 경로/시각,",
