@@ -72,7 +72,7 @@ Severity decides blocking. Disposition is what you do about it.
   and any attempt to lower a test or enforcement bar: moving a threshold, adding `.skip` or
   suppression, replacing behavior with a stub, adding an empty catch, or introducing a new
   exception path that avoids the check.
-  These are fix, or ESC to the desk — never a self-dismiss.
+  On a lead's own PR, the lead may dismiss these with direct evidence recorded in its ledger, under its authority in `lead` §Ledger. On every other PR, these are fix, or ESC to the repo's design session, else operator-desk — never a self-dismiss.
 - Every finding gets a line in the report: `id · severity · disposition · reason or SHA`.
   Unanswered findings do not count as handled.
 

@@ -51,6 +51,7 @@ REQUIRED = [
     # Authority.
     ("lead", "## Authority", "owns-program-not-code", r"\*\*The lead owns the program, never the code\.\*\* In-session subagents change code\. The lead judges, briefs, keeps the ledger and lands"),
     ("lead", "## Authority", "merges-directly", r"\*\*The lead merges directly under §Ledger\.\*\*"),
+    ("lead", "## Authority", "design-merges-watch-revert", r"The repo's design session does not merge the lead's PRs; it merges its own repo's `watch` revert PR \(`wake` §Authority\)"),
     ("lead", "## Authority", "own-prs-include-t3-deploy-approval", r"The lead merges its own PRs directly under §Ledger, including T3 PRs and PRs that touch a `deploy_approval` path"),
     ("lead", "## Authority", "own-prs-decisions-cited", r"`decision/2026-11-10/lead-direct-merge`; `decision/2026-11-10/lead-merge-scope`"),
     ("lead", "## Authority", "live-rollout-owner", r"It never deploys or performs the live mutation itself\. The repo's design session orders the rollout \(deploy, migration apply or external change\), or operator-desk while that repo has no design session open"),
@@ -87,6 +88,7 @@ REQUIRED = [
     ("lead", "## Subagents", "final-head-all-three", L("Ledger items (a) to (c) are still all recorded on the final head: the tests rerun and the same-family verifier runs there (operator 2026-11-09)")),
     # Fleet review rules for lead-owned PRs.
     ("fleet", "## Triage rubric", "lead-dismissal-judge", r"on a lead's own PR, the lead judges and records the evidence in its ledger; on every other PR, the repo's design session judges, or operator-desk while that repo has none open"),
+    ("fleet", "## Triage rubric", "lead-may-dismiss-never-skip", r"On a lead's own PR, the lead may dismiss these with direct evidence recorded in its ledger, under its authority in `lead` §Ledger\. On every other PR, these are fix, or ESC to the repo's design session, else operator-desk — never a self-dismiss\."),
     ("fleet", "## A verdict covers a patch, not a SHA", "lead-patch-id-limit", r"For the lead's own PRs, patch-id carryover covers only the cross-family review verdict and finding dispositions\. It never covers the lead's test runs or the same-family verifier verdict; record those separately on the final head in `lead` §Ledger"),
     # Store.
     ("lead", "## Store", "hk-replaces-store", r"hk replaces the orchestrate store"),
@@ -101,7 +103,7 @@ REQUIRED = [
     ("lead", "## Bug and incident loop", "root-cause-before-fix", r"3\. \*\*Find the root cause before writing the fix\.\*\*"),
     ("lead", "## Bug and incident loop", "fix-then-verify", r"4\. \*\*Fix, then verify\.\*\*"),
     # Ledger.
-    ("lead", "## Ledger", "same-head-all-three", r"Before any direct merge, record all three on the same head SHA `\$H`, with the cross-family review and same-family verifier as separate ledger entries"),
+    ("lead", "## Ledger", "same-head-all-three", r"Before any direct merge, record the three ledger results and the cross-family review as separate entries on the same head SHA `\$H`"),
     ("lead", "## Ledger", "cross-family-review-separate", r"Cross-family review: record its verdict and disposition of every finding separately from the same-family verifier"),
     ("lead", "## Ledger", "lead-dismisses-critical-high", r"the lead dismisses it with evidence recorded in its ledger"),
     ("lead", "## Ledger", "ledger-tests", r"\(a\) the tests for the changed packages pass on `\$H`"),

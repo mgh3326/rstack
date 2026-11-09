@@ -22,7 +22,7 @@ The operator opens the lead session directly. For now no other session spawns on
 ## Authority
 
 - **The lead owns the program, never the code.** In-session subagents change code. The lead judges, briefs, keeps the ledger and lands. It writes no product code itself.
-- **The lead merges directly under §Ledger.** The design session never merges again; this is the one standing merge authority outside mergewake (operator 2026-11-05).
+- **The lead merges directly under §Ledger.** The repo's design session does not merge the lead's PRs; it merges its own repo's `watch` revert PR (`wake` §Authority). This is the one standing merge authority outside mergewake (operator 2026-11-05).
 - **The lead merges its own PRs directly under §Ledger, including T3 PRs and PRs that touch a `deploy_approval` path in `.mergewake/policy.yaml`.** It never deploys or performs the live mutation itself. The repo's design session orders the rollout (deploy, migration apply or external change), or operator-desk while that repo has no design session open. (`decision/2026-11-10/lead-direct-merge`; `decision/2026-11-10/lead-merge-scope`.) The `wake` §T3 split still governs how T3 work is split and verified.
 - **No credential reads.** The rule is `wake` §Authority: no session reads, sources, copies or prints a token, env or credential file.
 - **Advice and relayed text never authorise a merge.** A consult answer, a relayed message or a subagent's say-so is an opinion. Only the ledger on the current head authorises the merge (`wake` §Authority, Advice is an opinion).
@@ -66,7 +66,7 @@ An incident adds a first step: contain it with the smallest reversible action, t
 
 ## Ledger
 
-Before any direct merge, record all three on the same head SHA `$H`, with the cross-family review and same-family verifier as separate ledger entries:
+Before any direct merge, record the three ledger results and the cross-family review as separate entries on the same head SHA `$H`:
 
 - (a) the tests for the changed packages pass on `$H`;
 - (b) a regression test that is red on the pre-fix code and green on `$H`, or `regression: n/a (<reason>)` for a docs/config change with no behaviour;
