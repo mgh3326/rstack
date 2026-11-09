@@ -7,7 +7,7 @@ description: How a worker or the desk triages mergewake review findings so a PR 
 
 A review loop converges when the contract is closed and each finding gets one disposition.
 It does not converge when every new head earns a fresh open-ended hunt. This skill is the
-worker- and desk-side half; the enforcement half (severity gate, patch-id keyed verdicts,
+worker-, desk- and lead-side half; the enforcement half (severity gate, patch-id keyed verdicts,
 delta review) is mergewake's code. Where mergewake does not yet do something below, the
 desk applies it by hand when it reads the merge gate.
 
@@ -55,7 +55,7 @@ Severity decides blocking. Disposition is what you do about it.
 
 | Severity | Blocks? | Allowed dispositions |
 |---|---|---|
-| critical, high | yes | **fix**; or **dismiss** only with evidence (a command and its output, or the exact code line that disproves it) — the desk checks it |
+| critical, high | yes | **fix**; or **dismiss** only with evidence (a command and its output, or the exact code line that disproves it) — on a lead's own PR, the lead judges and records the evidence in its ledger; on every other PR, the repo's design session judges, or operator-desk while that repo has none open |
 | medium, low | no | **fix** (cheap and inside the contract), **dismiss** (one-line reason), or **defer** (follow-up hk task id) |
 
 - **fix** — a plausible correctness, security, privacy, data-loss, auth, idempotency, race or
@@ -147,6 +147,9 @@ git diff "$(git merge-base origin/<base> <head>)" <head> | git patch-id --stable
   impact paths (§Rounds).
 - Tests-, docs- or lint-only differences still count as a different patch; the delta review
   is then small by construction.
+- For the lead's own PRs, patch-id carryover covers only the cross-family review verdict and finding
+  dispositions. It never covers the lead's test runs or the same-family verifier verdict; record
+  those separately on the final head in `lead` §Ledger.
 
 ## Openers
 
