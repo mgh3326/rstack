@@ -1,15 +1,16 @@
 ---
 name: fleet-review
-description: How a worker or the desk triages mergewake review findings so a PR converges — what is in scope (the closed contract plus regressions the change introduces), the fix/dismiss/defer rubric, the per-repo learned skip-pattern file (.mergewake/triage-patterns.md), review rounds after fixes, reviewer independence (same-family passes are reference-only), and "a verdict covers a patch" (patch-id) evidence reuse. Use when you receive review findings, when you write or read a verdict, and when you decide whether a review pass counts or must be repeated. Triggers - "review finding", "mergewake review", "triage", "patch-id", "base_stale", "dismiss or fix", "same family", "review round".
+description: How a worker or the repo's design session, else operator-desk, triages mergewake review findings so a PR converges — what is in scope (the closed contract plus regressions the change introduces), the fix/dismiss/defer rubric, the per-repo learned skip-pattern file (.mergewake/triage-patterns.md), review rounds after fixes, reviewer independence (same-family passes are reference-only), and "a verdict covers a patch" (patch-id) evidence reuse. Use when you receive review findings, when you write or read a verdict, and when you decide whether a review pass counts or must be repeated. Triggers - "review finding", "mergewake review", "triage", "patch-id", "base_stale", "dismiss or fix", "same family", "review round".
 ---
 
 # fleet-review — scope, triage, rounds, independence
 
 A review loop converges when the contract is closed and each finding gets one disposition.
 It does not converge when every new head earns a fresh open-ended hunt. This skill is the
-worker-, desk- and lead-side half; the enforcement half (severity gate, patch-id keyed verdicts,
-delta review) is mergewake's code. Where mergewake does not yet do something below, the
-desk applies it by hand when it reads the merge gate.
+worker-, lead-, and repo-design-session-side half (operator-desk while that repo has no design
+session open); the enforcement half (severity gate, patch-id keyed verdicts, delta review) is
+mergewake's code. Where mergewake does not yet do something below, the repo's design session,
+else operator-desk, applies it by hand when it reads the merge gate.
 
 Vendored pstack skills follow the fleet adapter in `robin-mode` (rstack) §Fleet adapter for vendored pstack for
 vendored pstack.
@@ -72,7 +73,7 @@ Severity decides blocking. Disposition is what you do about it.
   and any attempt to lower a test or enforcement bar: moving a threshold, adding `.skip` or
   suppression, replacing behavior with a stub, adding an empty catch, or introducing a new
   exception path that avoids the check.
-  These are fix, or ESC to the desk — never a self-dismiss.
+  These are fix, or ESC to the repo's design session, else operator-desk — never a self-dismiss.
 - Every finding gets a line in the report: `id · severity · disposition · reason or SHA`.
   Unanswered findings do not count as handled.
 
@@ -104,8 +105,8 @@ checks only the open findings, the fix delta and its impact paths**, with the pr
 their dispositions in the reviewer's context and an instruction not to reopen them. Every lens
 the PR needs (for example correctness and state-risk on `blocking[].paths`) runs in the same
 round; lenses and transport retries are not extra rounds. **A round count never waives an open
-critical/high.** A third round is a signal to re-diagnose the cause or re-scope the PR (the desk
-decides), not an approval line. A change-caused defect found with new evidence is not dismissed
+critical/high.** A third round is a signal to re-diagnose the cause or re-scope the PR (the repo's
+design session, else operator-desk, decides), not an approval line. A change-caused defect found with new evidence is not dismissed
 only because it lies outside the delta.
 
 ## Independence
@@ -124,7 +125,7 @@ family of whoever started the review. **A same-family pass is reference evidence
 not satisfy the gate**; the PR still needs a qualifying pass. A fallback path (pane → headless)
 keeps the same qualification and evidence; if no qualifying reviewer runs, the result is
 `REVIEW_UNAVAILABLE`, not a pass. The report lists the author families; until mergewake
-checks them all, the desk does. Which reviewer is routed is hk
+checks them all, the repo's design session, else operator-desk, does. Which reviewer is routed is hk
 `policy/model-routing`.
 
 ## A verdict covers a patch, not a SHA
