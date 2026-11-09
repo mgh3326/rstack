@@ -74,7 +74,7 @@ REQUIRED = [
     # Subagents: review order, verifier, round cap, re-review scope.
     ("lead", "## Subagents", "cheap-review-first", L("**Review order: cheap cross-family review first.** Round 1 reviews the full PR; a later round reviews the open findings, the fix delta and its impact paths, and carries the earlier dispositions forward (`fleet-review` §Rounds). Remote tests may run beside it")),
     ("lead", "## Subagents", "verifier-only-on-passed-head", L("**The heavy same-family verifier starts only on a head the cross-family review passed.** Never start a verifier on a head that may still change (rstack#55: 6 rounds and 5 discarded verifiers, against 1-2 rounds and 0 in the 2026-11-09 trial)")),
-    ("lead", "## Subagents", "verifier-checks-remote-log", L("It runs the closed acceptance list: it satisfies each test command by checking the remote log for the revision its acceptance entry names (host, sha, exact command and result) — the pushed test-only or pre-fix sha for a red entry, `$H` for green — and runs every other check itself; the verdict and the ledger are recorded on `$H`; it runs no `go test` on mbp beyond the single test above")),
+    ("lead", "## Subagents", "verifier-checks-remote-log", L("It runs the closed acceptance list: it satisfies each test command by checking the remote log for the revision its acceptance entry names (host, sha, exact command and result) — the pushed test-only or pre-fix sha for a baseline red entry, `$H` with that mutant's diff applied for a mutant entry, `$H` for green — and runs every other check itself; the verdict and the ledger are recorded on `$H`; it runs no `go test` on mbp beyond the single test above")),
     ("lead", "## Subagents", "round-cap-non-blocking", L("**Round cap is 2 for non-blocking findings.** After round 2 the remaining non-blocking findings become follow-up tasks; P0/P1 and critical/high are never deferred (§Ledger)")),
     ("lead", "## Subagents", "blocking-fix-past-cap", L("A blocking fix gets a further cross-family review of that fix only; if a third blocking round is needed, send the STUCK line (§Store) and re-scope or split the unit. The cap never counts as approval")),
     ("lead", "## Subagents", "p3-only-skips-rereview", L("**Only P3 wording in prose that states no rule skips re-review** (typos, comments, examples, phrasing)")),
@@ -198,7 +198,8 @@ SUBSTITUTED = [
     ("rounds-interdiff-only", "a later round reviews the open findings, the fix delta and its impact paths, and carries the earlier dispositions forward", "after a fix only the interdiff"),
     ("verifier-log-not-H", "checking the remote log for the revision its acceptance entry names", "checking a remote log"),
     ("verifier-log-every-test-at-H", "checking the remote log for the revision its acceptance entry names", "checking the remote log for `$H`"),
-    ("verifier-red-not-prefix", "the pushed test-only or pre-fix sha for a red entry, `$H` for green", "`$H`"),
+    ("verifier-red-not-prefix", "the pushed test-only or pre-fix sha for a baseline red entry, `$H` with that mutant's diff applied for a mutant entry, `$H` for green", "`$H`"),
+    ("verifier-mutant-entry-dropped", "`$H` with that mutant's diff applied for a mutant entry, ", ""),
     ("verifier-verdict-not-on-H", "; the verdict and the ledger are recorded on `$H`", ""),
     ("verifier-log-fields", " (host, sha, exact command and result)", ""),
     ("verifier-no-tests", "It runs the closed acceptance list:", "It runs no tests:"),
