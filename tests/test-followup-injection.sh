@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Follow-up injection contract: ops/references/relay.md §3-3 is the one
-# normative section (panewire prompt --uptake status-transition), §3-1/§3-2
+# normative section (panewire prompt --from <sender-lane> --to <agent-name> --file <prompt-file> --uptake status-transition --timeout 60s), §3-1/§3-2
 # defer to it, and ops/references/spawn.md §4 names the same tool.
 set -euo pipefail
 
@@ -26,7 +26,7 @@ injection_text = relay_text
 
 
 INJECTION_HEADING = "### 3-3. 후속 라운드·보충 지시의 주입"
-TOOL = "panewire prompt --uptake status-transition"
+TOOL = "panewire prompt --from <sender-lane> --to <agent-name> --file <prompt-file> --uptake status-transition --timeout 60s"
 PERMISSION = r"(내도|써도|써도 좋|자유롭게|허용한다|허용이다)"
 
 
@@ -102,9 +102,8 @@ def check_spawn_worker(text: str) -> None:
     start = text.rindex("\n- ", 0, idx) + 1
     nxt = text.find("\n- ", idx)
     blk = flat(text[start : nxt if nxt != -1 else len(text)])
-    assert "panewire prompt --uptake status-transition" in blk, (
-        "spawn.md must designate panewire prompt --uptake "
-        "status-transition for follow-up injection"
+    assert TOOL in blk, (
+        f"spawn.md must designate {TOOL} for follow-up injection"
     )
     assert re.search(r"`relay\.md` §3-3 후속 라운드", blk), (
         "spawn.md bullet must point at relay.md §3-3 후속 라운드·보충 지시의 주입"
@@ -123,12 +122,9 @@ def check_relay_handoff(text: str) -> None:
     """§3-1 must carve out follow-up/supplementary instructions to panewire
     (direction pinned), and §3-2 must defer submit-timing to §3-3."""
     sec = flat(section(text, "### 3-1. 완료 통지·pane kind 분기 정본"))
-    assert re.search(
-        r"herdr agent prompt.{0,10}가 아니라.{0,40}panewire prompt --uptake "
-        r"status-transition",
-        sec,
-    ), ("relay.md §3-1 must pin the direction: NOT herdr agent prompt "
-        "but panewire prompt --uptake status-transition")
+    assert re.search(r"herdr agent prompt.{0,10}가 아니라.{0,40}" + re.escape(TOOL), sec), (
+        f"relay.md §3-1 must pin the direction: NOT herdr agent prompt but {TOOL}"
+    )
     assert "정본은 §3-3 후속 라운드" in sec, (
         "relay.md §3-1 must point at §3-3 as the normative source"
     )
@@ -215,7 +211,7 @@ assert injection_harness_inverted != injection_text, (
 )
 
 spawn_tool_reverted = spawn_text.replace(
-    "후속 라운드·보충 지시의 주입은\n  `panewire prompt --uptake status-transition` "
+    f"후속 라운드·보충 지시의 주입은\n  `{TOOL}` "
     "으로 한다",
     "후속 라운드·보충 지시의 주입은\n  `herdr agent prompt` 로 한다",
     1,
@@ -245,8 +241,8 @@ assert relay_carveout_removed != relay_text, (
 )
 
 relay_carveout_inverted = relay_text.replace(
-    "`herdr agent prompt` 가 아니라 `panewire prompt --uptake status-transition` 이다",
-    "`panewire prompt --uptake status-transition` 가 아니라 `herdr agent prompt` 이다",
+    f"`herdr agent prompt` 가 아니라 `{TOOL}` 이다",
+    f"`{TOOL}` 가 아니라 `herdr agent prompt` 이다",
     1,
 )
 assert relay_carveout_inverted != relay_text, (

@@ -52,6 +52,8 @@ refs = {p.name: p.read_text(encoding="utf-8") for p in sorted(refs_dir.glob("*.m
 docs["consult"] = refs["consult.md"]
 docs["spawn"] = refs["spawn.md"]
 docs["watching"] = refs["watching.md"]
+docs["relay"] = refs["relay.md"]
+docs["events"] = refs["panewire-events.md"]
 docs["reap"] = refs["reap.md"]
 docs["desk"] = Path(os.environ.get("DESK_SKILL", root / "skills/desk/SKILL.md")).read_text(encoding="utf-8")
 docs["robin"] = Path(os.environ.get("ROBIN_SKILL", root / "skills/robin-mode/SKILL.md")).read_text(encoding="utf-8")
@@ -196,6 +198,10 @@ REQUIRED = [
     ("ops", "## Escalate a decision", "ops-escalate-only-give-up", r"`panewire escalate <job> --question '<text>'` is only for giving up: it stops the job as escalated"),
     ("ops", "## Escalate a decision", "ops-esc-question-job-stays", r"\*\*An ESC is a question, and the job stays open\*\* \(`job\.waiting_decision`\)"),
     ("ops", "## Escalate a decision", "ops-esc-answer-resumes", r"The answer resumes it when delivered by `panewire prompt --from <sender-lane> --to <agent-name> --file <prompt-file> --uptake status-transition --timeout 60s` \(`relay\.md` §3-3\) or a relay to the pane's lane"),
+    ("relay", None, "relay-report-parent-lane-event", r"에이전트→디자인 세션 방향 보고는 send 금지.{0,180}부모 레인으로 `panewire emit --kind lane\.event --lane <parent-lane> --type report --text '<report summary>'`"),
+    ("events", "## 3. CI·PR 대기", "events-ci-pr-event-unknown", r"\| CI 결과·PR 상태 변화 이벤트 \| — \| \*\*미확인\*\* \| panewire main 코드는 handoffkeep/mergewake snapshot을 동기 조회.{0,220}panewire@a702d068db071d7685d417401023b3c276089012 `pr_status_cli\.go:20-24,121-140`"),
+    ("events", "## 3. CI·PR 대기", "events-pr-status-query", r"\| PR 상태·finding 조회 \| `panewire pr status <owner/repo> <n>` / `panewire pr findings <owner/repo> <n>` \| \*\*소스에 CLI 조회 있음\*\* \| panewire@a702d068db071d7685d417401023b3c276089012"),
+    ("events", "## 4. 기타", "events-prompt-from-source-pin", r"\| 프롬프트 착지 증명 \| `panewire prompt --from <sender-lane> --to <agent-name> --file <prompt-file> --uptake status-transition`.*panewire@a702d068db071d7685d417401023b3c276089012 `cli\.go:182-196`"),
     ("ops", "## Escalate a decision", "ops-esc-unanswered-lost", r"unanswered decision becomes `lost` after the decision timeout \(`PANEWIRE_DECISION_TIMEOUT_S`, six hours by default\) unless a later lane event from the pane resumes the job first"),
     ("ops", "## Escalate a decision", "ops-esc-only-ready-done", r"Only READY or DONE completes a job"),
     ("ops", "## Escalate a decision", "ops-esc-give-up-escalate", r"Giving up is `panewire escalate <job> --question '<why>'`, not an ESC"),
@@ -270,6 +276,8 @@ FORBIDDEN = [
     # hk 3613 (panewire#352): a design or desk lane never gets a notification body as pane text.
     ("wake", None, "design-lane-pane-text", r"otherwise the message arrives as pane text"),
     ("reap", "### 6-1. 그 밖의 pane — 스폰한 주체가 거둔다", "reap-old-open-pr-author-rule", r"자문·머지 안 된 PR·실패 잡의 pane 은 \*\*만든 곳이 회수한다\.\*\*"),
+    ("relay", None, "relay-file-inbox-fallback-removed", r"에이전트→디자인 세션 방향 보고는 send 금지.{0,180}파일 인박스"),
+    ("events", "## 3. CI·PR 대기", "events-no-github-ci-integration-removed", r"panewire 소스에 GitHub/CI 통합 없음"),
 ]
 
 # wake never tells a session to merge a feature PR or to wait on CI before a merge, and never
@@ -427,6 +435,24 @@ for label, doc, anchor, new in injections:
     mutated[doc] = docs[doc].replace(anchor, new, 1)
     expect_red(label, mutated, refs)
     count += 1
+
+# Injected mutants for the retired relay fallback and stale CI/PR claim.
+old_file_fallback = docs["relay"].replace(
+    "— 부모 레인으로 `panewire emit --kind lane.event --lane <parent-lane> --type report --text '<report summary>'` 를 보낸다",
+    "— 파일 인박스 `~/work/herdr-inbox/` 사용",
+    1,
+)
+assert old_file_fallback != docs["relay"], "fixture: parent lane event not found"
+expect_red("relay-file-inbox-fallback-injected", {**docs, "relay": old_file_fallback}, refs)
+count += 1
+old_ci_claim = docs["events"].replace(
+    "## 3. CI·PR 대기\n",
+    "## 3. CI·PR 대기\n\npanewire 소스에 GitHub/CI 통합 없음\n",
+    1,
+)
+assert old_ci_claim != docs["events"], "fixture: CI/PR section not found"
+expect_red("events-no-github-ci-integration-injected", {**docs, "events": old_ci_claim}, refs)
+count += 1
 
 # The named mutations from hk 2783 and r2: the owner is the design-session lane while it is open,
 # `operator-desk` once it has closed.
