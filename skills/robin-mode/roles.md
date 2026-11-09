@@ -17,7 +17,7 @@ A role is what a session is asked to do. Pick it from the harness's capabilities
 - **Vocabulary:** seat roles are lead, implementer, reviewer, consult and design. Explorer, verifier and judge are resolve-only: they name an in-session subagent's `panewire resolve` role (below), never a spawned seat. No reader, tester or delegate role exists.
 - **Verifier:** runs the acceptance list against the built artifact and answers PASS / PASS+NOTES / FAIL, with no fixing and no free bug hunting.
 - **Leads and implementers must run on harnesses that keep going across turns**, until READY or ESC, with nobody pressing continue. **One-turn profiles may take explorer and consult roles only.** On 2026-11-03 a one-turn profile routed to implementation stopped after its first turn on every attempt. A worker that stops this way goes through `ops` spawn §4-3.
-- A lead delegates and spawns under `robin-mode` §Subagents versus spawned workers.
+- A lead uses in-session subagents only, as `lead` §Subagents specifies; it never delegates or spawns workers.
 - An implementer gets a brief whose design is already decided (data shape, files, acceptance). If the brief needs a design choice, it escalates instead of guessing.
 - Whether a review pass counts as independent: `fleet-review` §Independence.
 - A verifier never edits code. Whether its verdict carries over to a later head: `fleet-review` §A verdict covers a patch, not a SHA.
@@ -43,6 +43,6 @@ panewire resolve --role <reviewer|judge> --builder-family <author family>
 - If `resolve` refuses (`role_exhausted_wait`, `role_exhausted_escalate`, or no policy and no cache for `lead`/`verifier`), do **not** pick a substitute model or family for the subagent. What to do depends on the role:
   - `lead`, `consult`, `verifier`: do not start that work on any other model. Wait on `role_exhausted_wait`; escalate to the parent lane on `role_exhausted_escalate` or a missing policy.
   - `reviewer`, `judge`: escalate. Never do it yourself — your own check is not independent.
-  - `explorer`, `implementer`: the one allowed fallback is your own session (no new model choice); do the step there and say so in the result.
+  - `explorer`, `implementer`: the one allowed fallback is your own session (no new model choice); do the step there and say so in the result. This fallback does not apply to a lead, which writes no product code (`lead` §Authority).
 - Effort steps, the `max` rung, grade and verifier rules are hk `policy/model-routing`; do not restate them in a brief.
 - No `panewire` on the host: use your own session model for exploration only, and say so in the result.
