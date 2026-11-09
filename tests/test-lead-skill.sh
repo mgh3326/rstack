@@ -5,9 +5,11 @@
 #   2. the direct-merge ledger (three results on one head SHA), the record line,
 #      the PR trailers and the post-merge handoff stay in place;
 #   3. the lead is in the full install set and not in the worker set;
-#   4. no line lets the lead deploy or lets spawned workers act as subagents.
+#   4. no line lets the lead deploy, lets spawned workers act as subagents, or
+#      lets a docs change skip re-review.
 # Every required row has a mutant that deletes the matched text in memory and
-# must go RED by assertion; the two forbidden rules have injected mutants.
+# must go RED by assertion; the forbidden rules have injected mutants; the
+# hk 3656 review/test rules also have substitution mutants (weaker wording).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -37,6 +39,8 @@ docs = {
     "sets": render(sets_path.read_text(encoding="utf-8")),
 }
 
+L = re.escape  # a row pinned as literal text
+
 # (doc, section heading or None, row name, pattern on the flattened scope)
 REQUIRED = [
     # When to use.
@@ -54,11 +58,35 @@ REQUIRED = [
     ("lead", "## Subagents", "verifier-distinct-same-family", r"\*\*The verifier is a different subagent from the implementer\*\*, started with a fresh context, and of the same family as the lead for now\. Record that as `same_family`"),
     ("lead", "## Subagents", "spawned-workers-later", r"\*\*Spawned workers used as subagents \(quota through panewire\) are a later experiment\. They are not allowed yet\.\*\*"),
     ("lead", "## Subagents", "model-choice-home", r"\*\*Model choice follows `robin-mode` `roles\.md` §Models and effort for in-session subagents\*\*"),
+    # Subagents: local vs remote tests (operator 2026-11-09; hk 3656 round 1 fixes).
+    # New rows are literal text through L() (re.escape), so a pinned `.` or `|` cannot match another character.
+    ("lead", "## Subagents", "no-local-go-test", L("**Implementers and verifiers run no `go test` on mbp except one single test.** Locally they run only `go build`, `go vet`, gofmt and at most one `go test -run '^TestX$' -p 1 <pkg>`")),
+    ("lead", "## Subagents", "implementer-hands-back-predictions", L("The implementer hands back a red/green prediction per test, the remote commands and the mutant diffs (operator 2026-11-09)")),
+    ("lead", "## Subagents", "lead-runs-remote", L("**The lead pushes, then runs the tests remotely.**")),
+    ("lead", "## Subagents", "remote-gotest-explicit-args", L("Package and race tests: `remote-gotest m1b|desktop <repo> <sha> -race -count=3 -run '<tests>' <pkgs>`; run Linux and macOS in parallel when platform behaviour matters")),
+    ("lead", "## Subagents", "red-at-test-only-sha", L("Red: the new tests run at the pushed test-only commit's sha")),
+    ("lead", "## Subagents", "mutant-applied-on-host", L("Mutants: copy each diff to the host, `git apply` it in a throwaway worktree at `$H` on that host and run the named tests; record the mutant caught apart from the green run on `$H`")),
+    ("lead", "## Subagents", "ci-any-ref-dispatch", L("Full or DB suites: `gh workflow run ci-any-ref.yml --repo mgh3326/<repo> -f ref=<sha> -f suite=<suite>`, then `gh run watch <id> --repo mgh3326/<repo> --exit-status`")),
+    ("lead", "## Subagents", "suites-panewire", L("Suites: panewire `test` (Go unit tests), `postgres` (DB suite) or `all` (full suite)")),
+    ("lead", "## Subagents", "suites-handoffkeep-mergewake", L("handoffkeep `test` (with `-f packages='…'`), `vitest`, `build` or `all`, DB tests: see the workflow; mergewake `main` (with `-f packages='…'`); never `deploy`")),
+    ("lead", "## Subagents", "suites-check-workflow", L("Check the list with `git -C ~/work/<repo> show origin/main:.github/workflows/ci-any-ref.yml`")),
+    ("lead", "## Subagents", "ledger-run-waited", L("A run the ledger needs is §Ledger item (a) and is waited on before the merge; ordinary post-merge CI is not (§After the merge)")),
+    # Subagents: review order, verifier, round cap, re-review scope.
+    ("lead", "## Subagents", "cheap-review-first", L("**Review order: cheap cross-family review first.** Round 1 reviews the full PR; a later round reviews the open findings, the fix delta and its impact paths, and carries the earlier dispositions forward (`fleet-review` §Rounds). Remote tests may run beside it")),
+    ("lead", "## Subagents", "verifier-only-on-passed-head", L("**The heavy same-family verifier starts only on a head the cross-family review passed.** Never start a verifier on a head that may still change (rstack#55: 6 rounds and 5 discarded verifiers, against 1-2 rounds and 0 in the 2026-11-09 trial)")),
+    ("lead", "## Subagents", "verifier-checks-remote-log", L("It runs the closed acceptance list: it satisfies each test command by checking the remote log for `$H` (host, sha, exact command and result) and runs every other check itself; it runs no `go test` on mbp beyond the single test above")),
+    ("lead", "## Subagents", "round-cap-non-blocking", L("**Round cap is 2 for non-blocking findings.** After round 2 the remaining non-blocking findings become follow-up tasks; P0/P1 and critical/high are never deferred (§Ledger)")),
+    ("lead", "## Subagents", "blocking-fix-past-cap", L("A blocking fix gets a further cross-family review of that fix only; if a third blocking round is needed, send the STUCK line (§Store) and re-scope or split the unit. The cap never counts as approval")),
+    ("lead", "## Subagents", "p3-only-skips-rereview", L("**Only P3 wording in prose that states no rule skips re-review** (typos, comments, examples, phrasing)")),
+    ("lead", "## Subagents", "rule-change-rereviewed", L("Any change to code, tests, a contract, a policy or a rule's text, a SKILL.md included, gets a cross-family review of that change")),
+    ("lead", "## Subagents", "carryover-record", L("The cross-family verdict carries to a new head only when the interdiff is P3-only prose; the ledger records `carryover=<old head>`")),
+    ("lead", "## Subagents", "final-head-all-three", L("Ledger items (a) to (c) are still all recorded on the final head: the tests rerun and the same-family verifier runs there (operator 2026-11-09)")),
     # Store.
     ("lead", "## Store", "hk-replaces-store", r"hk replaces the orchestrate store"),
     ("lead", "## Store", "unit-is-task", r"\*\*A unit is an hk task\*\*, one PR each"),
     ("lead", "## Store", "standing-orders-docs", r"\*\*Standing orders are hk decision docs\.\*\*"),
     ("lead", "## Store", "ledger-in-comments", r"\*\*The ledger lives in task comments\*\*, and in hk reviews once hk 3037 ships"),
+    ("lead", "## Store", "stuck-line", r"\*\*A step with no progress for over 30 minutes, or the same failure twice, gets one line to handoffkeep-design:\*\* `\[lead\] STUCK \| <what> \| <tried> \| <alternative A/B>`; then proceed on an alternative \(operator 2026-11-09\)"),
     ("lead", "## Store", "no-orchestrate-dir", r"There is no `~/\.claude/orchestrate/` directory"),
     # Bug and incident loop.
     ("lead", "## Bug and incident loop", "reproduce-first", r"1\. \*\*Reproduce first\*\*"),
@@ -76,6 +104,7 @@ REQUIRED = [
     ("lead", "## Ledger", "verifier-runs-acceptance", r"reached by running the brief's closed acceptance list on `\$H`"),
     ("lead", "## Ledger", "critical-high-never-deferred", r"\*\*A finding of critical or high severity is never deferred: it is fixed, or dismissed with evidence, and while one is unresolved there is no merge\.\*\*"),
     ("lead", "## Ledger", "merge-command", r"`gh pr merge <n> --squash --match-head-commit \"\$H\"`"),
+    ("lead", "## Ledger", "merge-chained-with-and", r"\*\*Gate the merge in the command\.\*\* Chain `git fetch`, the ancestor check, the leak scan, `gh pr ready` and `gh pr merge --match-head-commit` with `&&` only, never `;` \(panewire#360, where a `;` chain merged past a failed freshness check\)"),
     ("lead", "## Ledger", "record-line", r"`direct-merge pr=<n> head=<H> evidence=<…>`"),
     # PR trailers.
     ("lead", "## PR trailers", "trailers-home", r"The PR body ends with the Mergewake trailers exactly as a worker's does \(`wake` §Worker brief Rules\)"),
@@ -92,6 +121,7 @@ REQUIRED = [
     # After the merge.
     ("lead", "## After the merge", "watch-handles", r"\*\*mergewake watch handles post-merge CI, bisect and revert\.\*\*"),
     ("lead", "## After the merge", "no-ci-wait", r"Do not wait for CI before merging"),
+    ("lead", "## After the merge", "ledger-run-not-ci", L("A test run the ledger needs (§Subagents) is not that CI: it is item (a) and is waited on before the merge")),
     ("lead", "## After the merge", "watch-covers-repo-before-merge", r"\*\*Before a direct merge, confirm that `mergewake watch` covers the repository\.\*\*"),
     ("lead", "## After the merge", "revert-merged-by-desk", r"A revert PR that `watch` opens is merged by the desk, not by the lead"),
     ("lead", "## After the merge", "close-task", r"Close the hk task after the merge"),
@@ -100,6 +130,8 @@ REQUIRED = [
     ("lead", "## Briefs to subagents", "worker-brief-fields", r"Write each one to the `wake` §Worker brief fields"),
     ("lead", "## Briefs to subagents", "standing-orders-verbatim", r"\*\*Standing orders go in verbatim\*\* at every spawn and every resume"),
     ("lead", "## Briefs to subagents", "closed-acceptance", r"\*\*The acceptance list is closed\.\*\*"),
+    ("lead", "## Briefs to subagents", "design-attack-before-brief", r"\*\*Design attack before the brief\.\*\* For a unit that deletes code, removes a fallback or changes a contract, give the cross-family reviewer the scope and code areas \(no diff\) before writing the brief"),
+    ("lead", "## Briefs to subagents", "design-attack-list-becomes-red-tests", r"Ask it to list every way the change could read a wrong or stale result, delete what is still needed, or break a caller\. Its list becomes the brief's red tests; if it breaks the unit's premise, re-plan before implementing \(hk 3652, where \"fallback audit = 0\" did not prove the fallback unused; hk 3640\)"),
     ("lead", "## Briefs to subagents", "dropped-machinery", r"Dropped from `orchestrate\.md`: the `orch` CLI, the `~/\.claude/orchestrate/` store, babysit, swarm, arena and the sub-coordinator layer"),
     # Provenance.
     ("lead", None, "provenance", r"Provenance: adapted from the vendored pstack `skills/poteto-mode/playbooks/orchestrate\.md` \(Coordinator\) and `skills/poteto-mode/playbooks/bug-fix\.md`, pinned in `third_party/pstack/PINNED` \(commit [0-9a-f]{7}, MIT"),
@@ -107,10 +139,13 @@ REQUIRED = [
     ("sets", None, "lead-in-full-only", r"^lead-sets: full\s*$"),
 ]
 
-# Rules a line must never state: the lead deploying, and spawned workers acting as subagents.
+# Rules a line must never state: the lead deploying, spawned workers acting as subagents,
+# and docs skipping re-review.
 FORBIDDEN = {
     "lead-may-deploy": re.compile(r"(?i)\b(?:lead|it|you)\s+(?:may|can|should|is allowed to|is permitted to|are allowed to)\s+(?:deploy|run (?:a )?deploy)"),
     "spawned-workers-as-subagents": re.compile(r"(?i)spawned workers?(?: used)? as subagents?[^.\n]{0,60}\b(?:are|is|may be) (?:allowed|permitted|fine|ok)"),
+    # hk 3656 round 1 [P1]: "or docs" let a rule change in a SKILL.md skip re-review.
+    "docs-skip-rereview": re.compile(r"(?i)\bP3 wording or docs\b|\bor docs gets no re-review"),
 }
 
 
@@ -140,6 +175,44 @@ expect_red("lead-may-deploy-injected", check,
 expect_red("spawned-workers-injected", check,
            {**docs, "lead": docs["lead"].replace("## Store", "- Spawned workers as subagents are allowed.\n\n## Store", 1)})
 count += 2
+
+expect_red("docs-skip-rereview-injected", check,
+           {**docs, "lead": docs["lead"].replace("## Store", "- A fix that touches only P3 wording or docs gets no re-review.\n\n## Store", 1)})
+count += 1
+
+# Substitution mutants (hk 3656 round 1): a deletion removes a whole pinned sentence, so each
+# load-bearing token is also swapped for the weaker text a reviewer flagged, and the doc must go RED.
+SUBSTITUTED = [
+    ("workflow-filename-dot", "ci-any-ref.yml", "ci-any-ref-yml"),
+    ("single-test-incomplete", "`go test -run '^TestX$' -p 1 <pkg>`", "`-run '^TestX$' -p 1`"),
+    ("remote-gotest-default-args", "<sha> -race -count=3 -run '<tests>' <pkgs>`", "<sha>`"),
+    ("red-on-final-head", "at the pushed test-only commit's sha", "on `$H`"),
+    ("mutant-not-applied", "`git apply` it in a throwaway worktree at `$H` on that host and ", ""),
+    ("mutant-merged-with-green", "record the mutant caught apart from the green run on `$H`", "record the run"),
+    ("watch-loses-repo", "gh run watch <id> --repo mgh3326/<repo> --exit-status", "gh run watch <id> --exit-status"),
+    ("suite-postgres-as-test", "`postgres` (DB suite)", "`test` (DB suite)"),
+    ("suite-all-dropped", " or `all` (full suite)", ""),
+    ("deploy-suite-allowed", "; never `deploy`", ""),
+    ("ledger-run-not-waited", "is waited on before the merge; ordinary post-merge CI is not", "is not waited on"),
+    ("ledger-run-is-ci", "it is item (a) and is waited on before the merge", "it is not waited on"),
+    ("rounds-interdiff-only", "a later round reviews the open findings, the fix delta and its impact paths, and carries the earlier dispositions forward", "after a fix only the interdiff"),
+    ("verifier-log-not-H", "checking the remote log for `$H`", "checking a remote log"),
+    ("verifier-log-fields", " (host, sha, exact command and result)", ""),
+    ("verifier-no-tests", "It runs the closed acceptance list:", "It runs no tests:"),
+    ("cap-all-findings", "Round cap is 2 for non-blocking findings.", "Round cap is 2."),
+    ("blocking-fix-no-review", "A blocking fix gets a further cross-family review of that fix only", "A blocking fix after round 2 gets no further review"),
+    ("third-round-no-stuck", "send the STUCK line (§Store) and re-scope or split the unit", "run another round"),
+    ("cap-as-approval", "The cap never counts as approval", "The cap counts as approval"),
+    ("p3-scope-widened", "P3 wording in prose that states no rule", "P3 wording or a doc"),
+    ("skill-md-rule-exempt", "a contract, a policy or a rule's text, a SKILL.md included,", "or a contract"),
+    ("carryover-any-interdiff", "only when the interdiff is P3-only prose", "when the interdiff is small"),
+    ("carryover-unrecorded", "the ledger records `carryover=<old head>`", "the ledger records nothing"),
+    ("final-head-partial", "Ledger items (a) to (c) are still all recorded on the final head", "Ledger item (a) is recorded on the final head"),
+]
+for label, old_text, new_text in SUBSTITUTED:
+    assert old_text in docs["lead"], f"fixture: substitution {label} text not in the lead skill"
+    expect_red(f"sub-{label}", check, {**docs, "lead": docs["lead"].replace(old_text, new_text)})
+    count += 1
 
 # Extra guard, not counted in m: the worker set must not carry the lead. The rendered fact changes, so the install-sets row goes RED.
 sets_json = json.loads(sets_path.read_text(encoding="utf-8"))

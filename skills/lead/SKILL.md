@@ -34,7 +34,13 @@ The operator opens the lead session directly. For now no other session spawns on
 - **The verifier is a different subagent from the implementer**, started with a fresh context, and of the same family as the lead for now. Record that as `same_family` in the verdict.
 - **Spawned workers used as subagents (quota through panewire) are a later experiment. They are not allowed yet.** `panewire spawn` stays the design session's tool (`wake` §The loop).
 - **Model choice follows `robin-mode` `roles.md` §Models and effort for in-session subagents** (`panewire resolve`); never pick a substitute when it refuses.
+- **Implementers and verifiers run no `go test` on mbp except one single test.** Locally they run only `go build`, `go vet`, gofmt and at most one `go test -run '^TestX$' -p 1 <pkg>`. The implementer hands back a red/green prediction per test, the remote commands and the mutant diffs (operator 2026-11-09).
+- **The lead pushes, then runs the tests remotely.** Package and race tests: `remote-gotest m1b|desktop <repo> <sha> -race -count=3 -run '<tests>' <pkgs>`; run Linux and macOS in parallel when platform behaviour matters. Red: the new tests run at the pushed test-only commit's sha. Mutants: copy each diff to the host, `git apply` it in a throwaway worktree at `$H` on that host and run the named tests; record the mutant caught apart from the green run on `$H`. Full or DB suites: `gh workflow run ci-any-ref.yml --repo mgh3326/<repo> -f ref=<sha> -f suite=<suite>`, then `gh run watch <id> --repo mgh3326/<repo> --exit-status`. Suites: panewire `test` (Go unit tests), `postgres` (DB suite) or `all` (full suite); handoffkeep `test` (with `-f packages='…'`), `vitest`, `build` or `all`, DB tests: see the workflow; mergewake `main` (with `-f packages='…'`); never `deploy`. Check the list with `git -C ~/work/<repo> show origin/main:.github/workflows/ci-any-ref.yml`. A run the ledger needs is §Ledger item (a) and is waited on before the merge; ordinary post-merge CI is not (§After the merge).
 - A subagent returns an answer or a diff in its own worktree; its output is input to the lead's judgement, never a verdict by itself. The verifier never edits code (`roles.md` Rules).
+- **Review order: cheap cross-family review first.** Round 1 reviews the full PR; a later round reviews the open findings, the fix delta and its impact paths, and carries the earlier dispositions forward (`fleet-review` §Rounds). Remote tests may run beside it.
+- **The heavy same-family verifier starts only on a head the cross-family review passed.** Never start a verifier on a head that may still change (rstack#55: 6 rounds and 5 discarded verifiers, against 1-2 rounds and 0 in the 2026-11-09 trial). It runs the closed acceptance list: it satisfies each test command by checking the remote log for `$H` (host, sha, exact command and result) and runs every other check itself; it runs no `go test` on mbp beyond the single test above.
+- **Round cap is 2 for non-blocking findings.** After round 2 the remaining non-blocking findings become follow-up tasks; P0/P1 and critical/high are never deferred (§Ledger). A blocking fix gets a further cross-family review of that fix only; if a third blocking round is needed, send the STUCK line (§Store) and re-scope or split the unit. The cap never counts as approval.
+- **Only P3 wording in prose that states no rule skips re-review** (typos, comments, examples, phrasing). Any change to code, tests, a contract, a policy or a rule's text, a SKILL.md included, gets a cross-family review of that change. The cross-family verdict carries to a new head only when the interdiff is P3-only prose; the ledger records `carryover=<old head>`. Ledger items (a) to (c) are still all recorded on the final head: the tests rerun and the same-family verifier runs there (operator 2026-11-09).
 
 ## Store
 
@@ -45,6 +51,7 @@ hk replaces the orchestrate store. There is no `~/.claude/orchestrate/` director
 - **The ledger lives in task comments**, and in hk reviews once hk 3037 ships.
 - State is read from hk, `gh` and git, not from the chat: after a restart, re-read the open tasks, their ledgers and the open PRs, and reattach by PR and branch.
 - Report to the operator in the operator's channel; park a decision you cannot default as a decision request (`ops` decision-request), never as a question in a pane.
+- **A step with no progress for over 30 minutes, or the same failure twice, gets one line to handoffkeep-design:** `[lead] STUCK | <what> | <tried> | <alternative A/B>`; then proceed on an alternative (operator 2026-11-09).
 
 ## Bug and incident loop
 
@@ -67,7 +74,7 @@ Before any direct merge, record all three on the same head SHA `$H`:
 
 Then `git fetch origin <base>` and check base freshness, `git merge-base --is-ancestor origin/<base> "$H"`, and run the public-repo leak scan on the diff (`wake` §Merge gate). A new head voids the ledger; repeat it.
 
-Merge pinned to the head: `gh pr merge <n> --squash --match-head-commit "$H"`. Record on the hk task:
+Merge pinned to the head: `gh pr merge <n> --squash --match-head-commit "$H"`. **Gate the merge in the command.** Chain `git fetch`, the ancestor check, the leak scan, `gh pr ready` and `gh pr merge --match-head-commit` with `&&` only, never `;` (panewire#360, where a `;` chain merged past a failed freshness check). Record on the hk task:
 
 `direct-merge pr=<n> head=<H> evidence=<…>`
 
@@ -95,7 +102,7 @@ The PR body ends with the Mergewake trailers exactly as a worker's does (`wake` 
 
 ## After the merge
 
-- **mergewake watch handles post-merge CI, bisect and revert.** Do not wait for CI before merging (`wake` §Merge gate).
+- **mergewake watch handles post-merge CI, bisect and revert.** Do not wait for CI before merging (`wake` §Merge gate). A test run the ledger needs (§Subagents) is not that CI: it is item (a) and is waited on before the merge.
 - **Before a direct merge, confirm that `mergewake watch` covers the repository.** If `watch` is not running, nothing opens the revert and main stays red (`wake` §Merge gate); if you cannot confirm it, escalate to operator-desk (`ops` decision-request) instead of merging.
 - A revert PR that `watch` opens is merged by the desk, not by the lead.
 - Close the hk task after the merge, with the `direct-merge` line already on it.
@@ -115,6 +122,7 @@ The brief is the product. A subagent cannot ask the lead a question, and a vague
 
 - **Standing orders go in verbatim** at every spawn and every resume.
 - **The acceptance list is closed.** Anything the lead wants checked goes in before the brief is sent.
+- **Design attack before the brief.** For a unit that deletes code, removes a fallback or changes a contract, give the cross-family reviewer the scope and code areas (no diff) before writing the brief. Ask it to list every way the change could read a wrong or stale result, delete what is still needed, or break a caller. Its list becomes the brief's red tests; if it breaks the unit's premise, re-plan before implementing (hk 3652, where "fallback audit = 0" did not prove the fallback unused; hk 3640).
 - Size the brief to the unit: a one-command unit gets a paragraph that still names goal, scope, the verify command and the report shape.
 - Never resume-chain a brief; start a fresh subagent with consolidated scope.
 - Dropped from `orchestrate.md`: the `orch` CLI, the `~/.claude/orchestrate/` store, babysit, swarm, arena and the sub-coordinator layer.
