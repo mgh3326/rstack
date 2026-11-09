@@ -599,5 +599,6 @@ upload), emit READY with the local path `~/work/herdr-inbox/jobs/<job>/report.md
 Never name the hk prefix unless the newest round's sha256 matched the local report.
 Readers pick the round by the newest-round rule in `wake` loop step 8.
 After READY you are still the PR's author (`wake` §READY): fix the findings sent to you and stay
-in the pane until mergewake merges the PR and reaps it, or the desk says you are done.
+in the pane until mergewake merges the PR and reaps it, or the repo's design session, else
+operator-desk, says you are done.
 ````

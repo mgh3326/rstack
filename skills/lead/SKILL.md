@@ -52,7 +52,14 @@ hk replaces the orchestrate store. There is no `~/.claude/orchestrate/` director
 - **The ledger lives in task comments**, and in hk reviews once hk 3037 ships.
 - State is read from hk, `gh` and git, not from the chat: after a restart, re-read the open tasks, their ledgers and the open PRs, and reattach by PR and branch.
 - Report to the operator in the operator's channel; park a decision you cannot default as a decision request (`ops` decision-request), never as a question in a pane.
-- **A step with no progress for over 30 minutes, or the same failure twice, gets one line to handoffkeep-design:** `[lead] STUCK | <what> | <tried> | <alternative A/B>`; then proceed on an alternative (operator 2026-11-09).
+- **A step with no progress for over 30 minutes, or the same failure twice, gets one blocked event to the repo's design session, else operator-desk.** The repo's design session uses `<repo>-design` (default per `decision/2026-11-10/lead-direct-merge`); when no design session is open, use `operator-desk`. Run exactly one command for the applicable receiver:
+  ```sh
+  # The repo's design session is open.
+  panewire emit --kind lane.event --lane <repo>-design --type blocked --event-id <repo>-lead-stuck-<unique-id> --text '[lead] STUCK | <what> | <tried> | <alternative A/B>'
+  # No repo design session is open.
+  panewire emit --kind lane.event --lane operator-desk --type blocked --event-id <repo>-lead-stuck-<unique-id> --text '[lead] STUCK | <what> | <tried> | <alternative A/B>'
+  ```
+  Then proceed on an alternative (operator 2026-11-09).
 
 ## Bug and incident loop
 
@@ -103,7 +110,7 @@ mergewake stops on its own once the PR is merged; there is no other marker. **A 
 
 ## PR trailers
 
-The PR body ends with the Mergewake trailers exactly as a worker's does (`wake` §Worker brief Rules): paste the spawn preamble's block when there is one, otherwise `Mergewake-Author-Family`, `Mergewake-Author-Profile`, `Mergewake-Task`, `Mergewake-Grade` and `Mergewake-Tier`. A lead PR also carries `Mergewake-Notify-Lane: lead` (`wake` §Tier, a PR opened without a worker job), so the post-merge notice reaches the lead.
+The PR body ends with the Mergewake trailers exactly as a worker's does (`wake` §Worker brief Rules). Generate them with `bin/pr-trailers --task <id> --family <family> --profile <profile> --lane lead`, using a family listed in `wake` §Rules. A lead PR also carries `Mergewake-Notify-Lane: lead` (`wake` §Tier, a PR opened without a worker job), so the post-merge notice reaches the lead.
 
 ## After the merge
 
