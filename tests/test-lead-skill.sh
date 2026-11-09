@@ -52,6 +52,7 @@ REQUIRED = [
     ("lead", "## Authority", "owns-program-not-code", r"\*\*The lead owns the program, never the code\.\*\* In-session subagents change code\. The lead judges, briefs, keeps the ledger and lands"),
     ("lead", "## Authority", "merges-directly", r"\*\*The lead merges directly under §Ledger\.\*\*"),
     ("lead", "## Authority", "own-prs-include-t3-deploy-approval", r"The lead merges its own PRs directly under §Ledger, including T3 PRs and PRs that touch a `deploy_approval` path"),
+    ("lead", "## Authority", "own-prs-rollout-runbook", r"A lead PR that needs a rollout carries its runbook \(rollout, verification, rollback\) in the PR body"),
     ("lead", "## Authority", "own-prs-decisions-cited", r"`decision/2026-11-10/lead-direct-merge`; `decision/2026-11-10/lead-merge-scope`"),
     ("lead", "## Authority", "live-rollout-owner", r"It never deploys or performs the live mutation itself\. The repo's design session orders the rollout \(deploy, migration apply or external change\), or operator-desk while that repo has no design session open"),
     ("lead", "## Authority", "t3-split-retained", r"The `wake` §T3 split still governs how T3 work is split and verified"),
