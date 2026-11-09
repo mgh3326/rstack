@@ -34,12 +34,29 @@ The operator opens the lead session directly. For now no other session spawns on
 - **The verifier is a different subagent from the implementer**, started with a fresh context, and of the same family as the lead for now. Record that as `same_family` in the verdict.
 - **Spawned workers used as subagents (quota through panewire) are a later experiment. They are not allowed yet.** `panewire spawn` stays the design session's tool (`wake` §The loop).
 - **Model choice follows `robin-mode` `roles.md` §Models and effort for in-session subagents** (`panewire resolve`); never pick a substitute when it refuses.
-- **Implementers and verifiers run no `go test` on mbp except one single test.** Locally they run only `go build`, `go vet`, gofmt and at most one `go test -run '^TestX$' -p 1 <pkg>`. The implementer hands back a red/green prediction per test, the remote commands and the mutant diffs (operator 2026-11-09).
-- **The lead pushes, then runs the tests remotely.** Package and race tests: `remote-gotest m1b|desktop <repo> <sha> -race -count=3 -run '<tests>' <pkgs>`; run Linux and macOS in parallel when platform behaviour matters. Red: the new tests run at the pushed test-only commit's sha. Mutants: copy each diff to the host, `git apply` it in a throwaway worktree at `$H` on that host and run the named tests; record the mutant caught apart from the green run on `$H`. Full or DB suites: `gh workflow run ci-any-ref.yml --repo mgh3326/<repo> -f ref=<sha> -f suite=<suite>`, then `gh run watch <id> --repo mgh3326/<repo> --exit-status`. Suites: panewire `test` (Go unit tests), `postgres` (DB suite) or `all` (full suite); handoffkeep `test` (with `-f packages='…'`), `vitest`, `build` or `all`, DB tests: see the workflow; mergewake `main` (with `-f packages='…'`); never `deploy`. Check the list with `git -C ~/work/<repo> show origin/main:.github/workflows/ci-any-ref.yml`. A run the ledger needs is §Ledger item (a) and is waited on before the merge; ordinary post-merge CI is not (§After the merge).
+- **테스트 호스트 규칙은 `ops` §Invariants 를 따른다.** Implementer 와 verifier 는 lead 의 호스트
+  (현재 lead pane 이 실행되는 호스트)에서
+  `go test` 패키지 테스트를 하지 않는다. 예외는 단일 테스트 하나뿐이다. 로컬에서는 `go build`,
+  `go vet`, gofmt 및 최대 하나의 `go test -run '^TestX$' -p 1 <pkg>` 만 실행한다. Implementer 는
+  테스트마다 red/green 예상, 원격 명령과 mutant diff 를 전달한다 (operator 2026-11-09).
+- **Lead 는 push 한 뒤 spawn preamble 과 `ops` §Invariants 가 허용한 원격 호스트에서 테스트를 실행한다.**
+  Package 와 race 테스트는 저장소에 `remote-gotest` 가 있으면 반드시
+  `remote-gotest <host> <repo> <sha> -race -count=3 -run '<tests>' <pkgs>` 로 실행한다. 저장소에
+  `remote-gotest` 가 없으면 같은 허용 호스트의 checkout 에서 `ssh <host> 'git -C ~/work/<repo> fetch origin <branch> && git -C ~/work/<repo> checkout --detach <sha> && cd ~/work/<repo> && go test -race -count=3 -run "<tests>" <pkgs>'` 로 실행하고 호스트, sha, 정확한 명령을 기록한다.
+  플랫폼 동작이 중요하면 Linux 와 macOS 에서 병렬 실행한다. Red 확인은 push 한 test-only commit 의 sha
+  에서 새 테스트를 실행한다. Mutant 는 각 diff 를 해당 호스트의 `$H` 기반 throwaway worktree 에 적용해
+  이름이 지정된 테스트를 실행하고, `$H` 의 green 결과와 별도로 잡힌 mutant 를 기록한다. 전체 또는 DB
+  스위트는 `gh workflow run ci-any-ref.yml --repo mgh3326/<repo> -f ref=<sha> -f suite=<suite>` 후
+  `gh run watch <id> --repo mgh3326/<repo> --exit-status` 로 실행한다. 스위트: panewire `test` (Go unit
+  tests), `postgres` (DB suite), `all` (full suite); handoffkeep `test` (`-f packages='…'` 포함), `vitest`,
+  `build`, `all`; DB tests 는 workflow 참조; mergewake `main` (`-f packages='…'` 포함), `deploy` 는 금지.
+  `git -C ~/work/<repo> show origin/main:.github/workflows/ci-any-ref.yml` 로 목록을 확인한다. Ledger 가
+  요구하는 run 은 §Ledger item (a) 이며 merge 전에 기다린다. 일반 post-merge CI 는 기다리지 않는다
+  (§After the merge).
 - Test flags and timeout selection follows `ops` §Invariants.
 - A subagent returns an answer or a diff in its own worktree; its output is input to the lead's judgement, never a verdict by itself. The verifier never edits code (`roles.md` Rules).
 - **Review order: cheap cross-family review first.** Round 1 reviews the full PR; a later round reviews the open findings, the fix delta and its impact paths, and carries the earlier dispositions forward (`fleet-review` §Rounds). Remote tests may run beside it.
-- **The heavy same-family verifier starts only on a head the cross-family review passed.** Never start a verifier on a head that may still change (rstack#55: 6 rounds and 5 discarded verifiers, against 1-2 rounds and 0 in the 2026-11-09 trial). It runs the closed acceptance list: it satisfies each test command by checking the remote log for the revision its acceptance entry names (host, sha, exact command and result) — the pushed test-only or pre-fix sha for a baseline red entry, `$H` with that mutant's diff applied for a mutant entry, `$H` for green — and runs every other check itself; the verdict and the ledger are recorded on `$H`; it runs no `go test` on mbp beyond the single test above.
+- **The heavy same-family verifier starts only on a head the cross-family review passed.** Never start a verifier on a head that may still change (rstack#55: 6 rounds and 5 discarded verifiers, against 1-2 rounds and 0 in the 2026-11-09 trial). It runs the closed acceptance list: it satisfies each test command by checking the remote log for the revision its acceptance entry names (host, sha, exact command and result) — the pushed test-only or pre-fix sha for a baseline red entry, `$H` with that mutant's diff applied for a mutant entry, `$H` for green — and runs every other check itself; the verdict and the ledger are recorded on `$H`; it runs no package `go test` on the lead's host beyond the single test above.
 - **Round cap is 2 for non-blocking findings.** After round 2 the remaining non-blocking findings become follow-up tasks; P0/P1 and critical/high are never deferred (§Ledger). A blocking fix gets a further cross-family review of that fix only; if a third blocking round is needed, send the STUCK line (§Store) and re-scope or split the unit. The cap never counts as approval.
 - **Only P3 wording in prose that states no rule skips re-review** (typos, comments, examples, phrasing). Any change to code, tests, a contract, a policy or a rule's text, a SKILL.md included, gets a cross-family review of that change. The cross-family verdict carries to a new head only when the interdiff is P3-only prose; the ledger records `carryover=<old head>`. Ledger items (a) to (c) are still all recorded on the final head: the tests rerun and the same-family verifier runs there (operator 2026-11-09).
 

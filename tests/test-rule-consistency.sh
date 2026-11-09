@@ -92,7 +92,9 @@ for doc in ("consult", "questions"):
     ]
 
 # (row name, pattern on every flattened skill file, text a mutant appends to the first skill file)
+HOST_ALIASES = ("mb" + "p", "m1" + "b", "desk" + "top")
 SCANS = [
+    ("public-host-aliases", r"\b(?:" + "|".join(map(re.escape, HOST_ALIASES)) + r")\b", "\nThe host " + HOST_ALIASES[0] + " is available.\n"),
     ("repo-session-term", r"repo session", "\nA repo session reads only hk.\n"),
     ("next-unit-rule", r"next unit", "\n🔴 The `next unit:` line decides whether a lead pane closes.\n"),
     ("closing-lead-pane", r"Closing a lead pane", "\n| Closing a lead pane | reap |\n"),
