@@ -23,7 +23,7 @@ worktree 와 branch 를 지운다. **디자인 세션은 머지 후 pane 을 손
 
 ### 6-1. 그 밖의 pane — 스폰한 주체가 거둔다
 
-자문·머지 안 된 PR·실패 잡의 pane 은 **만든 곳이 회수한다.** 워커가 언제 끝났는지, 그게 "끝"인지
+열린 PR 의 작성자 pane 은 **절대 회수하지 않는다.** 자문·실패 잡의 pane 은 **만든 곳이 회수한다.** 워커가 언제 끝났는지, 그게 "끝"인지
 "대기"인지 아는 것은 job 맥락을 가진 스폰 주체뿐이다. 회수는 **깨어난 순간에 확인해서** 한다 —
 새 릴레이를 받았을 때, terminal 을 선언할 때, 운영자가 깨웠을 때.
 
@@ -89,13 +89,16 @@ panewire reap --lane <내 레인> --apply      # 실제 회수
   (`pane-working-or-mismatch`). close 직전에 잡 기록과 pane 을 다시 읽는다 — 잡이 되살아났으면
   건너뛰고, pane 이 바뀌었으면 rc 75 로 멈춘다. 닫은 잡은 quota 를 풀고 허브 레인을 지우고
   `job.reaped` 를 남긴다.
+- `--apply` 전에 미리보기의 각 job 에 연결된 PR 번호로 `gh pr view <n> --json state` 를 확인한다.
+  PR 이 `OPEN` 이면 그 job 을 적용 대상에서 빼고 pane 을 회수하지 않는다. PR 이 `MERGED` 또는 `CLOSED` 인 job 만 계속 검토한다.
 - `--worktrees` 는 깨끗하고 origin/main 에
   머지된 linked worktree 만 force 없이 지운다(branch 는 남는다).
 - 🔴 panewire 는 `--apply` 에 `--lane` 을 강제하지 않는다 — 전역 회수는 금지이므로 항상
   `--lane <내 레인>` 을 준다.
 - `panewire prune` 은 같은 규칙에 더해, pane 이 사라진 채 마지막 이벤트가 `--stale-age`(기본 24h)보다
   오래된 live 잡을 정리한다.
-- 🔴 `panewire reap` 은 §6-4 의 예외가 아니다 — 닫는 것은 panewire 가 그 잡을 위해 만든 pane 뿐이고,
+- 🔴 `panewire reap` 은 §6-4 의 예외가 아니다 — 닫는 것은 panewire 가 그 잡을 위해 만든 pane 뿐이며,
+  열린 PR 의 작성자 pane 은 언제나 제외한다.
   수동 회수는 여전히 `pane close` 다. §6-2 의 **1번(job 이 terminal 인가)도 대신 판단하지 않는다**
   — 결정을 기다리며 idle 인 세션(§6-3)에는 terminal 이벤트가 없으므로 자동으로 제외된다.
 
