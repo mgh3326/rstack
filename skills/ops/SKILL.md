@@ -96,7 +96,7 @@ panewire emit --kind lane.event --lane <parent-lane> --type decision \
 - `panewire escalate <job> --question '<text>'` is only for giving up: it stops the job as escalated and
   relays the question to the recorded parent. Use the ESC event for a question that leaves the job open.
 - **An ESC is a question, and the job stays open** (`job.waiting_decision`). The answer resumes it when
-  delivered by `panewire prompt --uptake status-transition` (`relay.md` §3-3) or a relay to the pane's lane.
+  delivered by `panewire prompt --from <sender-lane> --to <agent-name> --file <prompt-file> --uptake status-transition --timeout 60s` (`relay.md` §3-3) or a relay to the pane's lane.
   An unanswered decision becomes `lost` after the decision timeout (`PANEWIRE_DECISION_TIMEOUT_S`, six hours
   by default) unless a later lane event from the pane resumes the job first. Only READY or DONE
   completes a job. Giving up is `panewire escalate <job> --question '<why>'`, not an ESC. Source: panewire

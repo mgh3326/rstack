@@ -49,19 +49,22 @@
 
 | 감시하던 것 | panewire 이벤트 | 배포 판 | 근거 |
 |---|---|---|---|
-| CI 결과·PR 상태 변화 | — | **없음** | panewire 소스에 GitHub/CI 통합 없음 — GitHub 참조는 release asset 다운로드(노드 self-update, hub_r19_node.go)뿐 |
+| CI 결과·PR 상태 변화 이벤트 | — | **미확인** | panewire main 코드는 handoffkeep/mergewake snapshot을 동기 조회하는 경로를 확인하지만, CI/PR 변경이 lane event를 발행하는지는 미확인이다. panewire@a702d068db071d7685d417401023b3c276089012 `pr_status_cli.go:20-24,121-140` |
+| PR 상태·finding 조회 | `panewire pr status <owner/repo> <n>` / `panewire pr findings <owner/repo> <n>` | **소스에 CLI 조회 있음** | panewire@a702d068db071d7685d417401023b3c276089012 `pr_status_cli.go:20-30,121-140`; 배포 여부 미확인 |
 
 ## 4. 기타
 
 | 감시하던 것 | panewire 이벤트 | 배포 판 | 근거 |
 |---|---|---|---|
-| 프롬프트 착지 증명 | `panewire prompt --uptake` 관측(confirmed/unproven/composer_residue) | **있음** | prompt·wait 경로 두 판; 제출 증명은 claude·codex 만, 그 외 하네스는 unproven(`relay.md` §3-2) |
+| 프롬프트 착지 증명 | `panewire prompt --from <sender-lane> --to <agent-name> --file <prompt-file> --uptake status-transition` 관측(confirmed/unproven/composer_residue) | **소스 인터페이스 있음; 배포 미확인** | panewire@a702d068db071d7685d417401023b3c276089012 `cli.go:182-196`; `prompt.go:65-73`; 하네스별 제출 증거 차이는 `relay.md` §3-2 참조 |
 | 스폰 요청·결과 | `SPAWNED` / `SPAWN_FAILED`를 담은 owner/parent `lane.event` + hk job 이벤트 | **흡수 컷오버(#155/#157) 배포 후 사용** | `/v1/spawns`의 durable 예약 뒤 비동기 결과를 outbox로 전달한다. `ACCEPTED`는 착지 증거가 아니다. bounded `inbox wait`와 실패 처리는 `watching.md` §스폰 후 대기. 기존 저수준 `spawn.requested`·`spawn.result` broadcast는 세션 알림 경로가 아니다. |
 | 레인 라우트 변경 | `lanes.changed` 허브 broadcast | **있음 — 허브 내부/UI** | lanes_write.go @e401923 |
 | 릴레이 진단 | `relay.unrouted`·`rejected`·`truncated`·`unconfirmed` 등 | **있음 — 허브 내부/UI** | relay.go·relay_ack.go @e401923 |
 | 버스트·failover | burst request/hold·Wake-on-LAN·전원 | **있음** | burst*.go·failover(#17·#19·#20) 두 판 |
 | 잡·세션 인벤토리 조회 | `panewire jobs`·`lanes`·`outbox` 등 풀 CLI | **부분** | `jobs`·`lanes`·`emit`·`wait`·`place` 배포판에 있음(cli.go @05667f4); `fleet-census`(#73)·`session-reap`(#78)·`lanes-audit`(#71)·`sessions`(#69)·`panewire job *`(#74·#75) 미배포 |
 | devin 제출 증명 분류 | relay 분류 개선 | **미배포** | `458377b`(#62) origin/main 만 |
+
+배포 판의 기록은 **2026-09-24 실측**이며 과거 상태다. 현재 배포된 hub/node revision은 미확인이다. 현재 소스에서 확인되는 PR 상태 조회와 알림 여부는 §3 표에 분리해 적었다.
 
 ## 5. CI·PR 대기 결론 (범위 4)
 

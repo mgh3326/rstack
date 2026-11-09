@@ -136,7 +136,7 @@ v1 의 요지: **완료를 아는 쪽(답변자·워커)이 요청자 레인으�
 🔴 **버전을 갖는 것은 이번이 처음이다.** 이전 판들은 번호가 없었고, 그래서 위 사고가 났다.
 
 🔴 **예외 — 후속 라운드·보충 지시(이미 떠 있는 워커 에 대한 재지시)는
-`herdr agent prompt` 가 아니라 `panewire prompt --uptake status-transition` 이다.**
+`herdr agent prompt` 가 아니라 `panewire prompt --from <sender-lane> --to <agent-name> --file <prompt-file> --uptake status-transition --timeout 60s` 이다.**
 정본은 §3-3 후속 라운드·보충 지시의 주입(하네스별 제출 증명 차이·rc≠0
 처리 포함)이며, `herdr pane send-text`·`send-keys` 는 복구 목적 외에 금지한다.
 이 절의 `herdr agent prompt` 직접주입은 초기 브리프 주입에만 해당한다.
@@ -192,7 +192,7 @@ cmd 는 pane transport — panewire #286, hk 3330). 2026-11-07 실측에서 다�
 함정: 대상이 이미 working이면 상태 전이로 판별 불가(JSON·status 둘 다 무증거).
 auto-compact 직후/resume 상태 세션은 주입을 조용히 삼킴 — 유실 의심 시 재주입 헤더에
 `[재주입 — 이전 미션 유실]` 명시. 에이전트→디자인 세션 방향 보고는 send 금지(사용자 타이핑과
-충돌) — 파일 인박스 `~/work/herdr-inbox/` 사용.
+충돌) — 부모 레인으로 `panewire emit --kind lane.event --lane <parent-lane> --type report --text '<report summary>'` 를 보낸다 (panewire@a702d068db071d7685d417401023b3c276089012 `emit.go:117-124,169-228`).
 
 ### 3-2. 하네스별 제출 마커 표 (측정한 것만)
 
@@ -236,16 +236,15 @@ grok 의 대기 상태(`N queued, Enter to send now`)는 공유 화면에서 페
 이 절이 정본이다(초기 브리프 주입은 `spawn.md` §4 와 이 문서 §3 절차,
 완료 통지의 pane kind 분기는 §3-1).
 
-- 후속 라운드·보충 지시의 주입은 **`panewire prompt --uptake status-transition`**
+- 후속 라운드·보충 지시의 주입은 **`panewire prompt --from <sender-lane> --to <agent-name> --file <prompt-file> --uptake status-transition --timeout 60s`**
   으로 한다. `herdr pane send-text` 와 `send-keys` 는 **본문 주입 수단으로는 복구
   목적 외에 금지**한다 — 두 명령은 컴포저에 글자만 넣을 뿐 제출도 제출 확인도
   하지 않아, 미제출 브리프가 컴포저에서 이어 붙는다(2026-09-21 실사고: send-text
   후속 주입 2건이 미제출로 병합). 큐에 적재된 payload 를 넘기는 제출 키
   (`send-keys <pane> return`)는 주입이 아니라 제출 동작이라 이 금지와 무관하다.
-- 명령 형태: `panewire prompt --from <내 레인> --to <에이전트 이름> --file <파일>
-  --uptake status-transition --timeout 60s`. `--from`·`--to`·`--file` 은 필수이고
+- 명령 형태: `panewire prompt --from <sender-lane> --to <agent-name> --file <prompt-file> --uptake status-transition --timeout 60s`. `--from`·`--to`·`--file` 은 필수이고
   `--to` 는 에이전트 이름이다. `--timeout` 기본값 2s 는 status-transition 대기에
-  부족하다 — uptake 미관측 타임아웃은 rc=3 으로 나온다.
+  부족하다 — uptake 미관측 타임아웃은 rc=3 으로 나온다. rc=5 는 필수값 누락·무효이며 CLI 가 daemon 요청 전에 종료하므로 아무것도 보내지 않는다 (panewire@a702d068db071d7685d417401023b3c276089012 `cli.go:185-205`; `wait.go:17-25`).
 - 프롬프트 파일의 첫 비어 있지 않은 줄은 `expect:` 지정이어야 하고 `name=` 또는
   `cwd=` 가 필수다(수신자 고정). `--uptake` 는 이미 `working` 인 대상을 거부한다
   (rc=6) — working 중인 pane 에는 전이가 끝난 뒤에 보낸다. 단 이 가드는 herdr
