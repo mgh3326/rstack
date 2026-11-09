@@ -314,9 +314,10 @@ All must hold for head `$H`:
 - A PR that needs a rollout carries its runbook (rollout, verification, rollback) in the PR body;
   the repo's design session orders it after the merge (the desk's while that repo has none open).
 
-**CI is not a merge requirement.** CI runs after the merge, and a red main is reverted (Scion; hk 2788
-owns the mechanics; today's actors are below). Nobody waits for CI before a merge; never replay CI on a host as a
-substitute.
+Sessions do not wait for pending post-merge CI before merging. A required check that has already failed
+on `$H` blocks any merge, including a lead merge. A run the ledger needs is waited on; never replay CI
+on a host as a substitute. Post-merge CI still runs after the merge, and a red main is reverted (Scion;
+hk 2788 owns the mechanics; today's actors are below).
 
 *Temporary (operator-desk 2026-11-03, hk 2788): ends when the hk 2788 slice 5 cutover ships (hk 2788).*
 
@@ -598,5 +599,6 @@ upload), emit READY with the local path `~/work/herdr-inbox/jobs/<job>/report.md
 Never name the hk prefix unless the newest round's sha256 matched the local report.
 Readers pick the round by the newest-round rule in `wake` loop step 8.
 After READY you are still the PR's author (`wake` §READY): fix the findings sent to you and stay
-in the pane until mergewake merges the PR and reaps it, or the desk says you are done.
+in the pane until mergewake merges the PR and reaps it, or the repo's design session, else
+operator-desk, says you are done.
 ````

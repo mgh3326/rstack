@@ -36,6 +36,7 @@ The operator opens the lead session directly. For now no other session spawns on
 - **Model choice follows `robin-mode` `roles.md` §Models and effort for in-session subagents** (`panewire resolve`); never pick a substitute when it refuses.
 - **Implementers and verifiers run no `go test` on mbp except one single test.** Locally they run only `go build`, `go vet`, gofmt and at most one `go test -run '^TestX$' -p 1 <pkg>`. The implementer hands back a red/green prediction per test, the remote commands and the mutant diffs (operator 2026-11-09).
 - **The lead pushes, then runs the tests remotely.** Package and race tests: `remote-gotest m1b|desktop <repo> <sha> -race -count=3 -run '<tests>' <pkgs>`; run Linux and macOS in parallel when platform behaviour matters. Red: the new tests run at the pushed test-only commit's sha. Mutants: copy each diff to the host, `git apply` it in a throwaway worktree at `$H` on that host and run the named tests; record the mutant caught apart from the green run on `$H`. Full or DB suites: `gh workflow run ci-any-ref.yml --repo mgh3326/<repo> -f ref=<sha> -f suite=<suite>`, then `gh run watch <id> --repo mgh3326/<repo> --exit-status`. Suites: panewire `test` (Go unit tests), `postgres` (DB suite) or `all` (full suite); handoffkeep `test` (with `-f packages='…'`), `vitest`, `build` or `all`, DB tests: see the workflow; mergewake `main` (with `-f packages='…'`); never `deploy`. Check the list with `git -C ~/work/<repo> show origin/main:.github/workflows/ci-any-ref.yml`. A run the ledger needs is §Ledger item (a) and is waited on before the merge; ordinary post-merge CI is not (§After the merge).
+- Test flags and timeout selection follows `ops` §Invariants.
 - A subagent returns an answer or a diff in its own worktree; its output is input to the lead's judgement, never a verdict by itself. The verifier never edits code (`roles.md` Rules).
 - **Review order: cheap cross-family review first.** Round 1 reviews the full PR; a later round reviews the open findings, the fix delta and its impact paths, and carries the earlier dispositions forward (`fleet-review` §Rounds). Remote tests may run beside it.
 - **The heavy same-family verifier starts only on a head the cross-family review passed.** Never start a verifier on a head that may still change (rstack#55: 6 rounds and 5 discarded verifiers, against 1-2 rounds and 0 in the 2026-11-09 trial). It runs the closed acceptance list: it satisfies each test command by checking the remote log for the revision its acceptance entry names (host, sha, exact command and result) — the pushed test-only or pre-fix sha for a baseline red entry, `$H` with that mutant's diff applied for a mutant entry, `$H` for green — and runs every other check itself; the verdict and the ledger are recorded on `$H`; it runs no `go test` on mbp beyond the single test above.
@@ -51,7 +52,14 @@ hk replaces the orchestrate store. There is no `~/.claude/orchestrate/` director
 - **The ledger lives in task comments**, and in hk reviews once hk 3037 ships.
 - State is read from hk, `gh` and git, not from the chat: after a restart, re-read the open tasks, their ledgers and the open PRs, and reattach by PR and branch.
 - Report to the operator in the operator's channel; park a decision you cannot default as a decision request (`ops` decision-request), never as a question in a pane.
-- **A step with no progress for over 30 minutes, or the same failure twice, gets one line to handoffkeep-design:** `[lead] STUCK | <what> | <tried> | <alternative A/B>`; then proceed on an alternative (operator 2026-11-09).
+- **A step with no progress for over 30 minutes, or the same failure twice, gets one blocked event to the repo's design session, else operator-desk.** The repo's design session uses `<repo>-design` (default per `decision/2026-11-10/lead-direct-merge`); when no design session is open, use `operator-desk`. Run exactly one command for the applicable receiver:
+  ```sh
+  # The repo's design session is open.
+  panewire emit --kind lane.event --lane <repo>-design --type blocked --event-id <repo>-lead-stuck-<unique-id> --text '[lead] STUCK | <what> | <tried> | <alternative A/B>'
+  # No repo design session is open.
+  panewire emit --kind lane.event --lane operator-desk --type blocked --event-id <repo>-lead-stuck-<unique-id> --text '[lead] STUCK | <what> | <tried> | <alternative A/B>'
+  ```
+  Then proceed on an alternative (operator 2026-11-09).
 
 ## Bug and incident loop
 
@@ -67,6 +75,9 @@ An incident adds a first step: contain it with the smallest reversible action, t
 ## Ledger
 
 Before any direct merge, record the three ledger results and the cross-family review as separate entries on the same head SHA `$H`:
+
+- A required check that has already failed on `$H` blocks any merge, including the lead's.
+- **The lead never ends a turn on “waiting for X.”** For a pending ledger run, keep one bounded blocking wait in the background: `timeout 20m gh run watch <id> --exit-status` or `timeout 20m gh pr checks <n> --watch`. On success, record it in the ledger; on failure, record the failure and do not merge; on timeout, record the next action, owner and trigger on the hk task (`desk` §Commitments).
 
 - (a) the tests for the changed packages pass on `$H`;
 - (b) a regression test that is red on the pre-fix code and green on `$H`, or `regression: n/a (<reason>)` for a docs/config change with no behaviour;
@@ -99,7 +110,7 @@ mergewake stops on its own once the PR is merged; there is no other marker. **A 
 
 ## PR trailers
 
-The PR body ends with the Mergewake trailers exactly as a worker's does (`wake` §Worker brief Rules): paste the spawn preamble's block when there is one, otherwise `Mergewake-Author-Family`, `Mergewake-Author-Profile`, `Mergewake-Task`, `Mergewake-Grade` and `Mergewake-Tier`. A lead PR also carries `Mergewake-Notify-Lane: lead` (`wake` §Tier, a PR opened without a worker job), so the post-merge notice reaches the lead.
+The PR body ends with the Mergewake trailers exactly as a worker's does (`wake` §Worker brief Rules). Generate them with `bin/pr-trailers --task <id> --family <family> --profile <profile> --lane lead`, using a family listed in `wake` §Rules. A lead PR also carries `Mergewake-Notify-Lane: lead` (`wake` §Tier, a PR opened without a worker job), so the post-merge notice reaches the lead.
 
 ## After the merge
 
