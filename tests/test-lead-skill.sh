@@ -49,7 +49,8 @@ REQUIRED = [
     ("lead", "## When to use", "uses", r"Uses: hotfix, incident \(장애\), root cause, urgent multi-PR work, or any goal the operator hands it without a written contract"),
     ("lead", "## When to use", "normal-flow-unchanged", r"The normal flow is unchanged: design session \(`wake`\) → spawned worker → mergewake merge"),
     # Authority.
-    ("lead", "## Authority", "owns-program-not-code", r"\*\*The lead owns the program, never the code\.\*\* In-session subagents change code\. The lead judges, briefs, keeps the ledger and lands"),
+    ("lead", "## Authority", "owns-program", r"\*\*The lead owns the program; in-session subagents change code above the small hotfix threshold\.\*\* The lead judges, briefs, keeps the ledger and lands"),
+    ("lead", "## Authority", "small-hotfix-threshold", r"The lead may write a small hotfix itself only when the product-code change \(tests excluded\) is at most 20 lines in at most 2 files and touches no `wake` §T3 split core item \(guard wiring, safety DB constraints, error paths, lock or transaction lifetime\)\. It goes through the same §Ledger with an independent in-session verifier\. Above the threshold, subagents implement as today\. Reason: the cost of brief \+ implementer \+ verifier exceeds a tiny fix\."),
     ("lead", "## Authority", "merges-directly", r"\*\*The lead merges directly under §Ledger\.\*\*"),
     ("lead", "## Authority", "design-merges-watch-revert", r"The repo's design session does not merge the lead's PRs; it merges its own repo's `watch` revert PR \(`wake` §Authority\)"),
     ("lead", "## Authority", "own-prs-include-t3-deploy-approval", r"The lead merges its own PRs directly under §Ledger, including T3 PRs and PRs that touch a `deploy_approval` path"),
@@ -122,6 +123,10 @@ REQUIRED = [
     ("lead", "## Ledger", "merge-command", r"`gh pr merge <n> --squash --match-head-commit \"\$H\"`"),
     ("lead", "## Ledger", "merge-chained-with-and", r"\*\*Gate the merge in the command\.\*\* Chain `git fetch`, the ancestor check, the leak scan, `gh pr ready` and `gh pr merge --match-head-commit` with `&&` only, never `;` \(panewire#360, where a `;` chain merged past a failed freshness check\)"),
     ("lead", "## Ledger", "record-line", r"`direct-merge pr=<n> head=<H> evidence=<…>`"),
+    # Turn endings.
+    ("lead", "## Turn endings", "turn-endings-unattended", r"A lead runs unattended; it does not receive the spawn preamble\. A message with no tool call ends the turn, and nothing continues until something wakes this pane"),
+    ("lead", "## Turn endings", "turn-endings-do-not-end-with", r"\*\*Do not end a turn with\*\* a summary that announces the next step, an offer to carry on, a list of decisions none of which blocks the work, or a wait nothing will wake"),
+    ("lead", "## Turn endings", "turn-endings-only-when", r"\*\*End a turn only when\*\* the goal is met, a decision is the operator's \(§Authority\), or a named signal will wake this pane"),
     # hk 3749 (handoffkeep-design 2026-11-10): the merged transition carries refs.pr for the R12 deploy record.
     ("lead", "## After the merge", "merged-transition-refs-pr", r"`handoffkeep tasks transition <id> --to merged --pr <PR URL> --head-sha <H>`"),
     # PR trailers.
@@ -168,6 +173,7 @@ FORBIDDEN = {
     "never-runs-t3-work": re.compile(r"(?i)never runs T3 work"),
     "never-merges-deploy-approval": re.compile(r"(?i)never merges a PR that touches a `deploy_approval` path"),
     "watch-revert-merged-by-desk": re.compile(r"(?i)(?:revert PR|revert that .*watch).{0,100}merged by the desk"),
+    "writes-no-product-code": re.compile(r"(?i)\b(?:writes no product code(?: itself)?|never the code)\b"),
 }
 FLEET_FORBIDDEN = {
     "never-skip-medium-low-self-dismiss": re.compile(r"(?i)medium or low findings in this list (?:can be|may be) self-dismissed"),
@@ -213,6 +219,7 @@ for name, injected in [
     ("never-runs-t3-work-injected", "- The lead never runs T3 work.\n"),
     ("never-merges-deploy-approval-injected", "- The lead never merges a PR that touches a `deploy_approval` path.\n"),
     ("watch-revert-merged-by-desk-injected", "- A revert PR that `watch` opens is merged by the desk.\n"),
+    ("writes-no-product-code-injected", "- The lead writes no product code itself.\n"),
 ]:
     expect_red(name, check,
                {**docs, "lead": docs["lead"].replace("## Store", injected + "\n## Store", 1)})
@@ -254,6 +261,8 @@ SUBSTITUTED = [
     ("carryover-any-interdiff", "only when the interdiff is P3-only prose", "when the interdiff is small"),
     ("carryover-unrecorded", "the ledger records `carryover=<old head>`", "the ledger records nothing"),
     ("final-head-partial", "Ledger items (a) to (c) are still all recorded on the final head", "Ledger item (a) is recorded on the final head"),
+    ("small-hotfix-lines-limit", "at most 20 lines in at most 2 files", "at most 50 lines in at most 2 files"),
+    ("small-hotfix-t3-core", "touches no `wake` §T3 split core item", "touches `wake` §T3 split core items"),
 ]
 for label, old_text, new_text in SUBSTITUTED:
     assert old_text in docs["lead"], f"fixture: substitution {label} text not in the lead skill"
