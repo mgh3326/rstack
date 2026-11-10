@@ -77,10 +77,11 @@ anything here. Unset or missing is normal — the abstract rules below apply alo
   (`gh … view|list|checks`, `git fetch`, `handoffkeep … show|get|list|export`,
   `panewire … status|list|find|resolve`), a test or build rerun after an environment
   failure, `git merge origin/<base>` on your own branch, and a replay of the same
-  saved spawn request after a lost response that is not `failed` or `retryable`
-  (on `failed` or `retryable` never replay; `wake` §On spawn failure). The no-retry
-  rules in `wake` §On spawn failure, `desk` §Spawn failure and `deploy.md` cover only
-  what they name: a new spawn attempt and the deploy command.
+  saved spawn request after a lost response that is not `failed`, `retryable`,
+  `reconciling` or `deadline_exceeded` (on those statuses never replay; `wake`
+  §The loop step 6 and §On spawn failure). The no-retry rules in `wake`
+  §On spawn failure, `desk` §Spawn failure and `deploy.md` cover only what they name:
+  a new spawn attempt and the deploy command.
 
 ## Routing table
 
