@@ -122,6 +122,8 @@ REQUIRED = [
     ("lead", "## Ledger", "merge-command", r"`gh pr merge <n> --squash --match-head-commit \"\$H\"`"),
     ("lead", "## Ledger", "merge-chained-with-and", r"\*\*Gate the merge in the command\.\*\* Chain `git fetch`, the ancestor check, the leak scan, `gh pr ready` and `gh pr merge --match-head-commit` with `&&` only, never `;` \(panewire#360, where a `;` chain merged past a failed freshness check\)"),
     ("lead", "## Ledger", "record-line", r"`direct-merge pr=<n> head=<H> evidence=<…>`"),
+    # hk 3749 (handoffkeep-design 2026-11-10): the merged transition carries refs.pr for the R12 deploy record.
+    ("lead", "## After the merge", "merged-transition-refs-pr", r"`handoffkeep tasks transition <id> --to merged --pr <PR URL> --head-sha <H>`"),
     # PR trailers.
     ("lead", "## PR trailers", "trailers-home", r"The PR body ends with the Mergewake trailers exactly as a worker's does \(`wake` §Worker brief Rules\)"),
     ("lead", "## PR trailers", "notify-lane", r"carries `Mergewake-Notify-Lane: lead`"),
