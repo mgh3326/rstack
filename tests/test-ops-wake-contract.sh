@@ -225,6 +225,10 @@ REQUIRED = [
     ("ops", "## Escalate a decision", "ops-esc-cites-panewire-doc", r"`docs/r21-lane-event\.md` \(panewire@e1f9f39, lines 100-119\)"),
     ("ops", "## Escalate a decision", "ops-safe-default", r"If the default is safe .{0,80}continue with it .{0,60}Otherwise stop and wait for the reply"),
     # Standing worker rules folded from the retired fleet-tooling block (b953).
+    ("wake", "## Report discipline", "report-communicating-clearly", r"Communicating clearly: readers \(design session, operator\) did not see the tool calls; lead with the result; short sentences, one point each, active voice, same word for the same thing\."),
+    ("wake", "## Report discipline", "report-korean-clause", r"Operator-facing Korean follows the same principles \(hk:doc `policy/operator-facing-korean`\); identifiers and commands stay as they are\."),
+    ("wake", "## Report discipline", "report-machine-formats-exempt", r"Machine-read one-line formats \(READY lines, `\[job\] ESC \| …`, trailers, `Commitments:` lines\) are exempt\."),
+    ("wake", "## Acceptance (closed contract)", "brief-stop-and-report", r"When the Acceptance list is met and checked, stop and report\. Do not add features, files, docs or refactors the brief did not ask for; list them under `noticed but not touched`\."),
     ("wake", "## Rules", "b953-secrets", r"Never read, print or copy env, token or credential files, never print env vars"),
     ("wake", "## Rules", "b953-skill-roots", r"Reading skill files under an installed skill root \(rstack `install/sets\.json` `scan_dirs`, e\.g\. `~/\.codex/skills`, `~/\.claude/skills`, `~/\.agents/skills`\) is allowed\."),
     ("wake", "## Rules", "b953-agent-data", r"Never read auth, config, session or history files in an agent home directory, nor `~/\.claude\.json`\."),
