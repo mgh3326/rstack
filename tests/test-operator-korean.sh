@@ -14,6 +14,7 @@ key = r"policy/operator-facing-korean"
 rows = [
     ("wake-settle", "skills/wake/SKILL.md", "## Settle before spawning"),
     ("wake-brief-rules", "skills/wake/SKILL.md", "## Rules"),
+    ("wake-report-discipline", "skills/wake/SKILL.md", "## Report discipline"),
     ("ops-invariants", "skills/ops/SKILL.md", "## Invariants (all references)"),
     ("decision-request", "skills/ops/references/decision-request.md", "## 운영자 결정 요청"),
     ("desk-decisions", "skills/desk/SKILL.md", "## Decisions"),
