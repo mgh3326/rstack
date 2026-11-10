@@ -117,7 +117,7 @@ The PR body ends with the Mergewake trailers exactly as a worker's does (`wake` 
 - **mergewake watch handles post-merge CI, bisect and revert.** Do not wait for CI before merging (`wake` §Merge gate). A test run the ledger needs (§Subagents) is not that CI: it is item (a) and is waited on before the merge.
 - **Before a direct merge, confirm that `mergewake watch` covers the repository.** If `watch` is not running, nothing opens the revert and main stays red (`wake` §Merge gate); if you cannot confirm it, escalate to the repo's design session, else operator-desk (`ops` decision-request) instead of merging.
 - The repo's design session merges a revert PR that `watch` opens; operator-desk does so while that repo has no design session open.
-- Close the hk task after the merge, with the `direct-merge` line already on it.
+- Close the hk task after the merge, with the `direct-merge` line already on it, by a transition that carries the PR URL: `handoffkeep tasks transition <id> --to merged --pr <PR URL> --head-sha <H>`. Without `refs.pr` the deploy record (`ops` deploy R12 `included_prs`) cannot move the task to `deployed`, and a `merged` task is settled and cannot be patched later (hk 3739, 3746).
 
 ## Briefs to subagents
 
