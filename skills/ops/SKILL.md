@@ -48,11 +48,10 @@ anything here. Unset or missing is normal — the abstract rules below apply alo
   (`watching.md`). A missing event is a task for panewire, not a loop.
 - **Before ending a turn, name the signal that will wake this pane** (a pushed event,
   a bounded blocking wait in the background, a scheduled wake); if there is none,
-  hold one bounded wait (`watching.md`). If nothing will wake the pane, the wait is
-  not armed: run one bounded blocking wait in the background (for example
-  `timeout 20m gh pr checks <n> --watch`, or `panewire inbox wait --lane <lane> --timeout 20m`)
-  and act on its exit. A wait that times out twice becomes a `blocked` event to the
-  owner lane, not a third wait.
+  run one bounded blocking wait in the background (for example
+  `timeout 20m gh pr checks <n> --watch`, or `panewire inbox wait --lane <lane> --timeout 11m`;
+  `watching.md`) and act on its exit. A wait that times out twice becomes a `blocked`
+  event to the owner lane, not a third wait.
 - **One launcher per task.** Use `panewire spawn`; a network retry replays the same saved request and key. Never create another live job or override unresolved ownership (a fresh duplicate claim exits 74). Quota is `panewire quota`; review and post-merge cleanup are
   `mergewake`.
 - **Every packet and brief carries `comms-contract: v1`** (`relay.md` §3-1).
@@ -78,9 +77,10 @@ anything here. Unset or missing is normal — the abstract rules below apply alo
   (`gh … view|list|checks`, `git fetch`, `handoffkeep … show|get|list|export`,
   `panewire … status|list|find|resolve`), a test or build rerun after an environment
   failure, `git merge origin/<base>` on your own branch, and a replay of the same
-  saved spawn request after a lost response. The no-retry rules in `wake`
-  §On spawn failure, `desk` §Spawn failure and `deploy.md` cover only what they name:
-  a new spawn attempt and the deploy command.
+  saved spawn request after a lost response whose status is not `retryable`
+  (on `retryable` it is not run; `wake` §On spawn failure). The no-retry rules in
+  `wake` §On spawn failure, `desk` §Spawn failure and `deploy.md` cover only what
+  they name: a new spawn attempt and the deploy command.
 
 ## Routing table
 
