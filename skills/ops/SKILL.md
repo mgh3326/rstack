@@ -46,6 +46,12 @@ anything here. Unset or missing is normal — the abstract rules below apply alo
   `git ls-remote` before acting on it.
 - **No polling loops.** Wait for the pushed event or one bounded blocking wait
   (`watching.md`). A missing event is a task for panewire, not a loop.
+- **Before ending a turn, name the signal that will wake this pane** (a pushed event,
+  a bounded blocking wait in the background, a scheduled wake); if there is none,
+  run one bounded blocking wait in the background (for example
+  `timeout 20m gh pr checks <n> --watch`, or `panewire inbox wait --lane <lane> --timeout 11m`;
+  `watching.md`) and act on its exit. A wait that times out twice becomes a `blocked`
+  event to the owner lane, not a third wait.
 - **One launcher per task.** Use `panewire spawn`; a network retry replays the same saved request and key. Never create another live job or override unresolved ownership (a fresh duplicate claim exits 74). Quota is `panewire quota`; review and post-merge cleanup are
   `mergewake`.
 - **Every packet and brief carries `comms-contract: v1`** (`relay.md` §3-1).
@@ -67,6 +73,14 @@ anything here. Unset or missing is normal — the abstract rules below apply alo
   e.g. `go test -p 2 ./<changed pkg>/...` or the touched pytest files. Use `remote-gotest` where the repo
   has it. DB and full suites run in CI (`ci-any-ref`). A brief adds no host rules of its own. On macOS
   keep `-p 2`: wider parallelism stalls in syspolicyd.
+- **Steps that need no approval and may be repeated:** read-only commands
+  (`gh … view|list|checks`, `git fetch`, `handoffkeep … show|get|list|export`,
+  `panewire … status|list|find|resolve`), a test or build rerun after an environment
+  failure, `git merge origin/<base>` on your own branch, and a replay of the same
+  saved spawn request after a lost response that is not `failed` or `retryable`
+  (on `failed` or `retryable` never replay; `wake` §On spawn failure). The no-retry
+  rules in `wake` §On spawn failure, `desk` §Spawn failure and `deploy.md` cover only
+  what they name: a new spawn attempt and the deploy command.
 
 ## Routing table
 
@@ -108,6 +122,7 @@ panewire emit --kind lane.event --lane <parent-lane> --type decision \
   by default) unless a later lane event from the pane resumes the job first. Only READY or DONE
   completes a job. Giving up is `panewire escalate <job> --question '<why>'`, not an ESC. Source: panewire
   `docs/r21-lane-event.md` (panewire@e1f9f39, lines 100-119).
+- **The parent's answer names the approved action in words** (for example "Yes: merge base and re-run the two failed tests"), never a bare "go".
 - The parent lane that needs the operator records it first (`decision-request.md`).
 
 ## Who does what
