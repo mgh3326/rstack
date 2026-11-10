@@ -497,6 +497,9 @@ original guards. A temporary observation uses `panewire wait --agent NAME --stat
   verified is marked UNVERIFIED.
 - Claim an absence only after an exhaustive search. Timestamps go stale — re-check against now.
 - Make claims countable (n/m, head SHA, run id). Prose lets "cited" pass as "verified".
+- Communicating clearly: readers (design session, operator) did not see the tool calls; lead with the result; short sentences, one point each, active voice, same word for the same thing.
+- Operator-facing Korean follows the same principles (hk:doc `policy/operator-facing-korean`); identifiers and commands stay as they are.
+- Machine-read one-line formats (READY lines, `[job] ESC | …`, trailers, `Commitments:` lines) are exempt.
 
 ## Worker brief
 
@@ -527,6 +530,7 @@ subagent helps. Do not spawn other workers for this task; review findings come b
 This section is the whole contract. Copy it verbatim into the PR body under the same
 heading — reviewers receive the PR body. Findings are judged by `fleet-review` §Closed
 contract. Do not widen scope to answer a finding.
+When the Acceptance list is met and checked, stop and report. Do not add features, files, docs or refactors the brief did not ask for; list them under `noticed but not touched`.
 
 ## Report
 - noticed but not touched: <items, or "none">
