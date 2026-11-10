@@ -66,7 +66,8 @@ REQUIRED = [
     ("lead", "## Subagents", "model-choice-home", r"\*\*Model choice follows `robin-mode` `roles\.md` §Models and effort for in-session subagents\*\*"),
     # Subagents: local vs remote tests (operator 2026-11-09; hk 3656 round 1 fixes).
     # New rows are literal text through L() (re.escape), so a pinned `.` or `|` cannot match another character.
-    ("lead", "## Subagents", "no-local-go-test", L("**Implementers and verifiers run no `go test` on the lead's host except one single test.** Locally they run only `go build`, `go vet`, gofmt and at most one `go test -run '^TestX$' -p 1 <pkg>`")),
+    ("lead", "## Subagents", "lead-test-host-rule-one-home", L("**The test host rule is `ops` §Invariants (the one home).** On a host the spawn preamble forbids, implementers and verifiers run no `go test` at all; on any other host they run at most the changed packages (`ops` §Invariants).")),
+    ("lead", "## Subagents", "no-local-go-test", L("The lead's own choice to keep local runs to one single test is a load limit for the lead's host, not a second host rule: say so in the subagent brief when you apply it. Locally they run only `go build`, `go vet`, gofmt and at most one `go test -run '^TestX$' -p 1 <pkg>`")),
     ("lead", "## Subagents", "implementer-hands-back-predictions", L("The implementer hands back a red/green prediction per test, the remote commands and the mutant diffs (operator 2026-11-09)")),
     ("lead", "## Subagents", "lead-runs-remote", L("**The lead pushes, then runs the tests remotely.**")),
     ("lead", "## Subagents", "remote-gotest-explicit-args", L("Package and race tests: `remote-gotest <host> <repo> <sha> -race -count=3 -run '<tests>' <pkgs>`; run Linux and macOS in parallel when platform behaviour matters")),
@@ -168,6 +169,7 @@ FORBIDDEN = {
     "never-runs-t3-work": re.compile(r"(?i)never runs T3 work"),
     "never-merges-deploy-approval": re.compile(r"(?i)never merges a PR that touches a `deploy_approval` path"),
     "watch-revert-merged-by-desk": re.compile(r"(?i)(?:revert PR|revert that .*watch).{0,100}merged by the desk"),
+    "second-test-rule": re.compile(r"\*\*Implementers and verifiers run no `go test` on the lead's host except one single test\.\*\*"),
 }
 FLEET_FORBIDDEN = {
     "never-skip-medium-low-self-dismiss": re.compile(r"(?i)medium or low findings in this list (?:can be|may be) self-dismissed"),
@@ -213,6 +215,7 @@ for name, injected in [
     ("never-runs-t3-work-injected", "- The lead never runs T3 work.\n"),
     ("never-merges-deploy-approval-injected", "- The lead never merges a PR that touches a `deploy_approval` path.\n"),
     ("watch-revert-merged-by-desk-injected", "- A revert PR that `watch` opens is merged by the desk.\n"),
+    ("second-test-rule-injected", "- **Implementers and verifiers run no `go test` on the lead's host except one single test.**\n"),
 ]:
     expect_red(name, check,
                {**docs, "lead": docs["lead"].replace("## Store", injected + "\n## Store", 1)})
