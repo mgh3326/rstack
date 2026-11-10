@@ -130,6 +130,8 @@ REQUIRED = [
     ("lead", "## Turn endings", "turn-endings-unattended", r"A lead runs unattended; it does not receive the spawn preamble\. A message with no tool call ends the turn, and nothing continues until something wakes this pane"),
     ("lead", "## Turn endings", "turn-endings-do-not-end-with", r"\*\*Do not end a turn with\*\* a summary that announces the next step, an offer to carry on, a list of decisions none of which blocks the work, or a wait nothing will wake"),
     ("lead", "## Turn endings", "turn-endings-only-when", r"\*\*End a turn only when\*\* the goal is met, a decision is the operator's \(§Authority\), or a named signal will wake this pane"),
+    # hk 3860 (decision/2026-11-10/wake-vs-lead item 4): a non-converging PR is a lead exception.
+    ("lead", "## When to use", "non-converging-pr-exception", r"\*\*Exception — a non-converging PR:\*\* a PR whose review did not converge in 3 head rounds \(`fleet-review` §Rounds\) comes here although it has a brief"),
     # hk 3749 (handoffkeep-design 2026-11-10): the merged transition carries refs.pr for the R12 deploy record.
     ("lead", "## After the merge", "merged-transition-refs-pr", r"`handoffkeep tasks transition <id> --to merged --pr <PR URL> --head-sha <H>`"),
     # PR trailers.
