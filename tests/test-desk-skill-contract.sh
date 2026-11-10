@@ -52,7 +52,8 @@ REQUIRED = [
     ("desk", "## Resume", "hk-is-truth", r"Local agent memory is not the source of truth; hk is \(hk 2781\)"),
     ("desk", "## Before `tasks add`", "search-first", r"Search open and recent tasks first"),
     ("desk", "## Before `tasks add`", "retry-same-task", r"A retry is a new attempt on the same task, never a new task"),
-    ("desk", "## Delegation threshold", "threshold", r"Investigation that needs more than about 3 tool calls goes to a worker or a background subagent, with the result written to an hk doc"),
+    ("desk", "## Delegation threshold", "threshold", r"Investigation that would keep the desk off its queue for more than about ten minutes, or that needs reading across several files or logs, goes to a background subagent \(or a worker when it needs another host\), with the result written to an hk doc"),
+    ("desk", "## Delegation threshold", "known-target-lookups", r"Short lookups whose target is known stay with the desk"),
     ("desk", "## Spawn failure", "one-fix", r"one fix attempt on the same task"),
     ("desk", "## Spawn failure", "file-and-stop", r"If it still fails, file a task against the tool and stop"),
     ("desk", "## Spawn failure", "no-hopping", r"No host or model hopping, and no new task per attempt"),
@@ -84,6 +85,13 @@ REQUIRED = [
     ("robin", "## Where each rule lives", "desk-home", r"\| `desk` \(rstack\) \|"),
 ]
 
+# Rules a line in desk must never state.
+# (doc, section heading or None, row name, pattern on the flattened scope, injected mutant text)
+FORBIDDEN = [
+    ("desk", "## Delegation threshold", "three-tool-calls", r"3 tool calls",
+     "Investigation that needs more than about 3 tool calls goes to a worker.\n"),
+]
+
 
 def check_sections(desk):
     positions = [desk.find(f"\n{h}\n") for h in SECTIONS]
@@ -108,6 +116,9 @@ def check_rows(d):
     for doc, heading, row, pattern in REQUIRED:
         scope = flat(section(d[doc], heading) if heading else d[doc])
         assert re.search(pattern, scope), f"{doc}: row '{row}' missing or weakened"
+    for doc, heading, row, pattern, _ in FORBIDDEN:
+        scope = flat(section(d[doc], heading) if heading else d[doc])
+        assert not re.search(pattern, scope), f"{doc}: forbidden rule '{row}' present"
 
 
 def check_sets(sets):
@@ -135,6 +146,14 @@ def red(label, d, s=sets):
 count = 0
 for doc, heading, row, pattern in REQUIRED:
     red(f"row-{row}-deleted", {**docs, doc: delete_row(docs[doc], heading, pattern, row)})
+    count += 1
+
+for doc, heading, row, pattern, injected in FORBIDDEN:
+    if heading:
+        mutant = docs[doc].replace(f"{heading}\n", f"{heading}\n{injected}\n", 1)
+    else:
+        mutant = docs[doc] + f"\n{injected}\n"
+    red(f"forbidden-{row}-injected", {**docs, doc: mutant})
     count += 1
 
 desk = docs["desk"]
