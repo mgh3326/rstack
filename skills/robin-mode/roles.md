@@ -43,6 +43,6 @@ panewire resolve --role <reviewer|judge> --builder-family <author family>
 - If `resolve` refuses (`role_exhausted_wait`, `role_exhausted_escalate`, or no policy and no cache for `lead`/`verifier`), do **not** pick a substitute model or family for the subagent. What to do depends on the role:
   - `lead`, `consult`, `verifier`: do not start that work on any other model. Wait on `role_exhausted_wait`; escalate to the parent lane on `role_exhausted_escalate` or a missing policy.
   - `reviewer`, `judge`: escalate. Never do it yourself — your own check is not independent.
-  - `explorer`, `implementer`: the one allowed fallback is your own session (no new model choice); do the step there and say so in the result. This fallback does not apply to a lead, which writes no product code (`lead` §Authority).
+  - `explorer`, `implementer`: the one allowed fallback is your own session (no new model choice); do the step there and say so in the result. This fallback does not apply to a lead: a lead writes product code only for a small hotfix within the threshold in `lead` §Authority, and otherwise an implementer subagent does.
 - Effort steps, the `max` rung, grade and verifier rules are hk `policy/model-routing`; do not restate them in a brief.
 - No `panewire` on the host: use your own session model for exploration only, and say so in the result.

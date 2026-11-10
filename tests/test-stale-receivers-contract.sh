@@ -30,7 +30,7 @@ REQUIRED = [
     ("deploy", "join-receiver", r"레포 디자인 세션, 없으면 operator-desk로 전달한 경로/시각"),
     ("wake", "ready-receiver", r"repo's design session, else operator-desk, says you are done"),
     ("roles", "lead-in-session-only", r"A lead uses in-session subagents only, as `lead` §Subagents specifies; it never delegates or spawns workers"),
-    ("roles", "lead-excluded-from-self-fallback", r"This fallback does not apply to a lead, which writes no product code"),
+    ("roles", "lead-excluded-from-self-fallback", r"This fallback does not apply to a lead: a lead writes product code only for a small hotfix within the threshold in `lead` §Authority"),
     ("lead", "stuck-event-design", r"panewire emit --kind lane\.event --lane <repo>-design --type blocked --event-id <repo>-lead-stuck-<unique-id> --text '\[lead\] STUCK \| <what> \| <tried> \| <alternative A/B>'"),
     ("lead", "stuck-event-fallback", r"panewire emit --kind lane\.event --lane operator-desk --type blocked --event-id <repo>-lead-stuck-<unique-id> --text '\[lead\] STUCK \| <what> \| <tried> \| <alternative A/B>'"),
     ("lead", "stuck-design-lane-source", r"The repo's design session uses `<repo>-design` \(default per `decision/2026-11-10/lead-direct-merge`\)"),
@@ -45,6 +45,7 @@ FORBIDDEN = [
     ("wake", "old-ready-desk", r"or the desk says you are done"),
     ("roles", "lead-spawns", r"A lead delegates and spawns"),
     ("roles", "lead-spawn-worker-claim", r"Lead[^\n]{0,100}spawns workers"),
+    ("roles", "lead-writes-no-code-absolute", r"a lead, which writes no product code"),
     ("lead", "hardcoded-stuck-lane", r"handoffkeep" + r"-design"),
     ("lead", "handwritten-trailer-list", r"otherwise `Mergewake-Author-Family`"),
 ]
@@ -74,6 +75,7 @@ INJECTIONS = {
     "old-ready-desk": "or the desk says you are done",
     "lead-spawns": "A lead delegates and spawns under robin-mode.",
     "lead-spawn-worker-claim": "Lead delegates and spawns workers.",
+    "lead-writes-no-code-absolute": "This fallback does not apply to a lead, which writes no product code.",
     "hardcoded-stuck-lane": "handoffkeep-" + "design",
     "handwritten-trailer-list": "otherwise `Mergewake-Author-Family`",
 }
