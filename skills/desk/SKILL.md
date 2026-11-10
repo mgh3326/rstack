@@ -95,9 +95,11 @@ done | jq -r '.tasks[] | select(.title | test("<keyword>"; "i")) | "\(.id) \(.st
 
 ## Delegation threshold
 
-**Investigation that needs more than about 3 tool calls goes to a worker or a background subagent,
-with the result written to an hk doc** (`handoffkeep doc put --key research/<date>/<slug> --file <path>`).
-Read the doc, not the raw evidence, and judge from there.
+**Investigation that would keep the desk off its queue for more than about ten minutes, or that
+needs reading across several files or logs, goes to a background subagent (or a worker when it needs
+another host), with the result written to an hk doc** (`handoffkeep doc put --key research/<date>/<slug> --file <path>`).
+Short lookups whose target is known stay with the desk. Read the doc, not the raw evidence, and judge
+from there.
 
 The desk keeps deploy orders, operator decisions and spawn-failure handling wherever no design
 session is open for that project. The repo's design session merges its `watch` revert PR, or the desk
