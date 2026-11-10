@@ -279,8 +279,11 @@ FORBIDDEN = [
     ("wake", None, "esc-ends-job", r"(?i)ESC (?:ends|completes|closes) the (?:current )?job"),
     ("ops", None, "ops-esc-ends-job", r"(?i)ESC (?:ends|completes|closes) the (?:current )?job"),
     ("ops", None, "test-any-host", r"(?i)test only what you changed, on any host"),
-    # hk 3000: quota guidance goes through `panewire quota`; `pacelever reps` and the real-HOME lines stay.
+    # hk 3000: quota guidance goes through `panewire quota`. hk 3779: pacelever is retired (2026-11-10,
+    # hk:doc deploy/2026-11-10/pacelever-retirement-cutover); reps moved to `panewire reps`.
     ("wake", None, "wake-no-pacelever-quota", r"pacelever (?:--json|refresh)"),
+    ("wake", None, "wake-no-pacelever", r"pacelever"),
+    ("ops", None, "ops-no-pacelever", r"pacelever"),
     ("spawn", None, "spawn-no-pacelever-quota", r"pacelever (?:--json|refresh)"),
     ("consult", None, "consult-no-builder-family", r"--builder-family"),
     # hk 3427: no loop step tells a design session to act on READY.
@@ -440,6 +443,8 @@ injections = [
     ("wake-esc-ends-job", "wake", "## Escalation and notifications\n", "## Escalation and notifications\n\n- ESC ends the job.\n"),
     ("ops-esc-completes-job", "ops", "## Escalate a decision\n", "## Escalate a decision\n\nAn ESC completes the job.\n"),
     ("ops-test-any-host-restored", "ops", "## Invariants (all references)\n", "## Invariants (all references)\n\n- Test only what you changed, on any host.\n"),
+    ("wake-pacelever-reps-readded", "wake", "## Rules\n", "## Rules\n\nCount real use with `pacelever reps`.\n"),
+    ("ops-pacelever-home-readded", "ops", "## Routing table\n", "## Routing table\n\n- `pacelever` uses the real HOME.\n"),
     ("wake-pacelever-json-readded", "wake", "## The loop\n", "## The loop\n\nRun `pacelever --json` for quota.\n"),
     ("spawn-pacelever-refresh-readded", "spawn", "## 4. 기동·주입·감시\n", "## 4. 기동·주입·감시\n\n- 낡은 풀은 `pacelever refresh <풀>`.\n"),
     ("wake-role-builder-readded", "wake", "## Rules\n", "## Rules\n\nSpawn with `panewire spawn --role builder --lane x`.\n"),

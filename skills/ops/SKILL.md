@@ -55,7 +55,7 @@ anything here. Unset or missing is normal — the abstract rules below apply alo
 - **A missing target is not respawned automatically** — report the failure and
   escalate to the operator.
 - **Isolated HOME/XDG is for test and probe runs only.** Spawn, placement and delivery
-  commands (`pacelever`, `panewire`) use the real HOME.
+  commands (`panewire`) use the real HOME.
 - **A test harness that does a real spawn stops its completion watchers before removing
   its temp root**; signal only pids it started.
 - **A clock time in a record comes from `date` or the server, never from your head.** Any time written

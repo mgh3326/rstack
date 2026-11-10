@@ -96,7 +96,7 @@ operator-desk; `ops` deploy), or decisions (ask the operator).
 **Grade** (S+..C) is the reasoning difficulty, a separate axis. **Do not lower a grade
 because of quota** — if no pool can supply it, stop and report. Effort is an argument
 (`--effort`), not part of the profile name; count real use by `launch_profile`
-(`pacelever reps`), not by the normalised pool column. Grade is a worker axis; lead and consult
+(`panewire reps`), not by the normalised pool column. Grade is a worker axis; lead and consult
 admission and effort are hk `policy/model-routing`. A hard single PR raises the grade: it is an
 implementer with a higher grade, not a lead (`robin-mode` roles.md).
 
@@ -573,7 +573,7 @@ contract. Do not widen scope to answer a finding.
 - Comparison or mutant copies come from `git clone` or `git worktree add`, never `cp -R` of a
   linked worktree.
 - Isolated HOME/XDG is for test and probe runs only; spawn, placement and delivery commands
-  (`pacelever`, `panewire`) run with the real HOME.
+  (`panewire`) run with the real HOME.
 - Never ask a question in this pane — no confirmation prompt, no AskUserQuestion or other
   interactive chooser; nobody sees it and it blocks silently. On a decision emit
   `panewire emit --kind lane.event --lane <parent-lane> --type decision --event-id <job>-decision-<n> --text '[<job>] ESC | <question> | options: <A>/<B> | default: <A>'`
