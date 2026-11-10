@@ -106,7 +106,11 @@ their dispositions in the reviewer's context and an instruction not to reopen th
 the PR needs (for example correctness and state-risk on `blocking[].paths`) runs in the same
 round; lenses and transport retries are not extra rounds. **A round count never waives an open
 critical/high.** A third round is a signal to re-diagnose the cause or re-scope the PR (the repo's
-design session, else operator-desk, decides), not an approval line. A change-caused defect found with new evidence is not dismissed
+design session, else operator-desk, decides), not an approval line. **A PR whose review does not
+converge in 3 head rounds (a new critical/high on each) goes to the lead:** the repo's design session,
+else operator-desk, starts no fourth fix round and hands the PR, its open findings and the brief to a
+lead (`lead` skill; the operator opens the session). mergewake's ESC after the third round is that
+signal (hk:doc `decision/2026-11-10/wake-vs-lead` item 4). A change-caused defect found with new evidence is not dismissed
 only because it lies outside the delta.
 
 ## Independence

@@ -26,6 +26,7 @@ REQUIRED = [
     ("fleet", "critical-high-receiver", r"on every other PR, the repo's design session judges, or operator-desk while that repo has none open"),
     ("fleet", "escalation-receiver", r"ESC to the repo's design session, else operator-desk"),
     ("fleet", "round-receiver", r"repo's design session, else operator-desk, decides"),
+    ("fleet", "non-converging-pr-to-lead", r"A PR whose review does not converge in 3 head rounds \(a new critical/high on each\) goes to the lead:\*\* the repo's design session, else operator-desk, starts no fourth fix round and hands the PR, its open findings and the brief to a lead"),
     ("fleet", "reviewer-family-receiver", r"checks them all, the repo's design session, else operator-desk, does"),
     ("deploy", "join-receiver", r"레포 디자인 세션, 없으면 operator-desk로 전달한 경로/시각"),
     ("wake", "ready-receiver", r"repo's design session, else operator-desk, says you are done"),

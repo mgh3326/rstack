@@ -188,6 +188,9 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    that passes presence and the quota gate; unknown evidence fails closed. Do not pick a model
    from a recommend list. `panewire quota status --json` shows quota; `panewire quota refresh <pool>` re-measures
    a stale pool. An explicit `-m` or `--host NAME` needs `--override-reason`, which is recorded.
+   Grade A work on state machines, ledgers, idempotency or data integrity runs on a strong profile, not
+   a waste-tier pick: until panewire can express this on the task, pass an explicit `-m <profile>` with
+   `--override-reason` (hk:doc `decision/2026-11-10/wake-vs-lead` item 3).
 5. **Preview, then spawn** (`ops` spawn). Spawn only tickets with no unlanded blocker. Later tickets
    are spawned when their blockers merge, by whichever session is open (the design session if still
    open, otherwise the desk).
@@ -445,6 +448,11 @@ original guards. A temporary observation uses `panewire wait --agent NAME --stat
 - **Every instruction maps 1:1 to an observable acceptance check** (`<command>` → expected
   output). Re-read the brief backwards: an instruction without a check is either given one
   or deleted. Small tasks need this most — nobody re-reads them.
+- **A brief settles every design choice before spawn.** "Your choice; say which in the PR" is allowed
+  only for a choice that cannot change correctness (naming, file layout). A state transition, a binding
+  or authority rule, an idempotency key or a data invariant is decided in §Settle before spawning and
+  written into Desired (hk:doc `decision/2026-11-10/wake-vs-lead` item 2: a brief that left such a
+  design to the worker took 4 head rounds and moved to the lead).
 - **The acceptance list is a closed contract.** It is what the reviewer judges
   (`fleet-review` §Closed contract), and the worker copies it into the PR body. Anything the
   brief author wants checked goes in it before spawn, not into a later review round.
