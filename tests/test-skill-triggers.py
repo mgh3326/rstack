@@ -12,6 +12,7 @@ FIXTURES = {
     "tdd": ["bug fixes", "regression test"],
     "desk": ["desk", "commitment", "resume", "compaction", "tasks add", "spawn failed"],
     "lead": ["lead", "hotfix", "핫픽스", "장애"],
+    "fleet-policy": ["fleet-policy", "policy session", "정책 세션", "experiment", "실험", "catalog"],
 }
 CAP = 1000  # Keeps descriptions comfortably scannable across harness skill routers.
 

@@ -42,6 +42,7 @@ operator-desk; `ops` deploy), or decisions (ask the operator).
   that lane as owner (§The loop step 5).
 - **Worker:** implements and reports. It never merges, deploys, or touches
   brokers, live servers, secrets or migrations.
+- **fleet-policy session:** settles cross-repo policy and experiments, then hands code to the owning design session; it never merges or deploys (`fleet-policy` §Authority). Its recorded decisions bind design sessions for `policy/model-routing`, `policy/model-families` and `policy/quota-stop`.
 - **Lead** (opened by the operator, follows the `lead` skill): the only session that directly merges
   its own PRs, under `lead` §Ledger, including T3 and `deploy_approval` PRs. It never deploys or
   performs the live mutation. The repo's design session orders the rollout, or operator-desk while
