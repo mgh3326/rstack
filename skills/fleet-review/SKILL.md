@@ -106,12 +106,26 @@ their dispositions in the reviewer's context and an instruction not to reopen th
 the PR needs (for example correctness and state-risk on `blocking[].paths`) runs in the same
 round; lenses and transport retries are not extra rounds. **A round count never waives an open
 critical/high.** A third round is a signal to re-diagnose the cause or re-scope the PR (the repo's
-design session, else operator-desk, decides), not an approval line. **A PR whose review does not
-converge in 3 head rounds (a new critical/high on each) goes to the lead:** the repo's design session,
-else operator-desk, starts no fourth fix round and hands the PR, its open findings and the brief to a
-lead (`lead` §When to use, Exception — a non-converging PR; the operator opens the session). mergewake's ESC after the third round is that
-signal (hk:doc `decision/2026-11-10/wake-vs-lead` item 4). A change-caused defect found with new evidence is not dismissed
+design session, else operator-desk, decides), not an approval line. A change-caused defect found with new evidence is not dismissed
 only because it lies outside the delta.
+
+### Escalation ladder — a PR that does not converge
+
+- **Trigger:** 3 reviewed heads without convergence (a new critical/high on each); mergewake's ESC after the
+  third round is the signal. The number is set again from data once mergewake records real head counts
+  (hk 3908).
+- **Step:** hk:doc `policy/model-families` §The escalation ladder is the one home of the order — same model one
+  effort up to the family's cap, then the next model of the family at medium, then another family's seat at
+  the same or the next grade. The repo's design session, else operator-desk, starts no fourth fix round on the
+  same rung: it re-spawns the PR's work pinned to the next rung with
+  `--override-reason 'ladder step <from> → <to>, PR <n>'` and records the failed rung (hk 3887).
+- **panewire does not compute the step yet** (hk 3917 item 4): the session reads the table in the policy
+  document.
+- **Then the lead:** when the ladder has no step left, or the cause is a correctness design the brief left
+  open (`wake` §Brief rules), the session hands the PR, its open findings and the brief to a lead (`lead` §When
+  to use, Exception — a non-converging PR; the operator opens the session). hk:doc
+  `decision/2026-11-11/rstack-ladder-lead-reconcile` orders the two decisions (`decision/2026-11-10/wake-vs-lead`
+  item 4, `decision/2026-11-11/model-routing-escalation` A17 item 4).
 
 ## Independence
 

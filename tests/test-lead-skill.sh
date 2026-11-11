@@ -131,7 +131,9 @@ REQUIRED = [
     ("lead", "## Turn endings", "turn-endings-do-not-end-with", r"\*\*Do not end a turn with\*\* a summary that announces the next step, an offer to carry on, a list of decisions none of which blocks the work, or a wait nothing will wake"),
     ("lead", "## Turn endings", "turn-endings-only-when", r"\*\*End a turn only when\*\* the goal is met, a decision is the operator's \(§Authority\), or a named signal will wake this pane"),
     # hk 3860 (decision/2026-11-10/wake-vs-lead item 4): a non-converging PR is a lead exception.
-    ("lead", "## When to use", "non-converging-pr-exception", r"\*\*Exception — a non-converging PR:\*\* a PR whose review did not converge in 3 head rounds \(`fleet-review` §Rounds\) comes here although it has a brief"),
+    ("lead", "## When to use", "non-converging-pr-exception", r"\*\*Exception — a non-converging PR:\*\* a PR whose review did not converge in 3 head rounds comes here although it has a brief, but only after the escalation ladder has no step left or when the cause is a correctness design the brief left open"),
+    # hk 3919 (A17 request 2): a hard single PR is a higher-grade implementer or a ladder step.
+    ("lead", "## When to use", "hard-single-pr-not-lead", r"\*\*A hard single PR is not a lead's\.\*\* It is an implementer at a higher grade or an escalation-ladder step"),
     # hk 3749 (handoffkeep-design 2026-11-10): the merged transition carries refs.pr for the R12 deploy record.
     ("lead", "## After the merge", "merged-transition-refs-pr", r"`handoffkeep tasks transition <id> --to merged --pr <PR URL> --head-sha <H>`"),
     # PR trailers.
