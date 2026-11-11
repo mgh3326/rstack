@@ -40,9 +40,9 @@ panewire resolve --role <reviewer|judge> --builder-family <author family>
 
 - Pass the printed profile's model and effort on the subagent call (Claude Code `Agent` `model`/`effort`; Codex `spawn_agent` `model`/`reasoning_effort`).
 - A lead has no routing role: the operator opens the lead session, and its subagents resolve as implementer, explorer or verifier.
-- If `resolve` refuses (`role_exhausted_wait`, `role_exhausted_escalate`, or no policy and no cache for `consult`/`verifier`), do **not** pick a substitute model or family for the subagent. What to do depends on the role:
+- If `resolve` refuses (`role_exhausted_wait`, `role_exhausted_escalate`, or no policy and no cache for `consult`/`verifier` or a lead's implementer/explorer subagent), do **not** pick a substitute model or family for the subagent. What to do depends on the role:
   - `consult`, `verifier`: do not start that work on any other model. Wait on `role_exhausted_wait`; escalate to the parent lane on `role_exhausted_escalate` or a missing policy.
-  - For a lead's implementer or explorer subagent, wait on `role_exhausted_wait` or escalate to the parent lane on `role_exhausted_escalate`; a lead never writes product code because a subagent resolution refused.
+  - For a lead's implementer or explorer subagent, wait on `role_exhausted_wait` or escalate to the parent lane on `role_exhausted_escalate` or a missing policy; a lead never writes product code because a subagent resolution refused.
   - `reviewer`, `judge`: escalate. Never do it yourself — your own check is not independent.
   - `explorer`, `implementer`: the one allowed fallback is your own session (no new model choice); do the step there and say so in the result. This fallback does not apply to a lead: a lead writes product code only for a small hotfix within the threshold in `lead` §Authority, and otherwise an implementer subagent does.
 - Effort steps, the `max` rung, grade and verifier rules are hk `policy/model-routing`; do not restate them in a brief.
