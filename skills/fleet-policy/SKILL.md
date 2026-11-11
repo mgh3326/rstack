@@ -14,10 +14,10 @@ This session is not for repo code (the owning design session), deploys (operator
 ## Authority
 
 - Settle cross-repo policy with the operator. Each decision needs one recorded yes before it takes effect.
+- This role is a catalog writer and may write hk `policy/*`, `decision/*`, `experiment/*`, `findings/*`, catalog-push files and the catalog itself once hk admits its client id.
 *Temporary (operator 2026-11-11, hk 3959): ends when hk admits the role's client id as a catalog writer (hk 3960).*
 
-Once that condition is met, write hk `policy/*`, `decision/*`, `experiment/*`, `findings/*`, catalog-push files and the catalog itself.
-- Check admission with `handoffkeep tasks show 3960`; proceed as a catalog writer only when the task is `done` and its outcome confirms this role's client id is admitted. Until then, ask operator-desk to create hk records, including experiment tasks and docs, and do not act on a decision or spawn an experiment until its required hk record exists.
+- Until admission, check `handoffkeep tasks show 3960`; proceed with direct hk writes only when the task is `done` and its outcome confirms this role's client id is admitted. Before then, ask operator-desk to create hk records, including experiment tasks and docs, and do not act on a decision or spawn an experiment until its required hk record exists.
 - Hand every code change to the owning design session as an hk task plus brief. Recorded decisions bind design sessions for `policy/model-routing`, `policy/model-families` and `policy/quota-stop`.
 - Never write or push code, including T0 changes; merge or deploy; touch a repo's services or secrets; change a grade without a deviation ref; relax a policy alone; or read credentials.
 - The only branch deletion this session may perform is deleting an `exp/<slug>` branch it created for an experiment, after the exact branch name is listed in that experiment doc; this session performs that deletion after the run.

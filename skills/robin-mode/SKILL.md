@@ -68,6 +68,8 @@ Subagents share your quota and context budget, write no branches, and their outp
 
 **The author verifies its own acceptance**, alone or through in-session subagents. That evidence is the author's and never replaces independent review (`fleet-review` §Independence). A separate verifier step is not a required path for every PR, and the tier sets risk and permissions, not which process runs the tests. Work that writes uses an isolated worktree or one clear writer.
 
+A `fleet-policy` experiment replay may use `panewire spawn` without an independent PR, as defined in `fleet-policy` §Experiments; no other spawned worker is exempt from the own-PR rule.
+
 **Spawn a worker with `panewire spawn`** only when all of these hold:
 - the unit is independently mergeable (its own PR, its own acceptance contract);
 - it can run in parallel with what you are doing, or needs a different host, tool or model family;

@@ -36,8 +36,8 @@ REQUIRED = [
     ("fleet", "## When to use", "scope exclusions", r"not for repo code \(the owning design session\), deploys \(operator-desk\), or a hotfix \(lead\)"),
     ("fleet", "## Authority", "one recorded yes", r"Settle cross-repo policy with the operator\. Each decision needs one recorded yes before it takes effect"),
     ("fleet", "## Authority", "temporary marker", r"\*Temporary \(operator 2026-11-11, hk 3959\): ends when hk admits the role's client id as a catalog writer \(hk 3960\)\.\*"),
-    ("fleet", "## Authority", "temporary write scope", r"Once that condition is met, write hk `policy/\*`, `decision/\*`, `experiment/\*`, `findings/\*`, catalog-push files and the catalog itself"),
-    ("fleet", "## Authority", "admission check and pre-admission records", r"Check admission with `handoffkeep tasks show 3960`; proceed as a catalog writer only when the task is `done` and its outcome confirms this role's client id is admitted\. Until then, ask operator-desk to create hk records, including experiment tasks and docs, and do not act on a decision or spawn an experiment until its required hk record exists"),
+    ("fleet", "## Authority", "permanent conditional catalog writer grant", r"This role is a catalog writer and may write hk `policy/\*`, `decision/\*`, `experiment/\*`, `findings/\*`, catalog-push files and the catalog itself once hk admits its client id"),
+    ("fleet", "## Authority", "admission check and pre-admission records", r"Until admission, check `handoffkeep tasks show 3960`; proceed with direct hk writes only when the task is `done` and its outcome confirms this role's client id is admitted\. Before then, ask operator-desk to create hk records, including experiment tasks and docs, and do not act on a decision or spawn an experiment until its required hk record exists"),
     ("fleet", "## Authority", "code handoff", r"Hand every code change to the owning design session as an hk task plus brief"),
     ("fleet", "## Authority", "binding policy documents", r"Recorded decisions bind design sessions for `policy/model-routing`, `policy/model-families` and `policy/quota-stop`"),
     ("fleet", "## Authority", "no write push merge deploy etc", r"Never write or push code, including T0 changes; merge or deploy; touch a repo's services or secrets; change a grade without a deviation ref; relax a policy alone; or read credentials"),
@@ -74,6 +74,7 @@ REQUIRED = [
     ("roles", None, "consult verifier alternate model rule", r"`consult`, `verifier`: do not start that work on any other model"),
     ("roles", None, "lead implementer explorer refusal path", r"For a lead's implementer or explorer subagent, wait on `role_exhausted_wait` or escalate to the parent lane on `role_exhausted_escalate`; a lead never writes product code because a subagent resolution refused"),
     ("robin", "## Where each rule lives", "robin rule home", r"Cross-repo policy settling, experiments, catalog records \| `fleet-policy` \(rstack\)"),
+    ("robin", "## Subagents versus spawned workers", "robin experiment spawn exception", r"A `fleet-policy` experiment replay may use `panewire spawn` without an independent PR, as defined in `fleet-policy` §Experiments; no other spawned worker is exempt from the own-PR rule"),
     ("sets", None, "full not worker install", r"sets: full=[^;]*\bfleet-policy\b[^;]*; worker=(?![^;]*\bfleet-policy\b)"),
     ("triggers", None, "trigger fixture", r'"fleet-policy": \["fleet-policy", "policy session", "정책 세션", "experiment", "실험", "catalog"\]'),
     ("agents", None, "AGENTS layout", r"first-party skills \(wake, ops, lead, desk, fleet-policy, fleet-review, robin-mode\)"),
@@ -105,6 +106,11 @@ def check(current):
             scope = flat(current["fleet"])
         match = pattern.search(scope)
         assert not match, f"forbidden rule '{name}' present: {match.group(0)!r}"
+    authority = section(current["fleet"], "## Authority")
+    grant_pos = authority.index("This role is a catalog writer")
+    marker_pos = authority.index("*Temporary (operator 2026-11-11, hk 3959):")
+    interim_pos = authority.index("- Until admission,")
+    assert grant_pos < marker_pos < interim_pos, "temporary marker must scope the interim restriction, not the permanent conditional grant"
 
 check(docs)
 print(f"PASS rows={len(REQUIRED)}")
@@ -126,6 +132,11 @@ for name, injected in [
     count += 1
 expect_red("retired-lead-routing-role-injected", check,
            {**docs, "roles": docs["roles"].replace("## Rules", "panewire resolve --role lead\n\n## Rules", 1)})
+count += 1
+grant = "- This role is a catalog writer and may write hk `policy/*`, `decision/*`, `experiment/*`, `findings/*`, catalog-push files and the catalog itself once hk admits its client id."
+marker = "*Temporary (operator 2026-11-11, hk 3959): ends when hk admits the role's client id as a catalog writer (hk 3960).*"
+misplaced = docs["fleet"].replace(grant + "\n" + marker, marker + "\n\n" + grant)
+expect_red("temporary-marker-misplaced-on-grant", check, {**docs, "fleet": misplaced})
 count += 1
 print(f"PASS mutants assertion-red={count}/{count}")
 PY
