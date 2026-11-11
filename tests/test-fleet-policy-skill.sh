@@ -37,8 +37,8 @@ REQUIRED = [
     ("fleet", "## When to use", "scope exclusions", r"not for repo code \(the owning design session\), deploys \(the owning repo's design session, or operator-desk while that repo has no design session open\), or a hotfix \(lead\)"),
     ("fleet", "## Authority", "one recorded yes", r"Settle cross-repo policy with the operator\. Each decision needs one recorded yes before it takes effect"),
     ("fleet", "## Authority", "permanent direct doc and task writes plus conditional catalog grant", r"This role writes its hk `policy/\*`, `decision/\*`, `experiment/\*` and `findings/\*` docs and hk tasks directly\. It may write catalog-push files and the catalog itself once hk admits its client id"),
-    ("fleet", "## Authority", "catalog-only temporary marker", r"\*Temporary \(operator 2026-11-11, hk 3959\): ends when hk 3963 is implemented \(hk 3963\)\.\*"),
-    ("fleet", "## Authority", "interim catalog handoff and admission check", r"Until hk 3963 is complete, hand the prepared catalog-push file to a lane that is already a catalog writer\. Check `handoffkeep tasks show 3963`; use catalog write authority only after its completed record confirms client-id admission"),
+    ("fleet", "## Authority", "catalog-only temporary marker", r"\*Temporary \(operator 2026-11-11, hk 3959\): ends when hk 3963 is complete and its record confirms client-id admission \(hk 3963\)\.\*"),
+    ("fleet", "## Authority", "interim catalog handoff and admission check", r"Until hk 3963 is complete and its record confirms client-id admission, hand the prepared catalog-push file to a lane that is already a catalog writer\. Check `handoffkeep tasks show 3963`; use catalog write authority only after this condition is recorded"),
     ("fleet", "## Authority", "code handoff", r"Hand every code change to the owning design session as an hk task plus brief"),
     ("fleet", "## Authority", "binding policy documents", r"Recorded decisions bind design sessions for `policy/model-routing`, `policy/model-families` and `policy/quota-stop`"),
     ("fleet", "## Authority", "no write push merge deploy etc", r"Never write or push code, including T0 changes; merge or deploy; touch a repo's services or secrets; change a grade without a deviation ref; relax a policy alone; or read credentials"),
@@ -62,17 +62,19 @@ REQUIRED = [
     ("fleet", "## Experiments", "wake brief override", r"For an experiment, its brief overrides the usual worker-branch and PR fields: use `exp/<slug>`, open no PR, and record results in the experiment doc"),
     ("fleet", "## Experiments", "wake and ops mechanics", r"Follow `wake` for the task, brief, spawn preview and landing proof"),
     ("fleet", "## Records", "operator message record with redaction exception", r"Before acting on an operator message, put it verbatim in the session's decision doc with the time from `date` and the session's reading, except for the credential redactions required by the next rule"),
-    ("fleet", "## Records", "secret pattern redaction", r"Identify credential-like values by their recognizable pattern in the message without copying or repeating the value\. Replace each match with `\[secret omitted\]`, note the omission, and ask the operator to rotate the exposed credential; apply the same redaction to raw source copies"),
+    ("fleet", "## Records", "secret pattern and label detection", r"Identify credential-like values by recognizable patterns or message labels such as password, PIN, passphrase, secret, token, key or credential; do this without copying or repeating candidate values"),
+    ("fleet", "## Records", "uncertain secret redaction", r"Replace each value with `\[secret omitted\]`, note the omission, and ask the operator to rotate any exposed credential; apply the same redaction to raw source copies\. When unsure, redact and ask the operator instead of storing the value verbatim"),
     ("fleet", "## Records", "source register", r"Keep a source register for every link the operator gives: the message, read date and method, redacted raw copy, finding, and decisions grounded in it"),
     ("fleet", "## Records", "finding sources and date", r"A finding names exact source URLs and its read date"),
     ("fleet", "## Records", "decision sources", r"A decision names its findings and experiments"),
     ("fleet", "## Records", "hk docs", r"Store records in hk docs"),
     ("fleet", "## Records", "mechanical transcript check", r"Close with a mechanical check of the decision doc against the transcript"),
     ("wake", "## Authority", "wake cross-reference", r"\*\*fleet-policy session:\*\* settles cross-repo policy and experiments, then hands code to the owning design session; it never merges or deploys \(`fleet-policy` §Authority\)\. Its recorded decisions bind design sessions for `policy/model-routing`, `policy/model-families` and `policy/quota-stop`"),
-    ("wake", "## Authority", "policy divergence record and notify", r"\*\*Policy divergence:\*\* when a design session settles an operator decision that differs from an hk policy doc owned by `fleet-policy` \(`policy/model-routing`, `policy/model-families` or `policy/quota-stop`\), record it in an hk decision doc and tell the lane hk `policy/design-sessions` names for this role"),
+    ("wake", "## Authority", "policy divergence record, hold and owner", r"\*\*Policy divergence:\*\* when a design session settles an operator decision that differs from an hk policy doc owned by `fleet-policy` \(`policy/model-routing`, `policy/model-families` or `policy/quota-stop`\), record it in an hk decision doc and tell the lane hk `policy/design-sessions` names for this role\. Hold the conflicting decision until fleet-policy records the operator's explicit yes and updates the owned policy doc; fleet-policy makes that update"),
     ("lead", "## Subagents", "lead spawn cross-reference", r"`panewire spawn` stays the design session's tool \(`wake` §The loop\) and the fleet-policy session's tool for its experiments only \(`fleet-policy` §Experiments\)"),
     ("roles", None, "roles vocabulary", r"\*\*fleet-policy\*\*: operator-opened session that settles cross-repo policy, runs bounded catalog experiments and keeps catalog records"),
-    ("roles", None, "lead no routing role", r"A lead has no routing role: the operator opens the lead session, and its subagents resolve as implementer, explorer or verifier"),
+    ("roles", None, "lead no routing role and reviewer resolution", r"A lead has no routing role: the operator opens the lead session; its subagents resolve as implementer, explorer or verifier, and its cross-family reviewer resolves as reviewer with `--builder-family`"),
+    ("roles", None, "consult resolve form", r"panewire resolve --role consult\s+# consult takes no --grade"),
     ("roles", None, "consult verifier and lead refusal names", r"no policy and no cache for `consult`/`verifier` or a lead's implementer/explorer subagent"),
     ("roles", None, "consult verifier alternate model rule", r"`consult`, `verifier`: do not start that work on any other model"),
     ("roles", None, "lead implementer explorer refusal path", r"For a lead's implementer or explorer subagent, wait on `role_exhausted_wait` or escalate to the parent lane on `role_exhausted_escalate` or a missing policy; a lead never writes product code because a subagent resolution refused"),
@@ -115,8 +117,12 @@ def check(current):
     authority = section(current["fleet"], "## Authority")
     grant_pos = authority.index("This role writes its hk")
     marker_pos = authority.index("*Temporary (operator 2026-11-11, hk 3959):")
-    interim_pos = authority.index("- Until hk 3963 is complete,")
+    interim_pos = authority.index("- Until hk 3963 is complete and its record confirms client-id admission,")
     assert grant_pos < marker_pos < interim_pos, "temporary marker must scope the interim restriction, not the permanent conditional grant"
+    marker_line = authority[marker_pos: authority.index("\n", marker_pos)]
+    interim_line = authority[interim_pos: authority.index("\n", interim_pos)]
+    condition = "hk 3963 is complete and its record confirms client-id admission"
+    assert f"ends when {condition}" in marker_line and f"Until {condition}" in interim_line, "catalog-write marker and restriction must share one end condition"
 
 check(docs)
 print(f"PASS rows={len(REQUIRED)}")
@@ -143,7 +149,7 @@ expect_red("retired-lead-routing-role-injected", check,
            {**docs, "roles": docs["roles"].replace("## Rules", "panewire resolve --role lead\n\n## Rules", 1)})
 count += 1
 grant = "- This role writes its hk `policy/*`, `decision/*`, `experiment/*` and `findings/*` docs and hk tasks directly. It may write catalog-push files and the catalog itself once hk admits its client id."
-marker = "*Temporary (operator 2026-11-11, hk 3959): ends when hk 3963 is implemented (hk 3963).*"
+marker = "*Temporary (operator 2026-11-11, hk 3959): ends when hk 3963 is complete and its record confirms client-id admission (hk 3963).*"
 misplaced = docs["fleet"].replace(grant + "\n" + marker, marker + "\n\n" + grant)
 expect_red("temporary-marker-misplaced-on-grant", check, {**docs, "fleet": misplaced})
 count += 1

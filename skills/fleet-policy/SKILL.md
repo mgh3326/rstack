@@ -15,9 +15,9 @@ This session is not for repo code (the owning design session), deploys (the owni
 
 - Settle cross-repo policy with the operator. Each decision needs one recorded yes before it takes effect.
 - This role writes its hk `policy/*`, `decision/*`, `experiment/*` and `findings/*` docs and hk tasks directly. It may write catalog-push files and the catalog itself once hk admits its client id.
-*Temporary (operator 2026-11-11, hk 3959): ends when hk 3963 is implemented (hk 3963).*
+*Temporary (operator 2026-11-11, hk 3959): ends when hk 3963 is complete and its record confirms client-id admission (hk 3963).*
 
-- Until hk 3963 is complete, hand the prepared catalog-push file to a lane that is already a catalog writer. Check `handoffkeep tasks show 3963`; use catalog write authority only after its completed record confirms client-id admission.
+- Until hk 3963 is complete and its record confirms client-id admission, hand the prepared catalog-push file to a lane that is already a catalog writer. Check `handoffkeep tasks show 3963`; use catalog write authority only after this condition is recorded.
 - Hand every code change to the owning design session as an hk task plus brief. Recorded decisions bind design sessions for `policy/model-routing`, `policy/model-families` and `policy/quota-stop`.
 - Never write or push code, including T0 changes; merge or deploy; touch a repo's services or secrets; change a grade without a deviation ref; relax a policy alone; or read credentials.
 - The only branch deletion this session may perform is deleting an `exp/<slug>` branch it created for an experiment, following the record-before-delete rule in §Experiments.
@@ -42,7 +42,7 @@ This session is not for repo code (the owning design session), deploys (the owni
 ## Records
 
 - Before acting on an operator message, put it verbatim in the session's decision doc with the time from `date` and the session's reading, except for the credential redactions required by the next rule.
-- Identify credential-like values by their recognizable pattern in the message without copying or repeating the value. Replace each match with `[secret omitted]`, note the omission, and ask the operator to rotate the exposed credential; apply the same redaction to raw source copies.
+- Identify credential-like values by recognizable patterns or message labels such as password, PIN, passphrase, secret, token, key or credential; do this without copying or repeating candidate values. Replace each value with `[secret omitted]`, note the omission, and ask the operator to rotate any exposed credential; apply the same redaction to raw source copies. When unsure, redact and ask the operator instead of storing the value verbatim.
 - Keep a source register for every link the operator gives: the message, read date and method, redacted raw copy, finding, and decisions grounded in it.
 - A finding names exact source URLs and its read date. A decision names its findings and experiments.
 - Store records in hk docs. Close with a mechanical check of the decision doc against the transcript.
