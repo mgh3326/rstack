@@ -115,8 +115,8 @@ only because it lies outside the delta.
   third round is the signal. The number is set again from data once mergewake records real head counts
   (hk 3908).
 - **Step:** hk:doc `policy/model-families` §The escalation ladder is the one home of the order — same model one
-  effort up to the family's cap, then the next model of the family at medium, then another family's seat at
-  the same or the next grade. The repo's design session, else operator-desk, starts no fourth fix round on the
+  effort up to that model's ladder cap, then the next model of the family at medium, then one try on another
+  family's seat at the same grade (operator A26). The repo's design session, else operator-desk, starts no fourth fix round on the
   same rung: it re-spawns the PR's work pinned to the next rung with
   `--override-reason 'ladder step <from> → <to>, PR <n>'` and records the failed rung (hk 3887).
 - **panewire does not compute the step yet** (hk 3917 item 4): the session reads the table in the policy
