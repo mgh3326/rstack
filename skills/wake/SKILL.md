@@ -148,7 +148,11 @@ The session is thrown away after it spawns, so whatever it did not write down is
 - **One ticket is one PR and one hk task** (`robin-mode` §Work boundary), small enough for one fresh session.
 - **A tracer bullet:** a narrow, complete path through every layer that can be verified alone.
 - **Blocking edges only where one ticket truly gates another.** Record an edge with
-  `handoffkeep tasks relate <blocker-id> --kind blocks --other <blocked-id>`.
+  `handoffkeep tasks relate <blocker-id> --kind blocks --other <blocked-id>`. *Takes effect with hk 3891:*
+  quota-stop reads this relation. When a pane stops on quota, its task moves to another pool at once only if
+  it is a bottleneck: it blocks another task, it is a reviewer or verifier job, or it carries the label
+  `handover-now`; otherwise it waits for the reset (a limit under 10 minutes always waits). A missing edge
+  means the task waits; hk priority is not an input (hk:doc `decision/2026-11-11/model-routing-escalation` A10, A11).
 - **Every ticket carries** Current, Desired, Key interfaces, Acceptance, Out of scope and pinned Evidence
   (`<repo>@<sha> <path>:<line>`), because an unpinned path goes stale while a ticket waits. The first
   five map onto §Worker brief.
@@ -190,7 +194,10 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    a stale pool. An explicit `-m` or `--host NAME` needs `--override-reason`, which is recorded.
    Grade A work on state machines, ledgers, idempotency or data integrity runs on a strong profile, not
    a waste-tier pick: until panewire can express this on the task, pass an explicit `-m <profile>` with
-   `--override-reason` (hk:doc `decision/2026-11-10/wake-vs-lead` item 3).
+   `--override-reason` (hk:doc `decision/2026-11-10/wake-vs-lead` item 3). The pin names a rung that has a
+   catalog row: `-m <profile> --effort <e>`. A pin without an effort launches with no effort and matches no
+   catalog row (dry-run baseline 2026-11-11, hk 3917). Until hk 3917 item 1 is fixed, do
+   not pin an omp rung for a brief that can end in an ESC.
 5. **Preview, then spawn** (`ops` spawn). Spawn only tickets with no unlanded blocker. Later tickets
    are spawned when their blockers merge, by whichever session is open (the design session if still
    open, otherwise the desk).
