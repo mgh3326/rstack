@@ -3,7 +3,7 @@
 Fleet skills, their contract tests, and the installer that links them into each harness's skill root.
 
 ## Layout
-- `skills/` — first-party skills (wake, ops, lead, desk, fleet-review, robin-mode). `skills/ops/references/` holds the
+- `skills/` — first-party skills (wake, ops, lead, desk, fleet-policy, fleet-review, robin-mode). `skills/ops/references/` holds the
   ops mechanics; `skills/robin-mode/roles.md` holds the role map.
 - `tests/` — contract tests (`test-*.sh`, `test-*.py`) and `tests/lib/contract.py` (section scoping, row deletion,
   mutant checks).

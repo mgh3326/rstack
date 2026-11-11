@@ -19,6 +19,7 @@ Each rule is stated once, in the home below; other documents point to it. Inside
 | Spawn, relay, consult, wait, reap and deploy mechanics | `ops` (rstack) |
 | Desk coordination: commitments, resume order, task intake, delegation threshold, task record | `desk` (rstack) |
 | Design session: settling decisions, slicing tickets, spawning workers, landing proof | `wake` (rstack) |
+| Cross-repo policy settling, experiments, catalog records | `fleet-policy` (rstack) |
 | Which profile, family and effort a role may use; where grade applies | hk `policy/model-routing`, applied by `panewire resolve` and `panewire spawn` |
 | Pool spending order, quota waits and hand-over | hk `policy/quota-stop` |
 
@@ -66,6 +67,8 @@ The default is **one session that goes deep**. Parallelism is for independent un
 Subagents share your quota and context budget, write no branches, and their output is input to your judgement.
 
 **The author verifies its own acceptance**, alone or through in-session subagents. That evidence is the author's and never replaces independent review (`fleet-review` §Independence). A separate verifier step is not a required path for every PR, and the tier sets risk and permissions, not which process runs the tests. Work that writes uses an isolated worktree or one clear writer.
+
+A `fleet-policy` experiment replay may use `panewire spawn` without an independent PR, as defined in `fleet-policy` §Experiments; no other spawned worker is exempt from the own-PR rule.
 
 **Spawn a worker with `panewire spawn`** only when all of these hold:
 - the unit is independently mergeable (its own PR, its own acceptance contract);
