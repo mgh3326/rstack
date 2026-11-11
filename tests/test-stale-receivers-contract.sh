@@ -29,6 +29,8 @@ REQUIRED = [
     ("fleet", "ladder-trigger", r"\*\*Trigger:\*\* 3 reviewed heads without convergence \(a new critical/high on each\)"),
     ("fleet", "ladder-policy-home", r"hk:doc `policy/model-families` §The escalation ladder is the one home of the order"),
     ("fleet", "ladder-pinned-respawn", r"re-spawns the PR's work pinned to the next rung with `--override-reason 'ladder step <from> → <to>, PR <n>'` and records the failed rung"),
+    ("fleet", "ladder-step-three", r"then one try on another family's seat at the same grade \(operator A26\)"),
+    ("fleet", "ladder-model-cap", r"effort up to that model's ladder cap"),
     ("fleet", "ladder-not-computed", r"\*\*panewire does not compute the step yet\*\* \(hk 3917 item 4\)"),
     ("fleet", "non-converging-pr-to-lead", r"\*\*Then the lead:\*\* when the ladder has no step left, or the cause is a correctness design the brief left open \(`wake` §Brief rules\), the session hands the PR, its open findings and the brief to a lead"),
     ("fleet", "reviewer-family-receiver", r"checks them all, the repo's design session, else operator-desk, does"),
@@ -43,6 +45,7 @@ REQUIRED = [
 ]
 FORBIDDEN = [
     ("fleet", "old-desk-receiver", r"the desk applies it by hand"),
+    ("fleet", "ladder-next-grade", r"another family's seat at the same or the next grade"),
     ("fleet", "old-desk-review-check", r"the desk checks it"),
     ("fleet", "old-desk-esc", r"ESC to the desk"),
     ("fleet", "old-desk-round", r"the desk decides"),
@@ -73,6 +76,7 @@ for doc, name, pattern in REQUIRED:
     count += 1
 INJECTIONS = {
     "old-desk-receiver": "the desk applies it by hand",
+    "ladder-next-grade": "then another family's seat at the same or the next grade.",
     "old-desk-review-check": "the desk checks it",
     "old-desk-esc": "ESC to the desk",
     "old-desk-round": "the desk decides",
