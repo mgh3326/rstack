@@ -9,6 +9,10 @@ The desk coordinates. It judges intent, runs gates, orders deploys and carries t
 decisions (`wake` §Authority). Its context window is a bounded cache; hk, panewire and GitHub are
 the record.
 
+## Intake
+
+**Prevents:** 세션이 닫힌 뒤 해당 레인으로 들어온 일이 수신함에 쌓여 누락되는 문제.
+
 The desk takes a project's ESC decisions, spawn failures, merge holds and deploys only while that
 project has no design session open — with one open they are the session's (`wake` §Authority). It
 receives a closing session's one-line hand-off; a session sends no notice before touching a target

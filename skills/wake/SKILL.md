@@ -49,9 +49,10 @@ operator-desk; `ops` deploy), or decisions (ask the operator).
   performs the live mutation. The repo's design session orders the rollout, or operator-desk while
   that repo has no design session open.
 - **operator-desk:** receives a project's ESC decisions, spawn failures, merge holds and deploys
-  only while that project has no design session open, and registers lane routes. `desk` §opening에 따라
-  세션이 없는 레인으로 온 일은 직접 처리하거나 다시 레인으로 나눈다. 프로젝트에 디자인 세션이 열려
-  있는 동안에는 dispatch path에 들어가지 않는다.
+  only while that project has no design session open, and registers lane routes. 세션이 없는 레인으로
+  온 주문, ESC, READY, finding은 desk가 접수해 처리하며, 큰 일은 `desk` §Intake에 따라 다시 디자인
+  세션에 넘긴다. 진행 중인 PR의 READY와 finding은 `wake` §READY 및 §BLOCKED에 따라 해당 작성자와
+  gate에 전달한다. 프로젝트에 디자인 세션이 열려 있는 동안에는 dispatch path에 들어가지 않는다.
 - **Operator only:** real orders and fund moves, new external accounts or public posts,
   policy relaxations, lane-contract conflicts, irreversible external actions. An approval
   covers one action in one session; it does not generalise to the next.
