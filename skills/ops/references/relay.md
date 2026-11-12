@@ -1,6 +1,6 @@
 # relay — 세션 간 핸드오프·릴레이 표준 절차
 
-디자인 세션 사이의 요청 종류, 교차 레포 의존성, 미해결 전달 추적은 `wake` §Escalation and notifications의 핸드오프 규칙을 따른다.
+디자인 세션 사이의 핸드오프 규칙(A1–A5)은 `wake` §Escalation and notifications에 있다. 요청 종류, 교차 레포 의존성, 미해결 전달 추적은 해당 절을 따른다.
 
 > ROB-NNN 은 비공개 이슈 트래커 참조이며, 각 규칙 옆 본문이 근거를 자립 설명한다.
 

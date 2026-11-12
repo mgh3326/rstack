@@ -241,12 +241,14 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
 
    | Exit | Meaning | Do |
    |---|---|---|
-   | `85` (`wait timeout for job`) | Landed: the spawn state was `succeeded` and the job is running | Comment the request id on the task, go to step 7 |
+   | `85` (`wait timeout for job`) | The job wait expired. It proves the spawn landed only if `handoffkeep tasks show <id>` has the matching `claimed_by` and `refs.job_id`; `85` alone does not prove landing | Check the task claim before proceeding |
    | `0`, `83`, `84` | Landed, then the job completed, escalated or was lost (`83` escalated means `panewire escalate`; an ESC alone no longer ends the job) | Comment the request id; on `0` mergewake takes the PR (step 7); handle the ESC or the loss |
    | Any other, with `spawn refused: <reason> (operation <id>)` | `failed` or `retryable`: not landed | §On spawn failure; never replay |
    | Any other, with `spawn ownership is unresolved` | `deadline_exceeded`: the hub keeps ownership after its request deadline | Never launch; §On spawn failure |
 
-   While state is `reconciling`, `--wait` keeps polling and emits no `SPAWN_FAILED`; wait for a terminal outcome. The no-launch and no-replay rule still applies while ownership is unresolved. Never launch another way or replay as a retry. (`panewire` #372, hk 3676.) Where the pane's host is reachable, `ops` spawn §4-2 adds one read-only look at the pane.
+   | Spawn state `reconciling` | `--wait` keeps polling and emits no `SPAWN_FAILED` while ownership remains unresolved | Wait for a terminal outcome; never launch another way or replay as a retry |
+
+   `--wait` timeout code 85 is the job wait deadline, not a spawn-state result (`panewire` `internal/fleet/command.go:82`). A task claim is still required as landing proof. (`panewire` #372, hk 3676.) Where the pane's host is reachable, `ops` spawn §4-2 adds one read-only look at the pane.
 7. **Close.** The design session may close once landing is proven. It sends no success notice:
    mergewake already notifies the owner lane. The worker opens the PR and reports READY (§READY).
    After READY, mergewake picks the PR up from the PR itself and reviews it, sends findings to the
