@@ -319,6 +319,13 @@ REQUIRED = [
     ("wake", "## Brief rules", "brief-correctness-choices-settled", r"A state transition, a binding or authority rule, an idempotency key or a data invariant is decided in §Settle before spawning"),
     ("wake", "## The loop", "grade-a-integrity-strong-profile", r"Grade A work on state machines, ledgers, idempotency or data integrity runs on a strong profile, not a waste-tier pick: until panewire can express this on the task, pass an explicit `-m <profile>` with `--override-reason`"),
     ("wake", "## Operator confirmation provenance", "provenance-verdict-doc-guard", r"문서 가드: rstack 레포에서 `VERDICT_DOC=<보고서 경로> bash tests/test-untagged-operator-evidence\.sh` 가 RED 면 그 보고서는 쓰지 않는다"),
+    # hk 4252: same-concept tasks spawn in sequence and brief names open PRs.
+    ("wake", "## The loop", "same-concept-sequence", r"Two tasks that change the same concept are not spawned at the same time; the second is spawned after the first has merged, and its brief is written against the merged state"),
+    ("wake", "## The loop", "same-concept-relate-blocks", r"Record the order with `handoffkeep tasks relate <first> --kind blocks --other <second>`"),
+    ("wake", "## The loop", "same-concept-shared-files-and-parallel", r"Tasks that only share files stay under the existing one-PR rule; tasks on different concepts still dispatch in parallel \(decision 80\)"),
+    ("wake", "## Brief rules", "brief-name-same-concept-prs", r"\*\*Name open PRs and tasks on the same concept\.\*\* Same concept means the same table, state machine, authority or contract, not only the same files"),
+    ("wake", "## Brief rules", "brief-same-concept-state-or-none", r"State what to assume about each \(e\.g\. \"assume PR <n> is merged: <what exists and decides>\"\); if there are none, write \"none\""),
+    ("wake", None, "worker-brief-same-concept-line", r"Open PRs and tasks on the same concept: <PR or task — what to assume about it, e\.g\. \"assume PR <n> is merged: <what exists and decides>\"; or \"none\">"),
 ]
 
 # Rows that must be absent: panewire resolve refuses --builder-family with --role consult.

@@ -207,7 +207,7 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    not pin an omp rung for a brief that can end in an ESC.
 5. **Preview, then spawn** (`ops` spawn). Spawn only tickets with no unlanded blocker. Later tickets
    are spawned when their blockers merge, by whichever session is open (the design session if still
-   open, otherwise the desk).
+   open, otherwise the desk). Two tasks that change the same concept are not spawned at the same time; the second is spawned after the first has merged, and its brief is written against the merged state. Record the order with `handoffkeep tasks relate <first> --kind blocks --other <second>`. Tasks that only share files stay under the existing one-PR rule; tasks on different concepts still dispatch in parallel (decision 80).
    Omit `-w` to use the executing host's configured workspace. `-w <label|id>` remains an
    optional override, resolved on that host; it does not select the model or quota pool.
    ```sh
@@ -498,6 +498,7 @@ After a bundle PR merges, the design session moves each delivered child that has
   `dry-run`, or `production (operator present)`); a brief without it is a brief defect.
   In production: prove guards first, announce what goes where, record identifiers after,
   and never press an approve or execute button.
+- **Name open PRs and tasks on the same concept.** Same concept means the same table, state machine, authority or contract, not only the same files. State what to assume about each (e.g. "assume PR <n> is merged: <what exists and decides>"); if there are none, write "none".
 - **Irreversible-mutation briefs:** the first step compares the target with the lane contract
   ("conflict → reply, do not run"); say *how* to verify (read-only method, or a numeric
   bound on any mutation); keep the gate light for free mock scope and strict for sealed,
@@ -558,6 +559,7 @@ Environment: <test DB | dry-run | production (operator present)>
 Current: <observable state and relevant evidence>
 Desired: <observable end state>
 Key interfaces: <files, APIs, contracts or callers to preserve>
+Open PRs and tasks on the same concept: <PR or task — what to assume about it, e.g. "assume PR <n> is merged: <what exists and decides>"; or "none">
 Out of scope: <explicit exclusions>
 
 Work in `robin-mode` (rstack): it sets the openers, how you verify your own work and when a
