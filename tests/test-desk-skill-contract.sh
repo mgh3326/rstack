@@ -118,7 +118,8 @@ def check_resume_order(desk):
 
 
 def check_neutral(desk):
-    scrubbed = re.sub(r"claude --name <lane>|Claude session name", "", desk, flags=re.IGNORECASE)
+    exact = "A desk session uses its lane name as its Claude session name (`claude --name <lane>` or `/rename <lane>`), so others can address it."
+    scrubbed = desk.replace(exact, "", 1)
     m = NOT_NEUTRAL.search(scrubbed)
     assert not m, f"desk: names a harness-specific term {m.group(0)!r}"
 
@@ -181,8 +182,9 @@ assert first in desk and second in desk, "fixture: resume steps not found"
 swapped = desk.replace(first, "\0").replace(second, "2. Open decisions").replace("\0", "3. hk tasks with a next action")
 red("resume-steps-swapped", {**docs, "desk": swapped})
 red("harness-specific-term", {**docs, "desk": desk + "\nUse the Claude Agent tool.\n"})
+red("stray-claude-phrase", {**docs, "desk": desk + "\nRun `claude --name <lane>` on start.\n"})
 red("desk-not-in-full-set", docs, {**sets, "full": [n for n in sets["full"] if n != "desk"]})
 red("desk-in-worker-set", docs, {**sets, "worker": sets["worker"] + ["desk"]})
-count += 4
+count += 5
 print(f"PASS mutants assertion-red={count}/{count}")
 PY
