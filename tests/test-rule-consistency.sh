@@ -66,7 +66,7 @@ REQUIRED = [
     ("robin", "## Work boundary", "bundle-series-and-quota",
      r"A series bundle starts independent first steps that touch different files at the same time; tasks editing the same files belong in one PR\. Spawn as many bundles as the quota gate admits: displayed per-host `capacity` is not enforced; the account quota gate, one live spawn per task and role, four in progress at the hub, and one per node are enforced"),
     ("robin", "## Work boundary", "bundle-children-transition",
-     r"\*Temporary \(operator 2026-11-12, hk 4114\): ends when hk closes children on merge \(hk 3294\)\.\*\s+After merge, the design session transitions every delivered child to `merged` with the PR URL and head SHA"),
+     r"\*Temporary \(operator 2026-11-12, hk 4114\): ends when hk closes children on merge \(hk 3294\)\.\*\s+After merge, the design session moves every delivered child to `merged` using the bundle-close path in `wake` §Escalation and notifications \(hk 3294\), including the PR URL and head SHA on the merged transition"),
     ("relay", None, "relay-pointer-handoff-rows", r"디자인 세션 사이의 핸드오프 규칙\(A1–A5\)은 `wake` §Escalation and notifications에 있다"),
     ("fleet", "## Independence", "marker-same-family",
      r"\*Temporary \(operator 2026-11-04, hk 2856\): ends when hk 2857 lands and restores the rule \(hk 2857\)\.\*"),

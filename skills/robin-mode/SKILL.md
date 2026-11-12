@@ -55,7 +55,7 @@ A rule with no marker is permanent. When the condition is met, delete the rule a
 
 A request has one accountable owner. A separate worker exists only for a PR that is accepted and merged on its own, and a child never repeats its lead's triage. A coordinating task may own several PRs; an implementation task owns exactly one, except for a one-PR bundle: its parent hk task is titled `[bundle <scope> Bnn]`, one brief and one worker produce one PR delivering several child tasks, the PR's `Mergewake-Task` names one child or the parent, and its body lists every child delivered. A series bundle starts independent first steps that touch different files at the same time; tasks editing the same files belong in one PR. Spawn as many bundles as the quota gate admits: displayed per-host `capacity` is not enforced; the account quota gate, one live spawn per task and role, four in progress at the hub, and one per node are enforced.
 *Temporary (operator 2026-11-12, hk 4114): ends when hk closes children on merge (hk 3294).*
-After merge, the design session transitions every delivered child to `merged` with the PR URL and head SHA. An explicit hand-off requires the hk task comment and receiver acceptance defined in `wake` §READY.
+After merge, the design session moves every delivered child to `merged` using the bundle-close path in `wake` §Escalation and notifications (hk 3294), including the PR URL and head SHA on the merged transition. An explicit hand-off requires the hk task comment and receiver acceptance defined in `wake` §READY.
 
 ## Subagents versus spawned workers
 

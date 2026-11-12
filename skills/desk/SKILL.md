@@ -9,12 +9,18 @@ The desk coordinates. It judges intent, runs gates, orders deploys and carries t
 decisions (`wake` §Authority). Its context window is a bounded cache; hk, panewire and GitHub are
 the record.
 
+## Intake
+
+**Prevents:** 세션이 닫힌 뒤 해당 레인으로 들어온 일이 수신함에 쌓여 누락되는 문제.
+
 The desk takes a project's ESC decisions, spawn failures, merge holds and deploys only while that
 project has no design session open — with one open they are the session's (`wake` §Authority). It
 receives a closing session's one-line hand-off; a session sends no notice before touching a target
 several projects share. Lane routes stay with the desk. A closed session's jobs keep
-its lane as owner, so until that repo's next design session opens the desk reads their ESCs and spawn
-failures in that lane's inbox (`wake` §The loop step 5).
+its lane as owner (`wake` §The loop step 5). 세션이 열려 있지 않은 레인으로 온 주문, ESC, READY,
+finding은 desk가 받아 직접 처리하거나, 일이 많으면 다시 레인으로 나눈다. 다시 나눌 때는 운영자에게
+해당 레포의 디자인 세션을 열어 달라고 하고, 세션이 열리면 그 세션에 일을 넘긴다. 수신함에 남겨
+다음 세션을 기다리지 않는다. 보낸 쪽은 계속 그 레포의 디자인 레인으로 보낸다.
 
 **The desk lane is inbox-only** (panewire#352): ESCs, spawn failures and READYs arrive as inbox
 items, and the pane gets only an `[inbox] <desk lane>: N unread …` wake line. Handle that line by
@@ -60,6 +66,8 @@ After a start or compaction, read in this order before you act on anything you r
    and decision items in the inbox (§Decisions).
 4. Inbox READY/ESC — `panewire inbox list --lane <desk lane> --json`. Read every item since the last
    resume, not only unread ones: a READY can arrive during a long turn and go unnoticed.
+*Temporary (operator 2026-11-12, hk 4152): ends when panewire wakes the desk for a lane with no live session (hk 4150).*
+그때까지 desk는 resume할 때와 다음에 깨어날 때 세션이 없는 레인들의 수신함도 직접 확인하고, 도착한 일을 처리한다.
 5. Live jobs — `panewire jobs list --lane <desk lane> --json`, then each live job's pane state.
 6. PRs awaiting gate — each PR named on a task or a READY:
    `gh pr view <url> --json state,headRefOid,reviewDecision` and `gh pr checks <url>`.
