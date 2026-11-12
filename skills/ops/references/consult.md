@@ -26,9 +26,9 @@
   하나뿐이다: 결과가 이 규칙에 맞지 않으면 다른 프로필을 직접 고르지 말고 부모 레인에 결정을 올린다.
 - *Temporary (operator 2026-11-12, hk 4173): ends when the resolve command computes the consult floor (hk 4139).*
   **예외 — 디자인 세션의 SS 고정.** resolve 의 답이 다른 계열의 SS 좌석이 아니면, 디자인 세션은 hk:doc
-  `policy/model-families` §Consult 가 다른 계열의 SS 좌석으로 이름한 프로필을 `-m <profile>` 로 고정하고
-  `--override-reason 'consult SS, decision 124' --containment hk:<task>` 를 줄 수 있다(`<task>` 는 자문의 hk task).
-  SS 행이 effort 를 자체 결정하므로 `--effort` 는 주지 않고, 기본(default) 행이므로 `--operator-request` 는 적용 대상이 아니어서 주지 않는다.
+  `policy/model-families` §Consult 가 다른 계열의 SS 좌석으로 이름한 프로필과 effort 를 `-m <profile> --effort <e>` 로
+  고정하고 `--override-reason 'consult SS, decision 124' --containment hk:<task>` 를 줄 수 있다(`<task>` 는 자문의
+  hk task). 기본(default) 행이므로 `--operator-request` 는 적용 대상이 아니어서 주지 않는다.
   *Temporary (operator 2026-11-12, hk 4215): ends when panewire lifts the purpose limit (hk 4212).*
   그 좌석이 openai 계열이면 `--purpose architect` 를 추가한다.
   그 밖의 세션은 resolve 경로 하나만 쓴다 — 맞지 않으면 부모 레인에 결정을 올린다. 이것이 "resolve 가 유일한 길" 규칙의 유일한 예외다.

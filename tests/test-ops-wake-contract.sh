@@ -307,9 +307,9 @@ REQUIRED = [
     ("wake", "## The loop", "no-omp-pin-for-esc-brief", r"Until hk 3917 item 1 is fixed, do not pin an omp rung for a brief that can end in an ESC"),
     ("consult", "## 1. 자문처 결정", "consult-ss-rung", r"S\+ 급 질문자의 자문은 SS 급 rung 으로 간다\. SS 급 질문자는 다른 계열의 SS 급 rung 에 묻는다\."),
     ("consult", "## 1. 자문처 결정", "consult-session-ss-rule", r"task 가 없는 다른 세션은 S\+ 에 머문다\. 어느 좌석이 SS 인지는 hk:doc `policy/model-families` §Consult 가 정한다 — 이 문서는 모델명을 적지 않는다"),
-    ("consult", "## 1. 자문처 결정", "consult-ss-pin-scope", r"\*\*예외 — 디자인 세션의 SS 고정\.\*\* resolve 의 답이 다른 계열의 SS 좌석이 아니면, 디자인 세션은 hk:doc `policy/model-families` §Consult 가 다른 계열의 SS 좌석으로 이름한 프로필을 `-m <profile>` 로 고정하고 `--override-reason 'consult SS, decision 124' --containment hk:<task>` 를 줄 수 있다\(`<task>` 는 자문의 hk task\)\."),
+    ("consult", "## 1. 자문처 결정", "consult-ss-pin-scope", r"\*\*예외 — 디자인 세션의 SS 고정\.\*\* resolve 의 답이 다른 계열의 SS 좌석이 아니면, 디자인 세션은 hk:doc `policy/model-families` §Consult 가 다른 계열의 SS 좌석으로 이름한 프로필과 effort 를 `-m <profile> --effort <e>` 로 고정하고 `--override-reason 'consult SS, decision 124' --containment hk:<task>` 를 줄 수 있다\(`<task>` 는 자문의 hk task\)\."),
     ("consult", "## 1. 자문처 결정", "consult-ss-pin-marker", r"\*Temporary \(operator 2026-11-12, hk 4173\): ends when the resolve command computes the consult floor \(hk 4139\)\.\*"),
-    ("consult", "## 1. 자문처 결정", "consult-ss-pin-no-effort-request", r"SS 행이 effort 를 자체 결정하므로 `--effort` 는 주지 않고, 기본\(default\) 행이므로 `--operator-request` 는 적용 대상이 아니어서 주지 않는다\."),
+    ("consult", "## 1. 자문처 결정", "consult-ss-pin-no-request", r"기본\(default\) 행이므로 `--operator-request` 는 적용 대상이 아니어서 주지 않는다\."),
     ("consult", "## 1. 자문처 결정", "consult-ss-pin-purpose-marker", r"\*Temporary \(operator 2026-11-12, hk 4215\): ends when panewire lifts the purpose limit \(hk 4212\)\.\*"),
     ("consult", "## 1. 자문처 결정", "consult-ss-pin-purpose", r"그 좌석이 openai 계열이면 `--purpose architect` 를 추가한다\."),
     ("wake", "## Settle before spawning", "blocks-read-by-quota-stop", r"\*Takes effect with hk 3891:\* quota-stop reads this relation"),
@@ -335,6 +335,8 @@ FORBIDDEN = [
     ("ops", None, "ops-no-pacelever", r"pacelever"),
     ("spawn", None, "spawn-no-pacelever-quota", r"pacelever (?:--json|refresh)"),
     ("consult", None, "consult-no-builder-family", r"--builder-family"),
+    # finding 4545951839: consult §1 SS pin must give --effort, matching wake's pin-names-rung-with-effort.
+    ("consult", "## 1. 자문처 결정", "consult-ss-pin-no-effort-clause", r"(?i)--effort (?:는|는\s*)주지\s*않고"),
     # decision 124: consult §1 names no model or profile; which seats are SS stays in policy/model-families.
     ("consult", "## 1. 자문처 결정", "consult-no-model-name", r"(?i)\b(?:fable|astra|codex-astra|codex-sol|opus|sonnet|haiku|luna|terra61|dsflash41|swe2)\b"),
     # hk 3427: no loop step tells a design session to act on READY.
@@ -514,6 +516,7 @@ injections = [
     ("wake-delegated-seat-readded", "wake", "## Rules\n", "## Rules\n\n위임 좌석은 PR 을 올린다.\n"),
     ("ops-repo-session-readded", "ops", "## Routing table\n", "## Routing table\n\nrepo 세션이 스폰한다.\n"),
     ("consult-old-builder-family-line", "consult", "## 1. 자문처 결정\n", "## 1. 자문처 결정\n\n`panewire resolve --role consult --builder-family <질문자 계열>`\n"),
+    ("consult-ss-pin-no-effort-readded", "consult", "## 1. 자문처 결정\n", "## 1. 자문처 결정\n\n--effort 는 주지 않고\n"),
     ("consult-model-name-readded", "consult", "## 1. 자문처 결정\n", "## 1. 자문처 결정\n\n- 디자인 세션의 자문은 `fable` 로 고정한다.\n"),
     ("wake-loop-acts-on-ready", "wake", "## The loop\n", "## The loop\n\nThe design session acts on READY.\n"),
     ("wake-done-second-ready", "wake", "## Done\n", "## Done\npanewire emit --kind lane.event --lane <parent-lane> --type ready --event-id <job>-ready2 --text '[<job>] READY'\n"),
