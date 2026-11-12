@@ -248,7 +248,7 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
 
    | Spawn state `reconciling` | `--wait` keeps polling and emits no `SPAWN_FAILED` while ownership remains unresolved | Wait for a terminal outcome; never launch another way or replay as a retry |
 
-   `--wait` timeout code 85 is the job wait deadline, not a spawn-state result (`panewire` `internal/fleet/command.go:82`). A task claim is still required as landing proof. (`panewire` #372, hk 3676.) Where the pane's host is reachable, `ops` spawn §4-2 adds one read-only look at the pane.
+   `--wait` timeout code 85 is the job wait deadline, not a spawn-state result (`panewire` `internal/fleet/command.go:82`). A task claim is still required as landing proof. (`panewire` main `2b76a6341972b61f8f520b228383d0b599d510ac`, `internal/fleet/submission.go` `WaitSpawn`; #372, hk 3676.) Where the pane's host is reachable, `ops` spawn §4-2 adds one read-only look at the pane.
 7. **Close.** The design session may close once landing is proven. It sends no success notice:
    mergewake already notifies the owner lane. The worker opens the PR and reports READY (§READY).
    After READY, mergewake picks the PR up from the PR itself and reviews it, sends findings to the
@@ -461,7 +461,7 @@ When a lane finishes a blocker, it tells the waiting lane with an `order` that n
   record and `panewire inbox list`. ESC (`--type decision`), `SPAWN_FAILED` and failures that need action
   still reach the owner lane. The desk still receives READY from a worker it owns.
 *Temporary (operator 2026-11-12, hk 4114): ends when hk closes children on merge (hk 3294).*
-After a bundle PR merges, the design session transitions each child it delivered with `handoffkeep tasks transition <child> --to merged --pr <PR URL> --head-sha <H>`; the deploy record's `included_prs` then moves them to `deployed`.
+After a bundle PR merges, the repo's design session transitions every delivered child, identified from the bundle parent task's children and the PR body, with `handoffkeep tasks transition <child> --to merged --pr <PR URL> --head-sha <H>`. If that design session has closed, `operator-desk` performs the transition from the same records. The deploy record's `included_prs` then moves them to `deployed`.
 
 ## Brief rules
 
