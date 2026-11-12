@@ -142,7 +142,7 @@ REQUIRED = [
     ("wake", "## The loop", "landing-refused-no-replay", r"`spawn refused: <reason> \(operation <id>\)` \| `failed` or `retryable`: not landed \| §On spawn failure; never replay"),
     ("wake", "## The loop", "worktree-push-after-add", r"git -C ~/work/<repo> worktree add -b wk/<slug> ~/work/<repo>\.<slug> origin/main\s+git -C ~/work/<repo>\.<slug> push -u origin wk/<slug>"),
     ("wake", "## The loop", "worktree-push-rc81", r"Push immediately after creating the worktree: `panewire spawn` refuses an unpushed branch with rc 81 before making any hub request"),
-    ("wake", "## The loop", "landing-reconciling-wait", r"\| Spawn state `reconciling` \| `--wait` keeps polling and emits no `SPAWN_FAILED` while ownership remains unresolved \| Wait for a terminal outcome; never launch another way or replay as a retry \|"),
+    ("wake", "## The loop", "landing-reconciling-wait", r"Spawn state `reconciling`: `--wait` keeps polling and emits no `SPAWN_FAILED` while ownership remains unresolved\. Wait for a terminal outcome; never launch another way or replay as a retry\."),
     ("wake", "## The loop", "landing-reconciling-no-replay", r"`--wait` timeout code 85 is the job wait deadline, not a spawn-state result \(`panewire` `internal/fleet/command\.go:82`\)\. A task claim is still required as landing proof\. \(`panewire` main `2b76a6341972b61f8f520b228383d0b599d510ac`, `internal/fleet/submission\.go` `WaitSpawn`; #372, hk 3676\.\)"),
     ("wake", "## Authority", "no-credential-reads", r"\*\*No session reads credentials\.\*\* No session \(design, seat or worker\) reads, sources, copies or prints"),
     ("wake", "## The loop", "close-after-landing", r"The design session may close once landing is proven"),

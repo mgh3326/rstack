@@ -246,7 +246,7 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    | Any other, with `spawn refused: <reason> (operation <id>)` | `failed` or `retryable`: not landed | §On spawn failure; never replay |
    | Any other, with `spawn ownership is unresolved` | `deadline_exceeded`: the hub keeps ownership after its request deadline | Never launch; §On spawn failure |
 
-   | Spawn state `reconciling` | `--wait` keeps polling and emits no `SPAWN_FAILED` while ownership remains unresolved | Wait for a terminal outcome; never launch another way or replay as a retry |
+   Spawn state `reconciling`: `--wait` keeps polling and emits no `SPAWN_FAILED` while ownership remains unresolved. Wait for a terminal outcome; never launch another way or replay as a retry.
 
    `--wait` timeout code 85 is the job wait deadline, not a spawn-state result (`panewire` `internal/fleet/command.go:82`). A task claim is still required as landing proof. (`panewire` main `2b76a6341972b61f8f520b228383d0b599d510ac`, `internal/fleet/submission.go` `WaitSpawn`; #372, hk 3676.) Where the pane's host is reachable, `ops` spawn §4-2 adds one read-only look at the pane.
 7. **Close.** The design session may close once landing is proven. It sends no success notice:
