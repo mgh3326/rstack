@@ -241,7 +241,7 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
 
    | Exit | Meaning | Do |
    |---|---|---|
-   | `85` (`wait timeout for job`) | The job wait expired. It proves the spawn landed only if `handoffkeep tasks show <id>` has the matching `claimed_by` and `refs.job_id`; `85` alone does not prove landing | Check the task claim before proceeding |
+   | `85` (`wait timeout for job`) | Landed: `WaitSpawn` returned `succeeded`, and the job wait expired while the job remained active | Comment the request id on the task, go to step 7; if the task claim is missing, investigate the discrepancy without launching or replaying |
    | `0`, `83`, `84` | Landed, then the job completed, escalated or was lost (`83` escalated means `panewire escalate`; an ESC alone no longer ends the job) | Comment the request id; on `0` mergewake takes the PR (step 7); handle the ESC or the loss |
    | Any other, with `spawn refused: <reason> (operation <id>)` | `failed` or `retryable`: not landed | §On spawn failure; never replay |
    | Any other, with `spawn ownership is unresolved` | `deadline_exceeded`: the hub keeps ownership after its request deadline | Never launch; §On spawn failure |
