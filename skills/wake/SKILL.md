@@ -241,7 +241,7 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
 
    | Exit | Meaning | Do |
    |---|---|---|
-   | `85` (`wait timeout for job`) | `WaitSpawn` returned `succeeded`, and the job wait expired while the job remained active | If the task refs show matching `claimed_by` and `refs.job_id`, comment the request id and go to step 7. If the claim is missing, do not go to step 7: recheck task refs, inspect the job record and (where reachable) the pane via `ops` spawn §4-2; comment what you find, emit ESC `--type decision` to the owner lane, and wait for its answer in the inbox. Never launch or replay |
+   | `85` (`wait timeout for job`) | `WaitSpawn` returned `succeeded`, and the job wait expired while the job remained active | If the task refs show matching `claimed_by` and `refs.job_id`, comment the request id and go to step 7. If the claim is missing, do not go to step 7: recheck task refs, inspect the job record and, where reachable, make only the read-only pane observation in `ops` spawn §4-2; do not re-inject the brief. Comment what you find, emit ESC `--type decision` to the owner lane, and wait for its answer in the inbox. Never launch or replay |
    | `0`, `83`, `84` | Landed, then the job completed, escalated or was lost (`83` escalated means `panewire escalate`; an ESC alone no longer ends the job) | Comment the request id; on `0` mergewake takes the PR (step 7); handle the ESC or the loss |
    | Any other, with `spawn refused: <reason> (operation <id>)` | `failed` or `retryable`: not landed | §On spawn failure; never replay |
    | Any other, with `spawn ownership is unresolved` | `deadline_exceeded`: the hub keeps ownership after its request deadline | Never launch; §On spawn failure |
