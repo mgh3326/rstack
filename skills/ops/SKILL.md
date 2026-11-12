@@ -36,9 +36,9 @@ anything here. Unset or missing is normal — the abstract rules below apply alo
   cmd) receives `lane.event` (`relay.md` §3-1). If you cannot see the receiver (another host,
   `panewire find` misses it), `emit` rc 0 is sufficient — no fallback channel, no ESC about
   delivery.
-- **Every `panewire emit` between sessions carries `--type`.** A notice, receipt or handoff note
-  that needs no reply is `info` or `ack` (the hub files it in the inbox). Only what needs action
-  now is `decision`, `blocked` or `order` (interrupt). A completion the receiver is waiting on
+- **Every `panewire emit` between sessions carries `--type`.** A reply, acknowledgement or status
+  that asks for nothing is `info` (the hub files it in the inbox). A request for action is never
+  `info`; use `decision`, `blocked` or `order` as appropriate (operator decision 151). A completion the receiver is waiting on
   (a worker's or seat's READY, a `[consult-done]`) is `--type ready`. Operator 2026-11-05.
   A worker's READY to a design-session lane is recorded, not delivered (panewire hk 3426); the
   design session does not wait for it (`wake` §The loop step 7).
@@ -50,8 +50,12 @@ anything here. Unset or missing is normal — the abstract rules below apply alo
   a bounded blocking wait in the background, a scheduled wake); if there is none,
   run one bounded blocking wait in the background (for example
   `timeout 20m gh pr checks <n> --watch`, or `panewire inbox wait --lane <lane> --timeout 11m`;
-  `watching.md`) and act on its exit. A wait that times out twice becomes a `blocked`
-  event to the owner lane, not a third wait.
+  `watching.md`) and act on its exit. After READY is recorded, a wait timeout ends the worker's
+  turn with `info`, not `blocked`; `blocked` remains for a worker that has not reached READY. Before
+  READY, a wait that times out twice becomes a `blocked` event to the owner lane, not a third wait.
+  Wait for a busy Unity slot without an event and report it only after the brief's limit. If a review
+  command cannot run on the worker's host, report it to the review tool's design lane,
+  not this repository's lane (operator decision 152).
 - **One launcher per task.** Use `panewire spawn`; a network retry replays the same saved request and key. Never create another live job or override unresolved ownership (a fresh duplicate claim exits 74). Quota is `panewire quota`; review and post-merge cleanup are
   `mergewake`.
 - **Every packet and brief carries `comms-contract: v1`** (`relay.md` §3-1).

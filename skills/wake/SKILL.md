@@ -427,7 +427,7 @@ original guards. A temporary observation uses `panewire wait --agent NAME --stat
 
 ## Escalation and notifications
 
-- A request that needs action is sent as `--type order`; `info` is only for a notice that needs no action.
+- A reply, acknowledgement or status that asks for nothing is sent as `--type info`; a request for action is never `info` and uses the appropriate action type (operator decision 151).
 - Record a dependency on another repository's task when filing it with `handoffkeep tasks relate <blocker> --kind blocks --other <blocked>`, not only in a comment.
 *Temporary (operator 2026-11-12, hk 4114): ends when hk automatic unblocked notices deploy (hk 3292).*
 When a lane finishes a blocker, it tells the waiting lane with an `order` that names the unblocked task.
@@ -435,9 +435,11 @@ When a lane finishes a blocker, it tells the waiting lane with an `order` that n
 - If the receiver settles something different from the ask with the operator, it tells the sender lane with an `order`.
 - Decisions (scope, trade-offs, anything irreversible) go to the operator directly from the
   design session. Workers escalate to their parent lane and wait; they do not guess.
-- **Review non-convergence (the round rule):** The same worker keeps patching at the same seat after round 3 is not allowed (`fleet-review` §Escalation ladder).
-*Temporary (operator 2026-11-12, hk 4257): ends when mergewake hk 4256 and panewire hk 4262 are deployed (hk 4256).*
-Until mergewake hk 4256 and panewire hk 4262 are deployed, on the round-3 ESC, make sure the worker takes the consult one grade above in another family and re-spawns the PR's work one ladder step up (`fleet-review` §Escalation ladder). After the tools ship, the design session does nothing at round 3 (the hub restarts the author one ladder step up; the design lane gets an `info` record). In both states, at round 5 without a pass (the round-5 `decision` event once mergewake hk 4256 ships), the design session cuts the scope (the part that keeps drawing findings becomes a follow-up task, the rest merges) or takes one SS consult. When no ladder step is left, the PR goes to a lead (`lead` §When to use, Exception — a non-converging PR).
+- **Review non-convergence (the round rule):** At round 3 without a pass, the worker stops patching and asks a consult one grade above its seat in another family, with every finding and a question about the root cause; nothing else happens at round 3. At round 5 without a pass, the worker moves one ladder step up. At round 7 without a pass, the PR is held and the design session cuts scope or takes one SS consult (`fleet-review` §Escalation ladder; operator decision 148).
+*Temporary (operator 2026-11-12, hk 4268): ends when panewire hk 4262 ships (hk 4262).*
+Until panewire hk 4262 ships, at round 5 the worker ESCs with every finding and the design session re-spawns the PR's work pinned to the next rung. After panewire hk 4262 ships, the hub moves the worker one step up on the same worktree and the design lane gets an inbox record, no interrupt.
+*Temporary (operator 2026-11-12, hk 4268): ends when mergewake hk 4264 ships (hk 4264).*
+Until mergewake hk 4264 ships, at round 7 the worker ESCs and the design session keeps the PR held while it cuts scope or takes one SS consult. After mergewake hk 4264 ships, mergewake holds the PR and sends the design lane one event at round 7. The same worker does not keep patching at the same seat after round 5. When no ladder step is left, the PR goes to a lead (`lead` §When to use, Exception — a non-converging PR).
 - From a design session, the desk lane gets one one-line notice: the close hand-off (§Authority).
   ESC decisions, spawn failures and merge holds stay with the session. There is no success notify: mergewake already
   notifies the owner lane.
@@ -452,7 +454,7 @@ Until mergewake hk 4256 and panewire hk 4262 are deployed, on the round-3 ESC, m
   (`PANEWIRE_DECISION_TIMEOUT_S`, six hours by default) unless a later lane event from the pane resumes the job
   first. Only READY or DONE, with a stable report, completes a job. To give up, run
   `panewire escalate <job> --question '<why>'`. Source: panewire `docs/r21-lane-event.md` (panewire@e1f9f39, lines 100-119).
-- **A `MERGE_OVERDUE` notice that reaches a design session is not merge authority:** the session acks it with `--type ack` and does nothing else (mergewake already sent the desk an FYI; the operator opens a lead session).
+- **A `MERGE_OVERDUE` notice that reaches a design session is not merge authority:** the session replies with `--type info` and does nothing else (mergewake already sent the desk an FYI; the operator opens a lead session).
 - Deploys and infra of the repo are its design session's (§Authority); operator-desk takes them only
   while that repo has no design session open.
 - A worker's READY/ESC reach its parent lane — the owner lane: the design session's lane for its
@@ -609,9 +611,13 @@ When the Acceptance list is met and checked, stop and report. Do not add feature
   yourself; mergewake runs it on your fix delta (`fleet-review` §Rounds). If the config is
   missing, skip the review and say so in the report; a skipped review never satisfies the merge
   gate — mergewake runs it before merging.
-- **Review non-convergence at round 3 (worker side):** At round 3 without a pass, stop patching; the same worker keeps patching at the same seat after round 3 is not allowed. Ask a consult one grade above your own seat in another family (`ops` consult), give it every finding so far, and ask for the root cause. Once mergewake hk 4256 ships, the directive arrives with mergewake's findings.
-*Temporary (operator 2026-11-12, hk 4257): ends when mergewake round-3 directive ships (hk 4256).*
-Until mergewake hk 4256 ships, also ESC to the owner lane with the list of every finding so far.
+- **Review non-convergence at round 3 (worker side):** At round 3 without a pass, stop patching and ask a consult one grade above your seat in another family (`ops` consult), giving it every finding so far and asking for the root cause; nothing else happens at round 3. At round 5 without a pass, the worker moves one ladder step up. At round 7 without a pass, the PR is held and the design session cuts scope or takes one SS consult. The same worker does not keep patching at the same seat after round 5.
+*Temporary (operator 2026-11-12, hk 4268): ends when panewire hk 4262 ships (hk 4262).*
+Until panewire hk 4262 ships, at round 5 the worker ESCs with every finding so the design session can re-spawn the PR's work pinned to the next rung. After panewire hk 4262 ships, the hub moves the worker one step up on the same worktree and the design lane gets an inbox record, no interrupt.
+*Temporary (operator 2026-11-12, hk 4268): ends when mergewake hk 4264 ships (hk 4264).*
+Until mergewake hk 4264 ships, at round 7 the worker ESCs so the design session can keep the PR held while it cuts scope or takes one SS consult. After mergewake hk 4264 ships, mergewake holds the PR and sends the design lane one event at round 7.
+- A worker files at most one follow-up hk task for the PR, in the same project and lane and related to the parent task; put the findings in its list. The rule covers deferred findings and a fix that missed the merge. For a deferred finding, the worker replies `Disposition: defer <id>`. The worker sends one `info` naming the task. Ask the design session only for a missing fact or a design choice; a fix that missed the merge does not get a second PR or an ESC (operator decision 150).
+- A worker whose READY is recorded and whose wait times out ends its turn with `info`, not `blocked`; `blocked` is for a worker that has not reached READY. Wait for a busy Unity slot without an event and report it only after the brief's limit. If the review command cannot run on the worker's host, report it to the review tool's design lane, not this repository's lane (operator decision 152).
 - Vendored pstack skills follow the fleet adapter in `robin-mode` (rstack) §Fleet adapter for vendored pstack.
 - A refactor that moves or replaces existing checks: put the preservation table (`wake`
   §READY, Preservation evidence) in the report and PR body before the first READY, and rerun it

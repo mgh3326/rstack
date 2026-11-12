@@ -64,8 +64,13 @@ Severity decides blocking. Disposition is what you do about it.
 - **dismiss** — the code or context proves no change is needed, or it matches a skip pattern
   below. Reply with the reason. A dismissed finding stays dismissed unless a later review
   re-raises it with new evidence on changed lines.
-- **defer** — real but outside the contract or the PR's size. Create the hk task first, cite
-  its id in the reply.
+- **defer** — real but outside the contract or the PR's size. The worker files at most one
+  follow-up hk task per PR, in the same project and lane and related to the parent task; put the
+  findings in its list.
+  For a deferred finding, the worker replies `Disposition: defer <id>`. The
+  worker sends one `info` to the design session naming the task. Ask the design session only for a
+  missing fact or a design choice. The same worker files a follow-up task for a fix that missed the
+  merge; do not open a second PR or ESC it to the design session (operator decision 150).
 - A resolved finding is resolved. Never push a commit only to unblock a gate, quiet a bot or
   add a test for a dismissed finding. Never churn code to satisfy a reviewer's taste.
 - **Never skip, whatever the pattern file says:** security, privacy, auth, permission
@@ -114,12 +119,12 @@ only because it lies outside the delta.
 - **Trigger:** 3 review rounds without convergence (a new critical/high on each); mergewake's ESC after the
   third round is the signal. The number is set again from data once mergewake records real round counts
   (hk 3908).
-- **Worker side at round 3:** at round 3 without a pass, stop patching; the same worker keeps patching at the same seat after round 3 is not allowed. Ask a consult one grade above your own seat in another family (`ops` consult), give it every finding so far, and ask for the root cause. Once mergewake hk 4256 ships, the directive arrives with mergewake's findings.
-*Temporary (operator 2026-11-12, hk 4257): ends when mergewake round-3 directive ships (hk 4256).*
-Until mergewake hk 4256 ships, the worker also ESCs to the owner lane with the list of every finding.
+- **Worker side at round 3:** at round 3 without a pass, stop patching and ask for a consult one grade above your own seat in another family (`ops` consult), giving it every finding so far and asking for the root cause. Nothing else happens at round 3 (operator decision 148).
 - **Design-session side:**
-*Temporary (operator 2026-11-12, hk 4257): ends when mergewake hk 4256 and panewire hk 4262 are deployed (hk 4256).*
-Until mergewake hk 4256 and panewire hk 4262 are deployed, on the round-3 ESC, make sure the worker takes the consult and re-spawns the PR's work pinned to the next rung with `--override-reason 'ladder step <from> → <to>, PR <n>'` and records the failed rung (hk 3887). After the tools ship, the design session does nothing at round 3 (the panewire hub restarts the author one ladder step up on the same worktree and branch, and the design lane gets only an `info` record). In both states, at round 5 without a pass (the round-5 `decision` event once mergewake hk 4256 ships), the design session cuts the scope (the part that keeps drawing findings becomes a follow-up task, the rest merges) or takes one SS consult.
+*Temporary (operator 2026-11-12, hk 4268): ends when panewire hk 4262 ships (hk 4262).*
+Until panewire hk 4262 ships, at round 5 without a pass the worker ESCs with every finding; the design session re-spawns the PR's work pinned to the next rung with `--override-reason 'ladder step <from> → <to>, PR <n>'` and records the failed rung (hk 3887). After panewire hk 4262 ships, the hub moves the worker one ladder step up on the same worktree; the design lane gets an inbox record and no interrupt.
+*Temporary (operator 2026-11-12, hk 4268): ends when mergewake hk 4264 ships (hk 4264).*
+Until mergewake hk 4264 ships, at round 7 without a pass the worker ESCs; the design session keeps the PR held, then cuts the scope (the part that keeps drawing findings becomes a follow-up task and the rest merges) or takes one SS consult on the design. After mergewake hk 4264 ships, mergewake holds the PR and sends the design lane one event at round 7; the design session cuts the scope or takes one SS consult. The same worker does not keep patching at the same seat after round 5.
 - **Step:** hk:doc `policy/model-families` §The escalation ladder is the one home of the order — same model one
   effort up to that model's ladder cap, then the next model of the family at medium, then one try on another
   family's seat at the same grade (operator A26).
