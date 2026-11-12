@@ -40,7 +40,10 @@ REQUIRED = [
     # r2 (hk:doc decision/2026-11-07/design-session-desk-authority): the desk is the fallback for a
     # project that has no design session open, and it receives the session's hand-off.
     # PR #48 finding r4501835276: a closed session's jobs keep its lane as owner.
-    ("desk", None, "desk-reads-closed-lane", r"until that repo's next design session opens the desk reads their ESCs and spawn\s+failures in that lane's inbox"),
+    ("desk", None, "desk-reads-closed-lane", r"A closed session's jobs keep its lane as owner \(`wake` §The loop step 5\)"),
+    ("desk", None, "sessionless-lane-intake", r"세션이 열려 있지 않은 레인으로 온 주문, ESC, READY, finding은 desk가 받아 직접 처리하거나, 일이 많으면 다시 레인으로 나눈다\. 다시 나눌 때는 운영자에게 해당 레포의 디자인 세션을 열어 달라고 하고, 세션이 열리면 그 세션에 일을 넘긴다\. 수신함에 남겨 다음 세션을 기다리지 않는다\."),
+    ("desk", "## Resume", "sessionless-inbox-until-wake", r"\*Temporary \(operator 2026-11-12, hk 4152\): ends when panewire wakes the desk for a lane with no live session \(hk 4150\)\.\* 그때까지 desk는 resume할 때와 다음에 깨어날 때 세션이 없는 레인들의 수신함도 직접 확인하고, 도착한 일을 처리한다\."),
+    ("desk", None, "sessionless-sender-route", r"보낸 쪽은 계속 그 레포의 디자인 레인으로 보낸다\."),
     ("desk", None, "desk-scope", r"The desk takes a project's ESC decisions, spawn failures, merge holds and deploys only while that project has no design session open — with one open they are the session's \(`wake` §Authority\)\."),
     ("desk", None, "desk-close-handoff", r"It\s+receives a closing session's one-line hand-off; a session sends no notice before touching a target several projects share\. Lane routes stay with the desk\."),
     ("desk", "## Containment", "ledger-key", r"`ops/workaround-ledger`"),

@@ -49,8 +49,9 @@ operator-desk; `ops` deploy), or decisions (ask the operator).
   performs the live mutation. The repo's design session orders the rollout, or operator-desk while
   that repo has no design session open.
 - **operator-desk:** receives a project's ESC decisions, spawn failures, merge holds and deploys
-  only while that project has no design session open, and registers lane routes. It is not in the
-  dispatch path.
+  only while that project has no design session open, and registers lane routes. `desk` §opening에 따라
+  세션이 없는 레인으로 온 일은 직접 처리하거나 다시 레인으로 나눈다. 프로젝트에 디자인 세션이 열려
+  있는 동안에는 dispatch path에 들어가지 않는다.
 - **Operator only:** real orders and fund moves, new external accounts or public posts,
   policy relaxations, lane-contract conflicts, irreversible external actions. An approval
   covers one action in one session; it does not generalise to the next.
@@ -461,7 +462,7 @@ When a lane finishes a blocker, it tells the waiting lane with an `order` that n
   record and `panewire inbox list`. ESC (`--type decision`), `SPAWN_FAILED` and failures that need action
   still reach the owner lane. The desk still receives READY from a worker it owns.
 *Temporary (operator 2026-11-12, hk 4114): ends when hk closes children on merge (hk 3294).*
-After a bundle PR merges, the repo's design session transitions every delivered child, identified from the bundle parent task's children and the PR body, with `handoffkeep tasks transition <child> --to merged --pr <PR URL> --head-sha <H>`. If that design session has closed, `operator-desk` performs the transition from the same records. The deploy record's `included_prs` then moves them to `deployed`.
+묶음 PR이 머지된 뒤 아직 `reviewing`에 이르지 않은 자식 작업은 디자인 세션이 다음 순서로 전환한다: 먼저 `handoffkeep tasks transition <child> --to developing --no-job 'Delivered by bundle PR <url>'`로 시작하고, 이어 `handoffkeep tasks transition <child> --to reviewing --pr <PR URL>`로 검토 상태에 넣은 다음, `handoffkeep tasks transition <child> --to merged --pr <PR URL> --head-sha <H>`로 닫는다. 자식 작업은 묶음 부모 작업의 자식 목록과 PR 본문으로 확인한다. 디자인 세션이 닫혔다면 같은 기록을 바탕으로 `operator-desk`가 전환한다. 마지막 단계의 PR 및 head SHA 기록으로 배포 기록의 `included_prs`가 해당 작업들을 `deployed`로 옮긴다.
 
 ## Brief rules
 
