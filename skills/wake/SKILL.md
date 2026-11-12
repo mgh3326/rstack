@@ -208,7 +208,7 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    not pin an omp rung for a brief that can end in an ESC.
 5. **Preview, then spawn** (`ops` spawn). Spawn only tickets with no unlanded blocker. Later tickets
    are spawned when their blockers merge, by whichever session is open (the design session if still
-   open, otherwise the desk). Two tasks that change the same concept are not spawned at the same time; the second is spawned after the first has merged, and its brief is written against the merged state. Record the order with `handoffkeep tasks relate <first> --kind blocks --other <second>`. Tasks that only share files stay under the existing one-PR rule; tasks on different concepts still dispatch in parallel (decision 80).
+   open, otherwise the desk). Two tasks that change the same concept are not spawned at the same time (even as first steps of a series bundle in different files); the second is spawned after the first has merged, and its brief is written against the merged state. Record the order with `handoffkeep tasks relate <first> --kind blocks --other <second>`. Tasks that only share files stay under the existing one-PR rule; tasks on different concepts still dispatch in parallel (decision 80).
    Omit `-w` to use the executing host's configured workspace. `-w <label|id>` remains an
    optional override, resolved on that host; it does not select the model or quota pool.
    ```sh
