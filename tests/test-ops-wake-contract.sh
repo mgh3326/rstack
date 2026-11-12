@@ -138,7 +138,7 @@ REQUIRED = [
     ("wake", "## The loop", "accepted-proves-nothing", r"it proves nothing about a pane"),
     ("wake", "## The loop", "landing-proof", r"you read it from the exit of the step 5 run with `--wait --wait-timeout 2m` \(one launch, not a second spawn\), never with your own HTTP call"),
     ("wake", "## The loop", "landing-hk-claim", r"`handoffkeep tasks show <id>` with `claimed_by` and `refs\.job_id` equal to `<job>`"),
-    ("wake", "## The loop", "landing-exit-85", r"\| `85` \(`wait timeout for job`\) \| The job wait expired\. It proves the spawn landed only if `handoffkeep tasks show <id>` has the matching `claimed_by` and `refs\.job_id`; `85` alone does not prove landing"),
+    ("wake", "## The loop", "landing-exit-85", r"\| `85` \(`wait timeout for job`\) \| `WaitSpawn` returned `succeeded`, and the job wait expired while the job remained active \| If `handoffkeep tasks show <id>` has matching `claimed_by` and `refs\.job_id`, comment the request id and go to step 7\. If the claim is missing, do not go to step 7: comment the request id and missing claim on the task, emit ESC `--type decision` to the owner lane, and wait; never launch or replay"),
     ("wake", "## The loop", "landing-refused-no-replay", r"`spawn refused: <reason> \(operation <id>\)` \| `failed` or `retryable`: not landed \| §On spawn failure; never replay"),
     ("wake", "## The loop", "worktree-push-after-add", r"git -C ~/work/<repo> worktree add -b wk/<slug> ~/work/<repo>\.<slug> origin/main\s+git -C ~/work/<repo>\.<slug> push -u origin wk/<slug>"),
     ("wake", "## The loop", "worktree-push-rc81", r"Push immediately after creating the worktree: `panewire spawn` refuses an unpushed branch with rc 81 before making any hub request"),
