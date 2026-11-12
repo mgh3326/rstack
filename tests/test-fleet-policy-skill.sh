@@ -34,6 +34,7 @@ role_name = re.search(r"(?m)^name:\s*(\S+)", docs["fleet"]).group(1)
 REQUIRED = [
     ("fleet", "## When to use", "operator opens role", r"The operator opens this session directly; run one at a time"),
     ("fleet", "## When to use", "loads three skills", r"Load this skill with `wake` and `ops`"),
+    ("fleet", "## When to use", "policy-session-name", r"A policy session uses its lane name as its Claude session name \(`claude --name <lane>` or `/rename <lane>`\), so others can address it"),
     ("fleet", "## When to use", "scope exclusions", r"not for repo code \(the owning design session\), deploys \(the owning repo's design session, or operator-desk while that repo has no design session open\), or a hotfix \(lead\)"),
     ("fleet", "## Authority", "one recorded yes", r"Settle cross-repo policy with the operator\. Each decision needs one recorded yes before it takes effect"),
     ("fleet", "## Authority", "permanent direct doc and task writes plus conditional catalog grant", r"This role writes its hk `policy/\*`, `decision/\*`, `experiment/\*` and `findings/\*` docs and hk tasks directly\. It may write catalog-push files and the catalog itself once hk admits its client id"),

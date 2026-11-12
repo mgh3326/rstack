@@ -100,7 +100,7 @@ Read the file before triaging; if it is absent, triage from the rubric alone.
 
 ## Rounds
 
-Review is not capped at one pass. The whole diff is reviewed once. **After fixes, a later round
+Review is not capped at one pass. The whole diff is reviewed once. **Review rounds are counted, not heads; a head that only merges the base is not a round.** **After fixes, a later round
 checks only the open findings, the fix delta and its impact paths**, with the prior findings and
 their dispositions in the reviewer's context and an instruction not to reopen them. Every lens
 the PR needs (for example correctness and state-risk on `blocking[].paths`) runs in the same
@@ -111,14 +111,18 @@ only because it lies outside the delta.
 
 ### Escalation ladder — a PR that does not converge
 
-- **Trigger:** 3 reviewed heads without convergence (a new critical/high on each); mergewake's ESC after the
-  third round is the signal. The number is set again from data once mergewake records real head counts
+- **Trigger:** 3 review rounds without convergence (a new critical/high on each); mergewake's ESC after the
+  third round is the signal. The number is set again from data once mergewake records real round counts
   (hk 3908).
+- **Worker side at round 3:** at round 3 without a pass, stop patching; the same worker keeps patching at the same seat after round 3 is not allowed. Ask a consult one grade above your own seat in another family (`ops` consult), give it every finding so far, and ask for the root cause. Once mergewake hk 4256 ships, the directive arrives with mergewake's findings.
+*Temporary (operator 2026-11-12, hk 4257): ends when mergewake round-3 directive ships (hk 4256).*
+Until mergewake hk 4256 ships, the worker also ESCs to the owner lane with the list of every finding.
+- **Design-session side:**
+*Temporary (operator 2026-11-12, hk 4257): ends when mergewake hk 4256 and panewire hk 4262 are deployed (hk 4256).*
+Until mergewake hk 4256 and panewire hk 4262 are deployed, on the round-3 ESC, make sure the worker takes the consult and re-spawns the PR's work pinned to the next rung with `--override-reason 'ladder step <from> → <to>, PR <n>'` and records the failed rung (hk 3887). After the tools ship, the design session does nothing at round 3 (the panewire hub restarts the author one ladder step up on the same worktree and branch, and the design lane gets only an `info` record). In both states, at round 5 without a pass (the round-5 `decision` event once mergewake hk 4256 ships), the design session cuts the scope (the part that keeps drawing findings becomes a follow-up task, the rest merges) or takes one SS consult.
 - **Step:** hk:doc `policy/model-families` §The escalation ladder is the one home of the order — same model one
   effort up to that model's ladder cap, then the next model of the family at medium, then one try on another
-  family's seat at the same grade (operator A26). The repo's design session, else operator-desk, starts no fourth fix round on the
-  same rung: it re-spawns the PR's work pinned to the next rung with
-  `--override-reason 'ladder step <from> → <to>, PR <n>'` and records the failed rung (hk 3887).
+  family's seat at the same grade (operator A26).
 - **panewire does not compute the step yet** (hk 3917 item 4): the session reads the table in the policy
   document.
 - **Then the lead:** when the ladder has no step left, or the cause is a correctness design the brief left

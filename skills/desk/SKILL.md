@@ -13,6 +13,8 @@ the record.
 
 **Prevents:** 세션이 닫힌 뒤 해당 레인으로 들어온 일이 수신함에 쌓여 누락되는 문제.
 
+A desk session uses its lane name as its Claude session name (`claude --name <lane>` or `/rename <lane>`), so others can address it.
+
 The desk takes a project's ESC decisions, spawn failures, merge holds and deploys only while that
 project has no design session open — with one open they are the session's (`wake` §Authority). It
 receives a closing session's one-line hand-off; a session sends no notice before touching a target

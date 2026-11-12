@@ -26,7 +26,13 @@ REQUIRED = [
     ("fleet", "critical-high-receiver", r"on every other PR, the repo's design session judges, or operator-desk while that repo has none open"),
     ("fleet", "escalation-receiver", r"ESC to the repo's design session, else operator-desk"),
     ("fleet", "round-receiver", r"repo's design session, else operator-desk, decides"),
-    ("fleet", "ladder-trigger", r"\*\*Trigger:\*\* 3 reviewed heads without convergence \(a new critical/high on each\)"),
+    ("fleet", "ladder-trigger", r"\*\*Trigger:\*\* 3 review rounds without convergence \(a new critical/high on each\)"),
+    ("fleet", "rounds-not-heads", r"Review rounds are counted, not heads; a head that only merges the base is not a round"),
+    ("fleet", "worker-round-3-stop-consult", r"at round 3 without a pass, stop patching; the same worker keeps patching at the same seat after round 3 is not allowed\. Ask a consult one grade above your own seat in another family \(`ops` consult\), give it every finding so far, and ask for the root cause"),
+    ("fleet", "worker-round-3-interim-esc", r"Until mergewake hk 4256 ships, the worker also ESCs to the owner lane with the list of every finding"),
+    ("fleet", "ladder-round-rule-marker", r"\*Temporary \(operator 2026-11-12, hk 4257\): ends when mergewake hk 4256 and panewire hk 4262 are deployed \(hk 4256\)\.\*"),
+    ("fleet", "ladder-round-5-cut-or-ss-consult", r"In both states, at round 5 without a pass \(the round-5 `decision` event once mergewake hk 4256 ships\), the design session cuts the scope \(the part that keeps drawing findings becomes a follow-up task, the rest merges\) or takes one SS consult"),
+    ("fleet", "ladder-same-worker-patching-not-allowed", r"the same worker keeps patching at the same seat after round 3 is not allowed"),
     ("fleet", "ladder-policy-home", r"hk:doc `policy/model-families` §The escalation ladder is the one home of the order"),
     ("fleet", "ladder-pinned-respawn", r"re-spawns the PR's work pinned to the next rung with `--override-reason 'ladder step <from> → <to>, PR <n>'` and records the failed rung"),
     ("fleet", "ladder-step-three", r"then one try on another family's seat at the same grade \(operator A26\)"),
@@ -44,6 +50,7 @@ REQUIRED = [
     ("lead", "trailers-command", r"bin/pr-trailers --task <id> --family <family> --profile <profile> --lane lead"),
 ]
 FORBIDDEN = [
+    ("fleet", "old-heads-trigger", r"3 reviewed heads"),
     ("fleet", "old-desk-receiver", r"the desk applies it by hand"),
     ("fleet", "ladder-next-grade", r"another family's seat at the same or the next grade"),
     ("fleet", "old-desk-review-check", r"the desk checks it"),
@@ -75,6 +82,7 @@ for doc, name, pattern in REQUIRED:
     expect_red(f"{doc}-{name}-deleted", check, {**docs, doc: delete_row(docs[doc], None, pattern, name)})
     count += 1
 INJECTIONS = {
+    "old-heads-trigger": "**Trigger:** 3 reviewed heads without convergence",
     "old-desk-receiver": "the desk applies it by hand",
     "ladder-next-grade": "then another family's seat at the same or the next grade.",
     "old-desk-review-check": "the desk checks it",
