@@ -304,10 +304,10 @@ REQUIRED = [
     # hk 3919 (A17 items 3, 4, 8 with A10, A11).
     ("wake", "## The loop", "pin-names-rung-with-effort", r"The pin names a rung that has a catalog row: `-m <profile> --effort <e>`\. A pin without an effort launches with no effort and matches no catalog row"),
     ("wake", "## The loop", "no-omp-pin-for-esc-brief", r"Until hk 3917 item 1 is fixed, do not pin an omp rung for a brief that can end in an ESC"),
+    ("consult", "## 1. 자문처 결정", "consult-ss-rung", r"S\+ 급 질문자의 자문은 SS 급 rung 으로 간다\. SS 급 질문자는 다른 계열의 SS 급 rung 에 묻는다\."),
     ("wake", "## Settle before spawning", "blocks-read-by-quota-stop", r"\*Takes effect with hk 3891:\* quota-stop reads this relation"),
     ("wake", "## Settle before spawning", "handover-now-label", r"it blocks another task, it is a reviewer or verifier job, or it carries the label `handover-now`; otherwise it waits for the reset \(a limit under 10 minutes always waits\)\. A missing edge means the task waits"),
     ("consult", "## 1. 자문처 결정", "consult-one-grade-up", r"\*\*자문은 질문자 task grade 보다 한 단계 위, 다른 계열에 묻는다\.\*\* task 가 없는 세션은 S\+ 에 묻는다"),
-    ("consult", "## 1. 자문처 결정", "consult-ss-rung", r"S\+ 급 질문자의 자문은 SS 급 rung 으로 간다\. SS 급 질문자는 다른 계열의 SS 급 rung 에 묻는다\."),
     ("wake", "## Brief rules", "brief-settles-design-choices", r"A brief settles every design choice before spawn\.\*\* \"Your choice; say which in the PR\" is allowed only for a choice that cannot change correctness \(naming, file layout\)"),
     ("wake", "## Brief rules", "brief-correctness-choices-settled", r"A state transition, a binding or authority rule, an idempotency key or a data invariant is decided in §Settle before spawning"),
     ("wake", "## The loop", "grade-a-integrity-strong-profile", r"Grade A work on state machines, ledgers, idempotency or data integrity runs on a strong profile, not a waste-tier pick: until panewire can express this on the task, pass an explicit `-m <profile>` with `--override-reason`"),
