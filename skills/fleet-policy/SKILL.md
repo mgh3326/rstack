@@ -46,3 +46,8 @@ This session is not for repo code (the owning design session), deploys (the owni
 - Keep a source register for every link the operator gives: the message, read date and method, redacted raw copy, finding, and decisions grounded in it.
 - A finding names exact source URLs and its read date. A decision names its findings and experiments.
 - Store records in hk docs. Close with a mechanical check of the decision doc against the transcript.
+
+## Backlog pass
+
+This session runs the backlog pass for the fleet-tool repositories and the small projects, in one pass, by hk:doc `policy/backlog-pass`. The trigger is named there: a lane's open list passes 40 tasks, a week has passed since the last pass, or the operator asks. The steps are in that doc; this skill does not restate them.
+

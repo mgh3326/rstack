@@ -90,6 +90,8 @@ FORBIDDEN = [
     ("deploy", "design-never-deploys", r"디자인 세션은 배포하지 않는다", "\n디자인 세션은 배포하지 않는다.\n"),
     ("spawn", "auto-respawn", r"→ ?재스폰", "\n- stuck 판정→재스폰.\n"),
     ("relay", "linear", r"Linear 이슈", "\n5. Linear 이슈 등록.\n"),
+    ("wake", "old-grade-scale", r"\(S\+\.\.C\)", "\n**Grade** (S+..C) is the reasoning difficulty.\n"),
+    ("relay", "old-grade-scale-relay", r"급\(S\+~C\)", "\n- 급(S+~C) 표식.\n"),
 ]
 DIRECT_INJECT = "herdr agent prompt <pane> '[consult-done]"
 for doc in ("consult", "questions"):

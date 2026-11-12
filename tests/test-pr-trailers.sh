@@ -58,6 +58,8 @@ PANEWIRE_LANE=env-lane expect_ok lane-flag-wins "$want" 'x (grade B, T1)' --task
 want_last=${want/Grade: B/Grade: S+}
 want_last=${want_last/Tier: T1/Tier: T3}
 expect_ok last-marker-wins "$want_last" 'a (grade C, T0) b (grade S+, T3)' --task 7 --family anthropic --profile p --lane l
+want_ss=${want/Grade: B/Grade: SS}
+expect_ok grade-ss "$want_ss" 'x (grade SS, T1)' --task 7 --family anthropic --profile p --lane l
 
 ARGS=(--task 7 --family anthropic --profile p --lane l)
 expect_rc2 hk-fails "$(title_json 'x (grade B, T1)')" 1 "${ARGS[@]}"
@@ -71,6 +73,8 @@ expect_rc2 empty-profile "$(title_json 'x (grade B, T1)')" 0 --task 7 --family a
 expect_rc2 empty-task "$(title_json 'x (grade B, T1)')" 0 --task '' --family anthropic --profile p --lane l
 expect_rc2 newline-profile "$(title_json 'x (grade B, T1)')" 0 --task 7 --family anthropic --profile $'p\nq' --lane l
 expect_rc2 newline-lane "$(title_json 'x (grade B, T1)')" 0 --task 7 --family anthropic --profile p --lane $'l\nm'
+expect_rc2 unknown-grade-sss "$(title_json 'x (grade SSS, T1)')" 0 "${ARGS[@]}"
+expect_rc2 unknown-grade-xplus "$(title_json 'x (grade X+, T1)')" 0 "${ARGS[@]}"
 
 rc=0
 HANDOFFKEEP="$tmp/missing-hk" bin/pr-trailers "${ARGS[@]}" >"$tmp/out" 2>"$tmp/err" || rc=$?

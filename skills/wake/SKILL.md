@@ -99,8 +99,8 @@ operator-desk; `ops` deploy), or decisions (ask the operator).
   rstack checkout and append it to the PR body; it reads the grade and tier from the hk task
   title and the lane from `--lane` or `PANEWIRE_LANE`.
 
-**Grade** (S+..C) is the reasoning difficulty, a separate axis. **Do not lower a grade
-because of quota** — if no pool can supply it, stop and report. Effort is an argument
+**Grade** (C, B, A, A+, S, S+, then SS above S+) is the reasoning difficulty, a separate axis.
+**Do not lower a grade because of quota** — if no pool can supply it, stop and report. Effort is an argument
 (`--effort`), not part of the profile name; count real use by `launch_profile`
 (`panewire reps`), not by the normalised pool column. Grade is a worker axis; lead and consult
 admission and effort are hk `policy/model-routing`. A hard single PR raises the grade: it is an
@@ -536,6 +536,10 @@ After a bundle PR merges, the repo's design session transitions every delivered 
 - Communicating clearly: readers (design session, operator) did not see the tool calls; lead with the result; short sentences, one point each, active voice, same word for the same thing.
 - Operator-facing Korean follows the same principles (hk:doc `policy/operator-facing-korean`); identifiers and commands stay as they are.
 - Machine-read one-line formats (READY lines, `[job] ESC | …`, trailers, `Commitments:` lines) are exempt.
+
+## Backlog pass
+
+A large project's own design session runs the same pass for its own project, by hk:doc `policy/backlog-pass`; the fleet-tool repositories and the small projects belong to the `fleet-policy` session (its §Backlog pass). The intake rules in that doc apply to every session that files tasks.
 
 ## Worker brief
 
