@@ -463,7 +463,7 @@ When a lane finishes a blocker, it tells the waiting lane with an `order` that n
   record and `panewire inbox list`. ESC (`--type decision`), `SPAWN_FAILED` and failures that need action
   still reach the owner lane. The desk still receives READY from a worker it owns.
 *Temporary (operator 2026-11-12, hk 4114): ends when hk closes children on merge (hk 3294).*
-묶음 PR이 머지된 뒤 아직 `reviewing`에 이르지 않은 자식 작업은 디자인 세션이 다음 순서로 전환한다: 먼저 `handoffkeep tasks transition <child> --to developing --no-job 'Delivered by bundle PR <url>'`로 시작하고, 이어 `handoffkeep tasks transition <child> --to reviewing --pr <PR URL>`로 검토 상태에 넣은 다음, `handoffkeep tasks transition <child> --to merged --pr <PR URL> --head-sha <H>`로 닫는다. 자식 작업은 묶음 부모 작업의 자식 목록과 PR 본문으로 확인한다. 디자인 세션이 닫혔다면 같은 기록을 바탕으로 `operator-desk`가 전환한다. 마지막 단계의 PR 및 head SHA 기록으로 배포 기록의 `included_prs`가 해당 작업들을 `deployed`로 옮긴다.
+After a bundle PR merges, the design session moves each delivered child that has not reached `reviewing` in three steps: `handoffkeep tasks transition <child> --to developing --no-job 'Delivered by bundle PR <url>'`, then `handoffkeep tasks transition <child> --to reviewing --pr <PR URL>`, then `handoffkeep tasks transition <child> --to merged --pr <PR URL> --head-sha <H>` (hk refuses a direct move from `backlog` to `merged` with `task_conflict`). It finds the children from the bundle parent task's child list and the PR body. If that design session has closed, `operator-desk` makes the same transitions from the same records. The PR URL and head SHA on the last step let the deploy record's `included_prs` move the children to `deployed`.
 
 ## Brief rules
 
