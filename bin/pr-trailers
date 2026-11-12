@@ -8,7 +8,7 @@ import re
 import subprocess
 import sys
 
-MARKER = re.compile(r'\(grade ([A-Z]\+?), (T[0-3])\)')
+MARKER = re.compile(r'\(grade (SS|S\+|S|A\+|A|B|C), (T[0-3])\)')
 
 
 def fail(message):
