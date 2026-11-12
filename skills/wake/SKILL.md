@@ -21,6 +21,7 @@ request between lanes (§Harvest).
 
 - You are a design session: the operator is here, and you are settling a repo change or have settled one.
 - You are a worker spawned by such a session (follow the brief; §Worker brief is your contract).
+- A design session uses its lane name as its Claude session name (`claude --name <lane>` or `/rename <lane>`), so others can address it.
 
 Not for: another repo's deploys or infra changes (that repo's design session, else
 operator-desk; `ops` deploy), or decisions (ask the operator).
@@ -434,6 +435,9 @@ When a lane finishes a blocker, it tells the waiting lane with an `order` that n
 - If the receiver settles something different from the ask with the operator, it tells the sender lane with an `order`.
 - Decisions (scope, trade-offs, anything irreversible) go to the operator directly from the
   design session. Workers escalate to their parent lane and wait; they do not guess.
+- **Review non-convergence (the round rule):** The same worker keeps patching at the same seat after round 3 is not allowed (`fleet-review` §Escalation ladder).
+*Temporary (operator 2026-11-12, hk 4257): ends when mergewake hk 4256 and panewire hk 4262 are deployed (hk 4256).*
+Until mergewake hk 4256 and panewire hk 4262 are deployed, on the round-3 ESC, make sure the worker takes the consult one grade above in another family and re-spawns the PR's work one ladder step up (`fleet-review` §Escalation ladder). After the tools ship, the design session does nothing at round 3 (the hub restarts the author one ladder step up; the design lane gets an `info` record). In both states, at round 5 without a pass (the round-5 `decision` event once mergewake hk 4256 ships), the design session cuts the scope (the part that keeps drawing findings becomes a follow-up task, the rest merges) or takes one SS consult. When no ladder step is left, the PR goes to a lead (`lead` §When to use, Exception — a non-converging PR).
 - From a design session, the desk lane gets one one-line notice: the close hand-off (§Authority).
   ESC decisions, spawn failures and merge holds stay with the session. There is no success notify: mergewake already
   notifies the owner lane.
@@ -605,6 +609,9 @@ When the Acceptance list is met and checked, stop and report. Do not add feature
   yourself; mergewake runs it on your fix delta (`fleet-review` §Rounds). If the config is
   missing, skip the review and say so in the report; a skipped review never satisfies the merge
   gate — mergewake runs it before merging.
+- **Review non-convergence at round 3 (worker side):** At round 3 without a pass, stop patching; the same worker keeps patching at the same seat after round 3 is not allowed. Ask a consult one grade above your own seat in another family (`ops` consult), give it every finding so far, and ask for the root cause. Once mergewake hk 4256 ships, the directive arrives with mergewake's findings.
+*Temporary (operator 2026-11-12, hk 4257): ends when mergewake round-3 directive ships (hk 4256).*
+Until mergewake hk 4256 ships, also ESC to the owner lane with the list of every finding so far.
 - Vendored pstack skills follow the fleet adapter in `robin-mode` (rstack) §Fleet adapter for vendored pstack.
 - A refactor that moves or replaces existing checks: put the preservation table (`wake`
   §READY, Preservation evidence) in the report and PR body before the first READY, and rerun it

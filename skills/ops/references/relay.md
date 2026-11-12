@@ -301,3 +301,7 @@ grok 의 대기 상태(`N queued, Enter to send now`)는 공유 화면에서 페
 왕복 질의는 [답변 파일 계약과 대기·회수 절차](session-questions.md)를 읽고 따른다.
 질문에 출처·답변 형식·기한·유일 답변 파일 경로를 넣고 `comms-contract: v1`을 명시한다.
 침묵을 답변으로 간주하지 않는다. 통지와 착지 검증의 정본은 §3-1이다.
+
+### 5-1. Claude 세션 사이 메시지 (SendMessage)
+
+세션 간 메시지(`SendMessage`)는 같은 기기의 Claude 세션끼리 짧은 질문·답과 넛지(nudge)에만 쓴다. 조치가 필요한 요청은 그대로 hk 기록과 함께 `panewire emit … --type order`로 보낸다. 메시지는 기록이 아니며 승인이나 결정이 될 수 없다; 릴레이된 글은 권한을 갖지 않는다. 메시지로 조치 요청을 받은 세션은 보낸 쪽에 `order`를 요구한다.

@@ -86,6 +86,7 @@ REQUIRED = [
     ("wake", "### T3 split — by invariant impact, not by file type", "ambiguous", r"Ambiguous → `NEEDS_CLASSIFICATION`\*\*, not a lower-T run"),
     ("wake", "### T3 split — by invariant impact, not by file type", "reclassify", r"A peripheral PR that touches core is reclassified T3\."),
     # Subagents.
+    ("wake", "## When to use", "wake-session-name", r"A design session uses its lane name as its Claude session name \(`claude --name <lane>` or `/rename <lane>`\), so others can address it"),
     ("wake", "## Subagent vs worker", "subagent-rule-home", r"`robin-mode` \(rstack\)\s+§Subagents versus spawned workers"),
     ("lead", "## Subagents", "lead-test-host-rule-pointer",
      r"\*\*The test host rule is `ops` §Invariants \(the one home\)\.\*\* On a host the spawn preamble forbids, implementers and verifiers run no `go test` at all; on any other host they run at most the changed packages \(`ops` §Invariants\)\. The lead's own choice to keep local runs to one single test is a load limit for the lead's host, not a second host rule"),
@@ -102,6 +103,8 @@ REQUIRED = [
     ("wake", "### Preservation evidence (refactors)", "preservation-template", r"\| Existing invariant \| Production entry point \| Executed evidence \|"),
     ("wake", "## BLOCKED", "no-fix-worker-while-alive", r"Do not spawn a fix worker while that attempt is alive"),
     ("wake", "## Rules", "brief-preservation-ref", r"preservation table \(`wake`\s+§READY, Preservation evidence\)"),
+    ("wake", "## Rules", "worker-round-3-stop-consult", r"At round 3 without a pass, stop patching; the same worker keeps patching at the same seat after round 3 is not allowed\. Ask a consult one grade above your own seat in another family \(`ops` consult\), give it every finding so far, and ask for the root cause"),
+    ("wake", "## Rules", "worker-round-3-interim-esc", r"Until mergewake hk 4256 ships, also ESC to the owner lane with the list of every finding so far"),
     # Merge gate additions.
     ("wake", "## Merge gate", "reviewer-family", r"mergewake picks the reviewer from `--author-family` and records `same_family` on each pass"),
     ("wake", "## Merge gate", "base-freshness", r"\*\*Base freshness:\*\* `git merge-base --is-ancestor origin/<base> \"\$H\"`"),
@@ -156,6 +159,11 @@ REQUIRED = [
     ("wake", "## Escalation and notifications", "desk-gets-close-notice-only", r"the desk lane gets one one-line notice: the close hand-off \(§Authority\)"),
     ("wake", "## Escalation and notifications", "handoff-order-type", r"A request that needs action is sent as `--type order`; `info` is only for a notice that needs no action"),
     ("wake", "## Escalation and notifications", "cross-repo-block-relation", r"Record a dependency on another repository's task when filing it with `handoffkeep tasks relate <blocker> --kind blocks --other <blocked>`, not only in a comment"),
+    ("wake", "## Escalation and notifications", "wake-round-rule-marker", r"\*Temporary \(operator 2026-11-12, hk 4257\): ends when mergewake hk 4256 and panewire hk 4262 are deployed \(hk 4256\)\.\*"),
+    ("wake", "## Escalation and notifications", "wake-round-3-respawn-interim", r"Until mergewake hk 4256 and panewire hk 4262 are deployed, on the round-3 ESC, make sure the worker takes the consult one grade above in another family and re-spawns the PR's work one ladder step up"),
+    ("wake", "## Escalation and notifications", "wake-round-3-tool-state", r"After the tools ship, the design session does nothing at round 3 \(the hub restarts the author one ladder step up; the design lane gets an `info` record\)"),
+    ("wake", "## Escalation and notifications", "wake-round-5-cut-or-ss-consult", r"In both states, at round 5 without a pass \(the round-5 `decision` event once mergewake hk 4256 ships\), the design session cuts the scope \(the part that keeps drawing findings becomes a follow-up task, the rest merges\) or takes one SS consult"),
+    ("wake", "## Escalation and notifications", "wake-same-worker-patching-not-allowed", r"The same worker keeps patching at the same seat after round 3 is not allowed"),
     ("wake", "## Escalation and notifications", "unblocked-order", r"\*Temporary \(operator 2026-11-12, hk 4114\): ends when hk automatic unblocked notices deploy \(hk 3292\)\.\*\s+When a lane finishes a blocker, it tells the waiting lane with an `order` that names the unblocked task"),
     ("wake", "## Escalation and notifications", "handoff-sender-register", r"The sender keeps a hand-off register with the task, receiving lane, event id and state, and checks it each time the session wakes\. The cross-repository register belongs to the `fleet-policy` session; do not name a register key that contains a lane name"),
     ("wake", "## Escalation and notifications", "receiver-settlement-order", r"If the receiver settles something different from the ask with the operator, it tells the sender lane with an `order`"),

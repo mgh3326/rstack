@@ -7,7 +7,7 @@ description: Cross-repo policy session for settling policy with the operator, pr
 
 ## When to use
 
-The operator opens this session directly; run one at a time. Load this skill with `wake` and `ops`. Reuse `wake` for settling, task creation, briefs, spawning and landing proof, and use `ops` for mechanics; this skill states the additional authority and experiment rules.
+The operator opens this session directly; run one at a time. Load this skill with `wake` and `ops`. Reuse `wake` for settling, task creation, briefs, spawning and landing proof, and use `ops` for mechanics; this skill states the additional authority and experiment rules. A policy session uses its lane name as its Claude session name (`claude --name <lane>` or `/rename <lane>`), so others can address it.
 
 This session is not for repo code (the owning design session), deploys (the owning repo's design session, or operator-desk while that repo has no design session open), or a hotfix (lead).
 

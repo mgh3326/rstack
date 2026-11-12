@@ -18,7 +18,7 @@ The operator opens the lead session directly. For now no other session spawns on
 - Uses: hotfix, incident (장애), root cause, urgent multi-PR work, or any goal the operator hands it without a written contract.
 - The normal flow is unchanged: design session (`wake`) → spawned worker → mergewake merge. A goal that already has a settled contract and no urgency goes there, not here.
 - **A hard single PR is not a lead's.** It is an implementer at a higher grade or an escalation-ladder step (`fleet-review` §Escalation ladder; `robin-mode` roles.md).
-- **Exception — a non-converging PR:** a PR whose review did not converge in 3 head rounds comes here although it has a brief, but only after the escalation ladder has no step left or when the cause is a correctness design the brief left open (`fleet-review` §Escalation ladder). The lead takes over the PR, its open findings and the brief; it re-diagnoses the design the brief left open and lands the PR under §Ledger (hk:doc `decision/2026-11-10/wake-vs-lead` item 4, ordered by `decision/2026-11-11/rstack-ladder-lead-reconcile`).
+- **Exception — a non-converging PR:** a PR whose review did not converge in 3 review rounds comes here although it has a brief, but only after the escalation ladder has no step left or when the cause is a correctness design the brief left open (`fleet-review` §Escalation ladder). The lead takes over the PR, its open findings and the brief; it re-diagnoses the design the brief left open and lands the PR under §Ledger (hk:doc `decision/2026-11-10/wake-vs-lead` item 4, ordered by `decision/2026-11-11/rstack-ladder-lead-reconcile`).
 - **Prevents:** a design session or worker taking an urgent, contract-less goal and then waiting on a merge gate that the goal cannot afford.
 
 ## Authority
