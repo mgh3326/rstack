@@ -16,10 +16,19 @@
   (근거: 2026-09-14 실사고 — 6건 전량 드롭, 부분 배달 0).
 - **세션 이름 지정 시**: `panewire find <이름>`으로 상존·화면 확인 → 있으면 **`relay.md`의 질의
   절차**로 질의. 없으면 아래 경로로.
-- **자문은 질문자 task grade 보다 한 단계 위, 다른 계열에 묻는다.** task 가 없는 세션은 S+ 에 묻는다. S+ 급 질문자의 자문은 SS 급 rung 으로 간다. SS 급 질문자는 다른 계열의 SS 급 rung 에 묻는다.
+- **자문은 질문자 task grade 보다 한 단계 위, 다른 계열에 묻는다.** task 가 없는 세션은 S+ 에 묻는다.
+  **디자인 세션은 SS 에, 세션과 다른 계열의 SS 좌석에 묻는다** — 방향을 한 번에 잡아야 하기 때문이다
+  (operator decision 124, 2026-11-12); task 가 없는 다른 세션은 S+ 에 머문다. 어느 좌석이 SS 인지는
+  hk:doc `policy/model-families` §Consult 가 정한다 — 이 문서는 모델명을 적지 않는다. S+ 급 질문자의
+  자문은 SS 급 rung 으로 간다. SS 급 질문자는 다른 계열의 SS 급 rung 에 묻는다.
   등급 없는(unrated) rung 은 쓰지 않는다(hk:doc `policy/model-families` §Consult, A17 항목 3). panewire 는 이
   규칙을 아직 계산하지 않는다(hk 3917 항목 3). 프로필을 고르는 길은 그래도 아래 resolve 명령
   하나뿐이다: 결과가 이 규칙에 맞지 않으면 다른 프로필을 직접 고르지 말고 부모 레인에 결정을 올린다.
+- *Temporary (operator 2026-11-12, hk 4173): ends when the resolve command computes the consult floor (hk 4139).*
+  **예외 — 디자인 세션의 SS 고정.** resolve 의 답이 다른 계열의 SS 좌석이 아니면, 디자인 세션은 hk:doc
+  `policy/model-families` §Consult 가 다른 계열의 SS 좌석으로 이름한 프로필을 `-m <profile>` 로 고정하고
+  `--override-reason 'consult SS, decision 124'` 를 줄 수 있다. 그 밖의 세션은 resolve 경로 하나만 쓴다 — 맞지
+  않으면 부모 레인에 결정을 올린다. 이것이 "resolve 가 유일한 길" 규칙의 유일한 예외다.
 - **프로필·계열·effort 는 hk `policy/model-routing` 이 정한다** — 이 문서에 모델명이나 자격표를
   적지 않는다. 고르는 방법:
   `panewire resolve --role consult` 의 마지막 줄 `profile=<이름> effort=<rung>` 을 스폰의
