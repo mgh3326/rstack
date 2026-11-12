@@ -147,7 +147,9 @@ The session is thrown away after it spawns, so whatever it did not write down is
 
 **Tickets.** Show the operator the numbered breakdown and adjust it until they approve it.
 
-- **One ticket is one PR and one hk task** (`robin-mode` §Work boundary), small enough for one fresh session.
+- **One ticket is one PR and one hk task**, small enough for one fresh session. Exception: a one-PR bundle is one brief, one worker and one PR that delivers several child tasks; title its parent hk task `[bundle <scope> Bnn]`, put one child (or the parent) in `Mergewake-Task`, and list every delivered child in the PR body (`robin-mode` §Work boundary).
+- **Series bundles** spawn at the same time their first steps that touch different files; tasks that edit the same files go into one PR.
+- **Dispatch by bundle up to the quota gate.** Per-host `capacity` is display only. The enforced limits are the account quota gate, one live spawn per task and role, four spawns in progress at the hub, and one at a time per node.
 - **A tracer bullet:** a narrow, complete path through every layer that can be verified alone.
 - **Blocking edges only where one ticket truly gates another.** Record an edge with
   `handoffkeep tasks relate <blocker-id> --kind blocks --other <blocked-id>`. *Takes effect with hk 3891:*
@@ -169,7 +171,7 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
 1. **Task.** Decide and record on the hk task: grade, tier, urgency (hk priority 1–2 =
    urgent), capability tags (`unity`, `xcode`, `gpu`, `linux`; none = any host). Put the
    marker in the title — panewire refuses without it, and refuses a `--t` that differs from it.
-   An implementation task owns one PR (`robin-mode` §Work boundary).
+   An implementation task owns one PR, except that a one-PR bundle may deliver several child tasks in that PR (`robin-mode` §Work boundary).
    ```sh
    handoffkeep tasks add --project <project> --title '<title> (grade <G>, <T>)' \
      --priority <n> --expected <duration>
@@ -180,8 +182,9 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    ```sh
    git -C ~/work/<repo> fetch
    git -C ~/work/<repo> worktree add -b wk/<slug> ~/work/<repo>.<slug> origin/main
+   git -C ~/work/<repo>.<slug> push -u origin wk/<slug>
    ```
-   (`wt switch --create <slug>` also links `.env`; a raw worktree has none.) The worker is
+   Push immediately after creating the worktree: `panewire spawn` refuses an unpushed branch with rc 81 before making any hub request. (`wt switch --create <slug>` also links `.env`; a raw worktree has none.) The worker is
    spawned with `-c` set to this worktree: mergewake reap finds a PR's worker by the pane's cwd.
 3. **Brief.** Copy §Worker brief to a scratch file anywhere outside the worktree, fill it
    following §Brief rules, put it in hk, and spawn from the hk document. The scratch file is not
@@ -241,9 +244,9 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    | `85` (`wait timeout for job`) | Landed: the spawn state was `succeeded` and the job is running | Comment the request id on the task, go to step 7 |
    | `0`, `83`, `84` | Landed, then the job completed, escalated or was lost (`83` escalated means `panewire escalate`; an ESC alone no longer ends the job) | Comment the request id; on `0` mergewake takes the PR (step 7); handle the ESC or the loss |
    | Any other, with `spawn refused: <reason> (operation <id>)` | `failed` or `retryable`: not landed | §On spawn failure; never replay |
-   | Any other, with `spawn ownership is unresolved` | `reconciling` or `deadline_exceeded`: the hub keeps ownership | Never launch; §On spawn failure |
+   | Any other, with `spawn ownership is unresolved` | `deadline_exceeded`: the hub keeps ownership after its request deadline | Never launch; §On spawn failure |
 
-   Where the pane's host is reachable, `ops` spawn §4-2 adds one read-only look at the pane.
+   While state is `reconciling`, `--wait` keeps polling and emits no `SPAWN_FAILED`; wait for a terminal outcome. The no-launch and no-replay rule still applies while ownership is unresolved. Never launch another way or replay as a retry. (`panewire` #372, hk 3676.) Where the pane's host is reachable, `ops` spawn §4-2 adds one read-only look at the pane.
 7. **Close.** The design session may close once landing is proven. It sends no success notice:
    mergewake already notifies the owner lane. The worker opens the PR and reports READY (§READY).
    After READY, mergewake picks the PR up from the PR itself and reviews it, sends findings to the
@@ -419,6 +422,12 @@ original guards. A temporary observation uses `panewire wait --agent NAME --stat
 
 ## Escalation and notifications
 
+- A request that needs action is sent as `--type order`; `info` is only for a notice that needs no action.
+- Record a dependency on another repository's task when filing it with `handoffkeep tasks relate <blocker> --kind blocks --other <blocked>`, not only in a comment.
+*Temporary (operator 2026-11-12, hk 4114): ends when hk automatic unblocked notices deploy (hk 3292).*
+When a lane finishes a blocker, it tells the waiting lane with an `order` that names the unblocked task.
+- The sender keeps a hand-off register with the task, receiving lane, event id and state, and checks it each time the session wakes. The cross-repository register belongs to the `fleet-policy` session; do not name a register key that contains a lane name.
+- If the receiver settles something different from the ask with the operator, it tells the sender lane with an `order`.
 - Decisions (scope, trade-offs, anything irreversible) go to the operator directly from the
   design session. Workers escalate to their parent lane and wait; they do not guess.
 - From a design session, the desk lane gets one one-line notice: the close hand-off (§Authority).
@@ -449,6 +458,8 @@ original guards. A temporary observation uses `panewire wait --agent NAME --stat
 - **READY to a design-session lane is recorded, not delivered** (panewire hk 3426): it stays in the job
   record and `panewire inbox list`. ESC (`--type decision`), `SPAWN_FAILED` and failures that need action
   still reach the owner lane. The desk still receives READY from a worker it owns.
+*Temporary (operator 2026-11-12, hk 4114): ends when hk closes children on merge (hk 3294).*
+After a bundle PR merges, the design session transitions each child it delivered with `handoffkeep tasks transition <child> --to merged --pr <PR URL> --head-sha <H>`; the deploy record's `included_prs` then moves them to `deployed`.
 
 ## Brief rules
 

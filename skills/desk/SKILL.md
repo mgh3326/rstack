@@ -54,8 +54,8 @@ for hours.
 After a start or compaction, read in this order before you act on anything you remember:
 
 1. `date '+%F %T %Z'` — every later line is judged against this time.
-2. hk tasks with a next action — `handoffkeep tasks export --lane <desk lane> --state <state> --limit 5000`
-   for each open state, and `handoffkeep tasks comments <id>` for the latest `next:` lines.
+2. hk tasks with a next action — `handoffkeep tasks export --state <state> --limit 5000 --lane <desk lane>`
+   for each open state, and `handoffkeep tasks comments <id>` for the latest `next:` lines. `tasks export` returns an envelope; check its `complete` and `truncated` fields before treating the rows as exhaustive.
 3. Open decisions — the console Decisions view, `handoffkeep tasks export --state needs_decision`,
    and decision items in the inbox (§Decisions).
 4. Inbox READY/ESC — `panewire inbox list --lane <desk lane> --json`. Read every item since the last

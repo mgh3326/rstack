@@ -49,6 +49,8 @@ REQUIRED = [
     ("desk", "## Commitments", "id-in-sentence", r"Put the hk id in the sentence"),
     ("desk", "## Commitments", "commitments-line", r"ends with a `Commitments:` line listing ids"),
     ("desk", "## Resume", "ledger-later", r"Once hk serves the desk ledger \(hk 2773\), the order becomes `handoffkeep ledger`"),
+    ("desk", "## Resume", "resume-task-cli-forms", r"`handoffkeep tasks export --state <state> --limit 5000 --lane <desk lane>`.{0,100}`handoffkeep tasks comments <id>`"),
+    ("desk", "## Resume", "resume-export-completeness", r"`tasks export` returns an envelope; check its `complete` and `truncated` fields before treating the rows as exhaustive"),
     ("desk", "## Resume", "hk-is-truth", r"Local agent memory is not the source of truth; hk is \(hk 2781\)"),
     ("desk", "## Before `tasks add`", "search-first", r"Search open and recent tasks first"),
     ("desk", "## Before `tasks add`", "retry-same-task", r"A retry is a new attempt on the same task, never a new task"),
