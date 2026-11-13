@@ -150,15 +150,6 @@
       ],
       "evidence": "yes; real read-only session sees Claude-root skills; skills paths lists native/cognition/shared roots; known limit: worker gets full set by operator decision"
     },
-    "gemini": {
-      "set": "worker",
-      "install_dir": ".gemini/skills",
-      "scan_dirs": [
-        ".gemini/skills",
-        ".agents/skills"
-      ],
-      "evidence": "yes; https://geminicli.com/docs/cli/tutorials/skills-getting-started/; agy shares this root; Gemini session UNVERIFIED"
-    },
     "kiro": {
       "set": "full",
       "install_dir": ".kiro/skills",

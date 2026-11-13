@@ -31,6 +31,10 @@ class Manifest(unittest.TestCase):
         for name, harness in M['harnesses'].items():
             self.assertIn(harness['set'], M['sets'], name)
 
+    def test_retired_gemini_harness_is_absent(self):
+        self.assertNotIn('gemini', M['harnesses'])
+        self.assertIn('agy', M['harnesses'])
+
 
 class Install(unittest.TestCase):
     def setUp(self):
@@ -53,7 +57,8 @@ class Install(unittest.TestCase):
             self.assertEqual({p.name for p in (self.home / h['install_dir']).iterdir()}, set(M['sets'][h['set']]))
         self.assertFalse((self.home / '.agents/skills').exists())
         self.assertEqual(self.run_install().stdout, '')
-        self.assertTrue((self.home / '.local/bin/fleet-rev').is_symlink())
+        self.assertFalse((self.home / '.local/bin/fleet-rev').exists())
+        self.assertFalse((self.home / '.local/bin/fleet-install').exists())
         self.assertFalse((self.home / '.local/bin/arbiter').is_symlink())
 
     def test_foreign_link_refusal_and_force(self):
@@ -66,28 +71,10 @@ class Install(unittest.TestCase):
         self.run_install('--force')
         self.assertEqual(link.resolve(), ROOT / 'skills/wake')
 
-    def test_prune_old_checkout_and_links(self):
-        old = self.home / '.agents/skills'
-        old.mkdir(parents=True)
-        subprocess.run(['git', 'init', '-q', str(old)], check=True)
-        subprocess.run(['git', '-C', str(old), 'remote', 'add', 'origin', 'https://github.com/example/agent-skills.git'], check=True)
-        (old / 'third_party/pstack/skills/poteto-mode').mkdir(parents=True)
-        (old / 'third_party/pstack/skills/poteto-mode/SKILL.md').write_text('---\nname: poteto-mode\n---\n')
-        link = self.home / '.codex/skills/poteto-mode'
-        link.parent.mkdir(parents=True)
-        link.symlink_to(old / 'third_party/pstack/skills/poteto-mode')
-        before = subprocess.run([str(ROOT / 'scripts/check-harness-skills.sh'), '--list'], env={**os.environ, 'HOME': str(self.home)}, text=True, capture_output=True)
-        self.assertIn('poteto-mode', before.stdout)
-        self.run_install(ok=False)
-        self.run_install('--prune-old', '--dry-run')
-        self.assertTrue(old.exists())
-        self.run_install('--prune-old')
-        self.assertFalse(old.exists())
-        self.assertFalse(link.is_symlink())
-        self.assertTrue((self.home / '.agents/agent-skills-backup/.git').exists())
-        after = subprocess.run([str(ROOT / 'scripts/check-harness-skills.sh'), '--list'], env={**os.environ, 'HOME': str(self.home)}, text=True, capture_output=True)
-        self.assertEqual(after.returncode, 0, after.stderr)
-        self.assertNotIn('poteto-mode', after.stdout)
+    def test_prune_old_flag_is_retired(self):
+        r = self.run_install('--prune-old', ok=False)
+        self.assertIn('unrecognized arguments', r.stderr)
+        self.assertFalse((self.home / '.agents/agent-skills-backup').exists())
 
     def test_regular_content_never_overwritten(self):
         link = self.home / '.codex/skills/wake'
