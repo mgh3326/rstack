@@ -214,11 +214,11 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    optional override, resolved on that host; it does not select the model or quota pool.
    ```sh
    panewire spawn -c ~/work/<repo>.<slug> -m auto -p hk:doc/brief/<date>/<job> \
-     -l <job> --t <T> --task <id> --role worker --owner <design-session lane> --host auto [--tags unity] \
+     -l <job> --t <T> --task <id> --role implementer --owner <design-session lane> --host auto [--tags unity] \
      --report ~/work/herdr-inbox/jobs/<job>/report.md --dry-run
    ```
    `panewire work <task-id>` with the same `-c`, `-p`, `-l`, `--report` and
-   `-m auto --host auto --role worker --owner <design-session lane>` flags does the same. Pass them all: its
+   `-m auto --host auto --role implementer --owner <design-session lane>` flags does the same. Pass them all: its
    task-derived defaults need not match the worktree and brief you prepared. The owner is the design
    session's lane. panewire records it at spawn and it stays for the job's life: closing the session
    does not move it. Events for a closed session's jobs stay durable in that lane's inbox (panewire@330f1f7

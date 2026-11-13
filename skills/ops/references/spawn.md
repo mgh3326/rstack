@@ -46,7 +46,7 @@ mergewake reap 이 한다.
 - 기동 — 미리보기 후 `--dry-run`을 빼고 실행한다. 기본 실행은 hub의 durable 예약 뒤 `ACCEPTED`를 반환한다. `SPAWNED`/`SPAWN_FAILED`를 기다리고 아래 착지 확인을 수행한다:
   ```bash
   panewire spawn -c <worktree> -m auto -p hk:doc/<키> -l <라벨> --t <T0..T3> \
-    --task <id> --role worker --owner <내 레인> --host auto [--tags a,b] \
+    --task <id> --role implementer --owner <내 레인> --host auto [--tags a,b] \
     [--report ~/work/herdr-inbox/jobs/<라벨>/report.md] [--effort <레벨>] [-L live|mock] --dry-run
   ```
   `-p hk:doc/<키>` 가 권장 형태다 — 브리프는 `handoffkeep doc put --kind brief` 로 hk 에 두고 그 문서를 읽힌다. 로컬 파일 경로도 여전히 유효하다.
