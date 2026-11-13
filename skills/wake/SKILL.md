@@ -200,9 +200,11 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    that passes presence and the quota gate; unknown evidence fails closed. Do not pick a model
    from a recommend list. `panewire quota status --json` shows quota; `panewire quota refresh <pool>` re-measures
    a stale pool. An explicit `-m` or `--host NAME` needs `--override-reason`, which is recorded.
-   Grade A work on state machines, ledgers, idempotency or data integrity runs on a strong profile, not
-   a waste-tier pick: until panewire can express this on the task, pass an explicit `-m <profile>` with
-   `--override-reason` (hk:doc `decision/2026-11-10/wake-vs-lead` item 3). The pin names a rung that has a
+   A design session does not pin a model family or profile because a task touches a state machine, a ledger,
+   idempotency or data integrity. When such a task needs deeper reasoning than its grade suggests, raise the grade
+   (A to A+ or S) and spawn with `-m auto`; any row rated for that grade may take it (hk:doc `policy/model-families`
+   §No family pin for grade A state and ledger work). A pin remains for a host need (a device, Unity) and for an
+   experiment. The pin names a rung that has a
    catalog row: `-m <profile> --effort <e>`. A pin without an effort launches with no effort and matches no
    catalog row (dry-run baseline 2026-11-11, hk 3917). Until hk 3917 item 1 is fixed, do
    not pin an omp rung for a brief that can end in an ESC.

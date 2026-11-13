@@ -68,6 +68,8 @@ RETIRED = ("spawn-worker", "relay-handoff", "consult-advisor", "linear-archive",
 
 # (doc, section heading or None, row name, pattern on the flattened scope)
 REQUIRED = [
+    ("wake", "## The loop", "grade-a-integrity-raise-grade-auto", r"When such a task needs deeper reasoning than its grade suggests, raise the grade \(A to A\+ or S\) and spawn with `-m auto`; any row rated for that grade may take it"),
+    ("wake", "## The loop", "grade-a-integrity-pin-scope", r"A pin remains for a host need \(a device, Unity\) and for an experiment"),
     # Tier and floor.
     ("wake", "## Tier — by revert cost", "t0-no-spawn", r"\*\*T0\*\* \| [^|]+\| no spawn — the design session does it and still opens a PR"),
     ("wake", "## Tier — by revert cost", "t3-question", r"must a person intervene in an external system to undo it\?\* Yes → T3"),
@@ -342,7 +344,6 @@ REQUIRED = [
     ("consult", "## 1. 자문처 결정", "consult-one-grade-up", r"\*\*자문은 질문자 task grade 보다 한 단계 위, 다른 계열에 묻는다\.\*\* task 가 없는 세션은 S\+ 에 묻는다"),
     ("wake", "## Brief rules", "brief-settles-design-choices", r"A brief settles every design choice before spawn\.\*\* \"Your choice; say which in the PR\" is allowed only for a choice that cannot change correctness \(naming, file layout\)"),
     ("wake", "## Brief rules", "brief-correctness-choices-settled", r"A state transition, a binding or authority rule, an idempotency key or a data invariant is decided in §Settle before spawning"),
-    ("wake", "## The loop", "grade-a-integrity-strong-profile", r"Grade A work on state machines, ledgers, idempotency or data integrity runs on a strong profile, not a waste-tier pick: until panewire can express this on the task, pass an explicit `-m <profile>` with `--override-reason`"),
     ("wake", "## Operator confirmation provenance", "provenance-verdict-doc-guard", r"문서 가드: rstack 레포에서 `VERDICT_DOC=<보고서 경로> bash tests/test-untagged-operator-evidence\.sh` 가 RED 면 그 보고서는 쓰지 않는다"),
     # hk 4252: same-concept tasks spawn in sequence and brief names open PRs.
     ("wake", "## The loop", "same-concept-sequence", r"Two tasks that change the same concept are not spawned at the same time \(even as first steps of a series bundle in different files\); the second is spawned after the first has merged, and its brief is written against the merged state"),
@@ -355,6 +356,7 @@ REQUIRED = [
 
 # Rows that must be absent: panewire resolve refuses --builder-family with --role consult.
 FORBIDDEN = [
+    ("wake", "## The loop", "grade-a-integrity-strong-profile", r"Grade A work on state machines, ledgers, idempotency or data integrity runs on a strong profile, not a waste-tier pick: until panewire can express this on the task, pass an explicit `-m <profile>` with `--override-reason`"),
     ("wake", "## Rules", "blocked-after-ready", r"(?i)after READY.{0,100}(?:becomes|send|emit|ends with).{0,20}blocked"),
     ("ops", "## Invariants (all references)", "ops-blocked-after-ready", r"(?i)after READY.{0,100}(?:becomes|send|emit|ends with).{0,20}blocked"),
     ("wake", "## Rules", "old-round-3-ladder-step", r"round-3 ESC.{0,160}re-spawns the PR's work pinned to the next rung"),
@@ -546,6 +548,7 @@ injections = [
     ("wake-old-hk-4256-escalation", "wake", "## Escalation and notifications\n", "## Escalation and notifications\n\nUntil mergewake hk 4256 ships.\n"),
     ("reap-open-pr-author-reapable", "reap", "### 6-1. 그 밖의 pane — 스폰한 주체가 거둔다\n", "### 6-1. 그 밖의 pane — 스폰한 주체가 거둔다\n\n자문·머지 안 된 PR·실패 잡의 pane 은 **만든 곳이 회수한다.**\n"),
     ("wake-old-dotfiles", "wake", "## Rules\n", "## Rules\n\nnever read real agent " + "dotfiles\n"),
+    ("wake-grade-a-integrity-strong-profile-readded", "wake", "## The loop\n", "## The loop\n\nGrade A work on state machines, ledgers, idempotency or data integrity runs on a strong profile, not a waste-tier pick: until panewire can express this on the task, pass an explicit `-m <profile>` with `--override-reason`.\n"),
     ("wake-old-ci-no-requirement-readded", "wake", "## Merge gate\n", "## Merge gate\n\nCI is not a merge requirement.\n"),
     ("lead-covering-ci-rule-duplicated", "lead", "## Subagents\n", "## Subagents\n\nA local or remote test run uses the flags of the CI job that covers it, including `-timeout`.\n"),
     ("lead-second-test-rule-readded", "lead", "## Subagents\n", "## Subagents\n\n- **Implementers and verifiers run no `go test` on the lead's host except one single test.**\n"),
