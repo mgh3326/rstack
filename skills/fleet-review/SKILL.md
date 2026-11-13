@@ -138,22 +138,13 @@ Until mergewake hk 4264 ships, at round 7 without a pass the worker ESCs; the de
 
 ## Independence
 
-*Temporary (operator 2026-11-04, hk 2856): ends when hk 2857 lands and restores the rule (hk 2857).*
-
-While this relief stands,
-a same-family pass counts toward the gate like any other pass. Routing still prefers
-another family (hk `policy/model-routing`), and every pass still records `same_family`, so the
-PRs merged on a same-family pass can be listed later. The rule below is suspended, not removed.
-
-Wherever independent review is required — the `wake` merge gate requires it for every PR — a pass
-counts only when its reviewer's family differs from **every material author family** of the
-change: each family whose code the PR carries (commits, subagent or delegate output), not the
-family of whoever started the review. **A same-family pass is reference evidence only and does
-not satisfy the gate**; the PR still needs a qualifying pass. A fallback path (pane → headless)
-keeps the same qualification and evidence; if no qualifying reviewer runs, the result is
-`REVIEW_UNAVAILABLE`, not a pass. The report lists the author families; until mergewake
-checks them all, the repo's design session, else operator-desk, does. Which reviewer is routed is hk
-`policy/model-routing`.
+Wherever independent review is required — the `wake` merge gate requires it for every PR — a pass counts
+toward the gate whether or not its reviewer's family matches the author's (operator decision 215). A material
+author family is each family whose code the PR carries (commits, subagent or delegate output), not the family of
+whoever started the review. Routing prefers a reviewer from a family other than every material author family
+(hk `policy/model-routing` rule 3). Every pass records `same_family`, so the PRs merged on a same-family pass
+can be listed later. A fallback path (pane → headless) keeps the same evidence; if no reviewer runs, the result
+is `REVIEW_UNAVAILABLE`, not a pass. Which reviewer is routed is hk `policy/model-routing`.
 
 ## A verdict covers a patch, not a SHA
 

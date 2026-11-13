@@ -1,0 +1,13 @@
+# Retired names, one per line. Source: hk:doc policy/index §Retired names (read 2026-11-13).
+# A skill file that names one of these, as a whole word, fails tests/test-rule-consistency.sh.
+# `name except prefix` allows the name only when it directly follows that prefix.
+runtug
+wrk
+arbiter
+grok
+kimi
+herdr-mirror
+scopefuel
+pacelever
+Linear
+agent-skills except addyosmani/

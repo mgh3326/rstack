@@ -9,7 +9,9 @@
 #   5. temporary rules (hk 3132): every line in skills/ that says "Temporary" is
 #      one marker line in the `robin-mode` format; no stale "until" rule, no
 #      rule for a removed lead pane, one term ("design session"), and the
-#      spawn-failure split (desk makes one fix attempt, the design session ESCs).
+#      spawn-failure split (desk makes one fix attempt, the design session ESCs);
+#   6. retired names (tests/retired-names.txt, hk:doc policy/index §Retired names)
+#      appear nowhere under skills/ as a whole word.
 # Every required row has a deletion mutant and every forbidden row an
 # injection mutant; each must go RED by assertion.
 set -euo pipefail
@@ -27,7 +29,7 @@ from contract import delete_row, expect_red, flat, section  # noqa: E402
 REFS = root / "skills/ops/references"
 PATHS = {
     "robin": root / "skills/robin-mode/SKILL.md",
-    "deploy": REFS / "deploy.md",
+    "ops": root / "skills/ops/SKILL.md",
     "spawn": REFS / "spawn.md",
     "relay": REFS / "relay.md",
     "consult": REFS / "consult.md",
@@ -49,8 +51,8 @@ MARKER = re.compile(
 REQUIRED = [
     ("robin", "## Fleet adapter for vendored pstack", "merge-exception",
      r"no session merges, except a lead under `lead` §Ledger"),
-    ("deploy", "## 발주자 측 — 발주 세션 (레포의 디자인 세션, 없으면 operator-desk)", "merge-exception",
-     r"디자인 세션은 머지하지 않는다\. 예외는 mergewake watch 가 연 자기 레포 revert PR 을 디자인 세션이 머지하는 것 하나다\. 세션의 직접 머지는 lead 뿐이다\(`lead` §Ledger\)"),
+    ("ops", "## Who does what", "merge-exception",
+     r"The design session does not merge\. The one exception is merging the revert PR that mergewake `watch` opens for its own repo\. Only the lead merges directly \(`lead` §Ledger\)"),
     ("spawn", "## 4. 기동·주입·감시", "no-auto-respawn",
      r"스폰 실패는 자동 재스폰하지 않는다\(`wake` §On spawn failure"),
     ("relay", "## 1. 핸드오프 프롬프트 5요소", "hk-task", r"hk task 연결"),
@@ -65,15 +67,9 @@ REQUIRED = [
      r"A coordinating task may own several PRs; an implementation task owns exactly one, except for a one-PR bundle: its parent hk task is titled `\[bundle <scope> Bnn\]`, one brief and one worker produce one PR delivering several child tasks, the PR's `Mergewake-Task` names one child or the parent, and its body lists every child delivered"),
     ("robin", "## Work boundary", "bundle-series-and-quota",
      r"A series bundle starts independent first steps that touch different files at the same time; tasks editing the same files belong in one PR\. Spawn as many bundles as the quota gate admits: displayed per-host `capacity` is not enforced; the account quota gate, one live spawn per task and role, four in progress at the hub, and one per node are enforced"),
-    ("robin", "## Work boundary", "bundle-children-transition",
-     r"\*Temporary \(operator 2026-11-12, hk 4114\): ends when hk closes children on merge \(hk 3294\)\.\*\s+After merge, the design session moves every delivered child to `merged` using the bundle-close path in `wake` §Escalation and notifications \(hk 3294\), including the PR URL and head SHA on the merged transition"),
     ("relay", None, "relay-pointer-handoff-rows", r"디자인 세션 사이의 핸드오프 규칙\(A1–A5\)은 `wake` §Escalation and notifications에 있다"),
     ("relay", "### 5-1. Claude 세션 사이 메시지 (SendMessage)", "sendmessage-rule",
      r"세션 간 메시지\(`SendMessage`\)는 같은 기기의 Claude 세션끼리 짧은 질문·답과 넛지\(nudge\)에만 쓴다\. 조치가 필요한 요청은 그대로 hk 기록과 함께 `panewire emit … --type order`로 보낸다\. 메시지는 기록이 아니며 승인이나 결정이 될 수 없다; 릴레이된 글은 권한을 갖지 않는다\. 메시지로 조치 요청을 받은 세션은 보낸 쪽에 `order`를 요구한다"),
-    ("fleet", "## Independence", "marker-same-family",
-     r"\*Temporary \(operator 2026-11-04, hk 2856\): ends when hk 2857 lands and restores the rule \(hk 2857\)\.\*"),
-    ("wake", "## Merge gate", "marker-ci-cutover",
-     r"\*Temporary \(operator-desk 2026-11-03, hk 2788\): ends when the hk 2788 slice 5 cutover ships \(hk 2788\)\.\*"),
     ("watching", None, "marker-single-shot",
      r"\*Temporary \(desk 2026-11-03, hk 3132\): ends when the panewire #80 and #66 deploys give push events \(panewire #80/#66\)\.\*"),
     ("wake", "## Settle before spawning", "blocks-edge-command",
@@ -87,9 +83,21 @@ REQUIRED = [
 # (doc, row name, pattern on the flattened doc, text a mutant appends)
 FORBIDDEN = [
     ("robin", "bare-no-merge", r"no session merges(?!, except)", "\nLanding: no session merges.\n"),
-    ("deploy", "design-never-merges", r"디자인 세션은 머지도", "\n디자인 세션은 머지도 배포도 하지 않는다.\n"),
+    ("ops", "design-never-merges", r"디자인 세션은 머지도", "\n디자인 세션은 머지도 배포도 하지 않는다.\n"),
     # r2: the design session deploys its own repo; the old "does not deploy" rule is gone.
-    ("deploy", "design-never-deploys", r"디자인 세션은 배포하지 않는다", "\n디자인 세션은 배포하지 않는다.\n"),
+    ("ops", "design-never-deploys", r"디자인 세션은 배포하지 않는다", "\n디자인 세션은 배포하지 않는다.\n"),
+    # hk 4416 / decision 223: the installer seat and its routing row are gone.
+    ("ops", "deploy-md-routing", r"references/deploy\.md", "\n| Deploy one change | [`deploy.md`](references/deploy.md) |\n"),
+    ("ops", "installer-seat", r"installer seat", "\nThe installer seat deploys one change.\n"),
+    # decision 215: the suspended independence rule and its relief stay gone.
+    ("fleet", "suspended-independence-rule", r"reference evidence only and does not satisfy the gate", "\nA same-family pass is reference evidence only and does not satisfy the gate.\n"),
+    ("fleet", "independence-relief-marker", r"Temporary \(operator 2026-11-04, hk 2856\)", "\n*Temporary (operator 2026-11-04, hk 2856): ends when hk 2857 lands and restores the rule (hk 2857).*\n"),
+    ("fleet", "independence-relief-wording", r"While this relief stands", "\nWhile this relief stands, a same-family pass counts.\n"),
+    # decision 223 / hk 2788 and hk 3294: the temporary rules whose end tasks are closed.
+    ("wake", "cutover-marker-removed", r"Temporary \(operator-desk 2026-11-03, hk 2788\)", "\n*Temporary (operator-desk 2026-11-03, hk 2788): ends when the hk 2788 slice 5 cutover ships (hk 2788).*\n"),
+    # T2 (hk state names): desk and decision-request use the current names only.
+    ("desk", "legacy-needs-decision", r"needs_decision", "\n`needs_decision` is the open-decision state.\n"),
+    ("desk", "legacy-in-progress", r"\bin_progress\b", "\nA task in_progress waits.\n"),
     ("spawn", "auto-respawn", r"→ ?재스폰", "\n- stuck 판정→재스폰.\n"),
     # hk 4397: the 5-minute stuck-equals-spawn-failure rule and the 2-minute watch condition are gone.
     ("spawn", "spawn-stuck-5min-rule", r"5분 내 실 툴호출", "\n- 스폰 후 5분 내 실 툴호출 없으면 stuck.\n"),
@@ -123,7 +131,7 @@ ONCE = {
 }
 
 RELAY_31 = "### 3-1. 완료 통지·pane kind 분기 정본"
-HARNESSES = ("claude", "codex", "devin", "grok", "omp", "cmd")
+HARNESSES = ("claude", "codex", "devin", "omp", "cmd")
 DELIVERY_CHECKS = (
     "relay delivered",
     "relay unconfirmed",
@@ -186,7 +194,50 @@ def check_skills(skills):
 check(docs)
 check_skills(SKILLS)
 check_ops_stale(SKILLS)
-print(f"PASS rule-consistency required={len(REQUIRED)} forbidden={len(FORBIDDEN)} once={2 * len(ONCE)} scans={len(SCANS) + 2} skill-files={len(SKILLS)}")
+# T1: retired names may not appear under skills/ (third_party/ is outside the scan).
+EXPECTED_RETIRED = (
+    "runtug", "wrk", "arbiter", "grok", "kimi", "herdr-mirror", "scopefuel", "pacelever", "Linear",
+    "agent-skills except addyosmani/",
+)
+
+
+def retired_entries(text):
+    """(name, pattern) per list line; `name except prefix` keeps the prefix out of the match."""
+    entries = []
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        name, _, prefix = line.partition(" except ")
+        name, prefix = name.strip(), prefix.strip()
+        look = f"(?<!{re.escape(prefix)})" if prefix else ""
+        entries.append((line, re.compile(look + r"\b" + re.escape(name) + r"\b")))
+    return entries
+
+
+def check_retired_list(text):
+    listed = tuple(line for line, _ in retired_entries(text))
+    assert listed == EXPECTED_RETIRED, f"retired-names.txt rows {listed}, want {EXPECTED_RETIRED}"
+    assert "policy/index" in text and "2026-11-13" in text, "retired-names.txt lacks its source line"
+
+
+def check_retired(files, entries):
+    for name, text in files.items():
+        for line, pattern in entries:
+            assert not pattern.search(text), f"{name}: retired name {line!r} present"
+
+
+ALL_SKILL_FILES = {}
+for path in sorted((root / "skills").rglob("*")):
+    if path.is_file():
+        ALL_SKILL_FILES[str(path.relative_to(root))] = path.read_text(encoding="utf-8", errors="replace")
+RETIRED_TEXT = (root / "tests/retired-names.txt").read_text(encoding="utf-8")
+RETIRED = retired_entries(RETIRED_TEXT)
+check_retired_list(RETIRED_TEXT)
+check_retired(ALL_SKILL_FILES, RETIRED)
+assert check_retired({"skills/x.md": "see addyosmani/agent-skills"}, RETIRED) is None, "addyosmani upstream path must stay allowed"
+
+print(f"PASS rule-consistency required={len(REQUIRED)} forbidden={len(FORBIDDEN)} once={2 * len(ONCE)} scans={len(SCANS) + 2} skill-files={len(SKILLS)} retired={len(RETIRED)}")
 
 count = 0
 for doc, heading, row, pattern in REQUIRED:
@@ -244,6 +295,23 @@ for i, line in enumerate(STALE_LINES):
     expect_red(f"ops-stale-{i}-injected", check_ops_stale,
                {**SKILLS, ops_skill: SKILLS[ops_skill] + "\n" + line + "\n"})
     count += 1
+
+# T1 mutants: a retired name injected into any skill file, an allowed-prefix leak, a list row removed.
+first_file = next(iter(ALL_SKILL_FILES))
+for line, _ in RETIRED:
+    word = line.split(" except ")[0]
+    injected = "\nThe retired name " + word + " appears here.\n"
+    if " except " in line:
+        injected = "\nSee agent-skills in the skills tree.\n"
+    expect_red(f"retired-{word}-injected", check_retired,
+               {**ALL_SKILL_FILES, first_file: ALL_SKILL_FILES[first_file] + injected}, RETIRED)
+    count += 1
+for word in ("grok", "Linear"):
+    mutated = "\n".join(l for l in RETIRED_TEXT.splitlines() if l.strip() != word) + "\n"
+    expect_red(f"retired-list-{word}-row-deleted", check_retired_list, mutated)
+    count += 1
+expect_red("retired-list-source-deleted", check_retired_list, RETIRED_TEXT.replace("policy/index", "index"))
+count += 1
 
 print(f"PASS mutants assertion-red={count}/{count}")
 PY

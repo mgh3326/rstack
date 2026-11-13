@@ -64,7 +64,7 @@ After a start or compaction, read in this order before you act on anything you r
 1. `date '+%F %T %Z'` — every later line is judged against this time.
 2. hk tasks with a next action — `handoffkeep tasks export --state <state> --limit 5000 --lane <desk lane>`
    for each open state, and `handoffkeep tasks comments <id>` for the latest `next:` lines. `tasks export` returns an envelope; check its `complete` and `truncated` fields before treating the rows as exhaustive.
-3. Open decisions — the console Decisions view, `handoffkeep tasks export --state needs_decision`,
+3. Open decisions — the console Decisions view, `handoffkeep tasks export --limit 5000` filtered on `awaiting_decision` (`jq -r '.tasks[] | select(.awaiting_decision)'`; check `complete` and `truncated` first),
    and decision items in the inbox (§Decisions).
 4. Inbox READY/ESC — `panewire inbox list --lane <desk lane> --json`. Read every item since the last
    resume, not only unread ones: a READY can arrive during a long turn and go unnoticed.
@@ -90,7 +90,7 @@ written down was repeated.
 Search open and recent tasks first:
 
 ```sh
-for s in backlog claimed in_progress hold needs_decision verifying join reopened merged dropped; do
+for s in triage backlog unstarted researching developing reviewing merged deployed completed dropped duplicate icebox; do
   handoffkeep tasks export --state "$s" --limit 5000
 done | jq -r '.tasks[] | select(.title | test("<keyword>"; "i")) | "\(.id) \(.state) \(.updated_at[:10]) \(.title)"'
 ```

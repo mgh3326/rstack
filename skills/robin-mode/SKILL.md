@@ -54,7 +54,8 @@ A rule with no marker is permanent. When the condition is met, delete the rule a
 ## Work boundary
 
 A request has one accountable owner. A separate worker exists only for a PR that is accepted and merged on its own, and a child never repeats its lead's triage. A coordinating task may own several PRs; an implementation task owns exactly one, except for a one-PR bundle: its parent hk task is titled `[bundle <scope> Bnn]`, one brief and one worker produce one PR delivering several child tasks, the PR's `Mergewake-Task` names one child or the parent, and its body lists every child delivered. A series bundle starts independent first steps that touch different files at the same time; tasks editing the same files belong in one PR. Spawn as many bundles as the quota gate admits: displayed per-host `capacity` is not enforced; the account quota gate, one live spawn per task and role, four in progress at the hub, and one per node are enforced.
-*Temporary (operator 2026-11-12, hk 4114): ends when hk closes children on merge (hk 3294).*
+
+*Temporary (operator 2026-11-12, hk 4114): ends when hk 4172 ships the close-gate recovery and the automatic case is verified (hk 4172).*
 After merge, the design session moves every delivered child to `merged` using the bundle-close path in `wake` §Escalation and notifications (hk 3294), including the PR URL and head SHA on the merged transition. An explicit hand-off requires the hk task comment and receiver acceptance defined in `wake` §READY.
 
 ## Subagents versus spawned workers
@@ -90,18 +91,17 @@ The brief, host safety, `wake` authority and `fleet-review` govern fleet work. V
 
 1. **Autonomy and external actions:** use only the brief's authorised tools and scope. `principle-never-block-on-the-human` permits reversible work within that scope. Merge, deploy and data migration are irreversible actions requiring the authority in `wake`; a worker never merges or arms auto-merge.
 2. **Unattended sessions:** "going to bed" grants no new authority. Stop for an unsafe decision.
-3. **Subagents:** follow §Subagents versus spawned workers. Missing `pstack:comment-sicko` is not an available agent: for `no-comments`, review inline and report that substitution. Never launch a missing upstream executable.
-4. **Models:** ignore all pstack Models sections, model slugs, `pstack-models.md` and `/setup-pstack`. Use `panewire resolve` and `roles.md`.
-5. **Landing:** mergewake merges after its gate; no session merges, except a lead under `lead` §Ledger. No babysit, swarm or arena routing; robin-mode is not babysit/swarm/arena.
-6. **Waves:** a wave is a series of independently green PRs, never stacked PRs. Rebase only before the first push; thereafter merge the base, never force-push. Candidate worktrees belong in scratch, outside canonical checkouts and skill discovery roots.
-7. **Review ownership:** the author handles its own findings. `fleet-review` decides scope, severity, disposition and independence; `interrogate` and `blast-radius` supply analysis without replacing the review gate.
-8. **Waits:** no polling, watchers or autonomous loops from pstack. Use `ops` waiting procedures.
-9. **Questions:** every "ask the user", AskUserQuestion or confirmation in interrogate, reflect, no-comments and verification skills becomes an `ops` decision ESC event with question, options and default. Continue only with a safe default.
-10. **Transcripts and missing scripts:** do not audit real agent transcripts or configuration. `show-me-your-work` uses a local TSV decision trail without its missing log.sh or transcript audit. `recall` uses supplied evidence, not transcript search. `reflect` uses the active supplied conversation only; its node scripts are absent. `statechart` may sketch a diagram but must report model checking UNVERIFIED because its compiler is absent. Never imply an omitted check ran.
-11. **Cleanup:** mergewake owns post-merge branch/worktree cleanup; upstream cleanup playbooks grant no authority.
-12. **Host safety:** no local database servers; run changed tests only, leave full suites to CI, and stop only the PIDs you started. Verification skills and benchmarks inherit these limits.
-13. **Sources:** `why` may query only brief-authorised services. Report unavailable evidence as a gap.
-14. **Reply format:** use the openers here; naming every pstack principle is optional, never a review gate.
+3. **Models:** ignore all pstack Models sections, model slugs, `pstack-models.md` and `/setup-pstack`. Use `panewire resolve` and `roles.md`.
+4. **Landing:** mergewake merges after its gate; no session merges, except a lead under `lead` §Ledger. No babysit, swarm or arena routing; robin-mode is not babysit/swarm/arena.
+5. **Waves:** a wave is a series of independently green PRs, never stacked PRs. Rebase only before the first push; thereafter merge the base, never force-push. Candidate worktrees belong in scratch, outside canonical checkouts and skill discovery roots.
+6. **Review ownership:** the author handles its own findings. `fleet-review` decides scope, severity, disposition and independence; `interrogate` and `blast-radius` supply analysis without replacing the review gate.
+7. **Waits:** no polling, watchers or autonomous loops from pstack. Use `ops` waiting procedures.
+8. **Questions:** every "ask the user", AskUserQuestion or confirmation in interrogate and verification skills becomes an `ops` decision ESC event with question, options and default. Continue only with a safe default.
+9. **Transcripts and missing scripts:** do not audit real agent transcripts or configuration. `show-me-your-work` uses a local TSV decision trail without its missing log.sh or transcript audit. Never imply an omitted check ran.
+10. **Cleanup:** mergewake owns post-merge branch/worktree cleanup; upstream cleanup playbooks grant no authority.
+11. **Host safety:** no local database servers; run changed tests only, leave full suites to CI, and stop only the PIDs you started. Verification skills and benchmarks inherit these limits.
+12. **Sources:** `why` may query only brief-authorised services. Report unavailable evidence as a gap.
+13. **Reply format:** use the openers here; naming every pstack principle is optional, never a review gate.
 
 `install/sets.json` defines harness roles and the worker subset. `third_party/pstack/INSTALL` is the full vendored allowlist. The vendor checkout must live outside every harness's scanned skill directories. Relative links into excluded skills are reference material and do not install them.
 

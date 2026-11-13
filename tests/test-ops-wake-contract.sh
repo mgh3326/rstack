@@ -56,7 +56,6 @@ docs["consult"] = refs["consult.md"]
 docs["spawn"] = refs["spawn.md"]
 docs["watching"] = refs["watching.md"]
 docs["relay"] = refs["relay.md"]
-docs["events"] = refs["panewire-events.md"]
 docs["reap"] = refs["reap.md"]
 docs["desk"] = Path(os.environ.get("DESK_SKILL", root / "skills/desk/SKILL.md")).read_text(encoding="utf-8")
 docs["robin"] = Path(os.environ.get("ROBIN_SKILL", root / "skills/robin-mode/SKILL.md")).read_text(encoding="utf-8")
@@ -96,7 +95,6 @@ REQUIRED = [
     ("wake", "## READY", "ready-keeps-author", r"\*\*the author stays the PR owner until merge, an explicit hand-off, or abandonment\*\*"),
     ("wake", "## READY", "ready-explicit-handoff", r"명시적 인계\*\*는 새 담당자를 이름으로 적은 같은 `hk task` 의 comment 와, 그 task 에서 수신자가 남긴 수락 comment 둘 다를 뜻한다\. 수신자가 같은 task 에서 수락하기 전까지 PR 작성자가 소유권을 유지한다\."),
     ("robin", None, "robin-handoff-points-to-ready-definition", r"An explicit hand-off requires the hk task comment and receiver acceptance defined in `wake` §READY\."),
-    ("robin", "## Work boundary", "bundle-close-points-to-wake", r"After merge, the design session moves every delivered child to `merged` using the bundle-close path in `wake` §Escalation and notifications \(hk 3294\), including the PR URL and head SHA on the merged transition"),
     ("reap", "### 6-1. 그 밖의 pane — 스폰한 주체가 거둔다", "reap-open-pr-author-never", r"열린 PR 의 작성자 pane 은 \*\*절대 회수하지 않는다\.\*\*"),
     ("reap", "### 6-6. `panewire reap` — 끝난 pane 일괄 회수", "reap-apply-pr-state-gate", r"`--apply` 전에 미리보기의 각 job 에 연결된 PR 번호로 `gh pr view <n> --json state` 를 확인한다\. PR 이 `OPEN` 이면 그 job 을 적용 대상에서 빼고 pane 을 회수하지 않는다\. PR 이 `MERGED` 또는 `CLOSED` 인 job 만 계속 검토한다\."),
     ("reap", "### 6-6. `panewire reap` — 끝난 pane 일괄 회수", "reap-no-pr-uses-existing-criteria", r"연결된 PR 이 없는 job 은 기존 회수 조건으로 계속 검토한다\."),
@@ -185,11 +183,12 @@ REQUIRED = [
     ("wake", "## Escalation and notifications", "unblocked-order", r"\*Temporary \(operator 2026-11-12, hk 4114\): ends when hk automatic unblocked notices deploy \(hk 3292\)\.\*\s+When a lane finishes a blocker, it tells the waiting lane with an `order` that names the unblocked task"),
     ("wake", "## Escalation and notifications", "handoff-sender-register", r"The sender keeps a hand-off register with the task, receiving lane, event id and state, and checks it each time the session wakes\. The cross-repository register belongs to the `fleet-policy` session; do not name a register key that contains a lane name"),
     ("wake", "## Escalation and notifications", "receiver-settlement-order", r"If the receiver settles something different from the ask with the operator, it tells the sender lane with an `order`"),
-    ("wake", "## Escalation and notifications", "bundle-children-transition", r"\*Temporary \(operator 2026\-11\-12, hk 4114\): ends when hk closes children on merge \(hk 3294\)\.\* After a bundle PR merges, the design session moves each delivered child that has not reached `reviewing` in three steps: `handoffkeep tasks transition <child> \-\-to developing \-\-no\-job 'Delivered by bundle PR <url>'`, then `handoffkeep tasks transition <child> \-\-to reviewing \-\-pr <PR URL>`, then `handoffkeep tasks transition <child> \-\-to merged \-\-pr <PR URL> \-\-head\-sha <H>` \(hk refuses a direct move from `backlog` to `merged` with `task_conflict`\)\. It finds the children from the bundle parent task's child list and the PR body\. If that design session has closed, `operator\-desk` makes the same transitions from the same records\. The PR URL and head SHA on the last step let the deploy record's `included_prs` move the children to `deployed`\."),
     ("wake", "## Escalation and notifications", "deploy-owner-rule", r"Deploys and infra of the repo are its design session's \(§Authority\); operator-desk takes them only while that repo has no design session open\."),
     ("wake", "## Escalation and notifications", "worker-parent-owner-lane", r"A worker's READY/ESC reach its parent lane — the owner lane: the design session's lane for its worker, else `operator-desk`\."),
     ("wake", "## Brief rules", "parent-lane-owner", r"`<parent-lane>` in a worker brief is the owner lane: the design session's lane, else `operator-desk`"),
-    ("wake", "## Merge gate", "gate-held-pr-owner", r"A PR it holds or does not merge in the meantime is the repo's design session's \(the desk's while that repo has none open\)\."),
+    ("robin", "## Work boundary", "bundle-close-points-to-wake", r"After merge, the design session moves every delivered child to `merged` using the bundle-close path in `wake` §Escalation and notifications \(hk 3294\), including the PR URL and head SHA on the merged transition"),
+    ("wake", "## Escalation and notifications", "bundle-children-transition", r"\*Temporary \(operator 2026\-11\-12, hk 4114\): ends when hk 4172 ships the close-gate recovery and the automatic case is verified \(hk 4172\)\.\* After a bundle PR merges, the design session moves each delivered child that has not reached `reviewing` in three steps: `handoffkeep tasks transition <child> \-\-to developing \-\-no\-job 'Delivered by bundle PR <url>'`, then `handoffkeep tasks transition <child> \-\-to reviewing \-\-pr <PR URL>`, then `handoffkeep tasks transition <child> \-\-to merged \-\-pr <PR URL> \-\-head\-sha <H>` \(hk refuses a direct move from `backlog` to `merged` with `task_conflict`\)\. It finds the children from the bundle parent task's child list and the PR body\. If that design session has closed, `operator\-desk` makes the same transitions from the same records\. The PR URL and head SHA on the last step let the deploy record's `included_prs` move the children to `deployed`\."),
+    ("wake", "## Merge gate", "gate-held-pr-owner", r"A PR that mergewake holds or does not merge is the repo's design session's \(the desk's while that repo has none open\)\."),
     ("wake", "## Merge gate", "gate-revert-merger", r"The repo's design session merges that revert \(the desk while that repo has none open\)"),
     ("wake", "## On spawn failure", "failure-no-retry", r"\*\*Do not retry on the same task\.\*\*"),
     ("wake", "## On spawn failure", "failure-no-bypass", r"\*\*Never launch with `herdr agent start` or any other route\.\*\*"),
@@ -258,9 +257,6 @@ REQUIRED = [
     ("ops", "## Escalate a decision", "ops-esc-question-job-stays", r"\*\*An ESC is a question, and the job stays open\*\* \(`job\.waiting_decision`\)"),
     ("ops", "## Escalate a decision", "ops-esc-answer-resumes", r"The answer resumes it when delivered by `panewire prompt --from <sender-lane> --to <agent-name> --file <prompt-file> --uptake status-transition --timeout 60s` \(`relay\.md` §3-3\) or a relay to the pane's lane"),
     ("relay", None, "relay-report-parent-lane-event", r"에이전트→디자인 세션 방향 보고는 send 금지.{0,180}부모 레인으로 `panewire emit --kind lane\.event --lane <parent-lane> --type report --text '<report summary>'`"),
-    ("events", "## 3. CI·PR 대기", "events-ci-pr-event-unknown", r"\| CI 결과·PR 상태 변화 이벤트 \| — \| \*\*미확인\*\* \| panewire main 코드는 handoffkeep/mergewake snapshot을 동기 조회.{0,220}panewire@a702d068db071d7685d417401023b3c276089012 `pr_status_cli\.go:20-24,121-140`"),
-    ("events", "## 3. CI·PR 대기", "events-pr-status-query", r"\| PR 상태·finding 조회 \| `panewire pr status <owner/repo> <n>` / `panewire pr findings <owner/repo> <n>` \| \*\*소스에 CLI 조회 있음\*\* \| panewire@a702d068db071d7685d417401023b3c276089012"),
-    ("events", "## 4. 기타", "events-prompt-from-source-pin", r"\| 프롬프트 착지 증명 \| `panewire prompt --from <sender-lane> --to <agent-name> --file <prompt-file> --uptake status-transition --timeout 60s`.*panewire@a702d068db071d7685d417401023b3c276089012 `cli\.go:182-196`"),
     ("ops", "## Escalate a decision", "ops-esc-unanswered-lost", r"unanswered decision becomes `lost` after the decision timeout \(`PANEWIRE_DECISION_TIMEOUT_S`, six hours by default\) unless a later lane event from the pane resumes the job first"),
     ("ops", "## Escalate a decision", "ops-esc-only-ready-done", r"Only READY or DONE completes a job"),
     ("ops", "## Escalate a decision", "ops-esc-give-up-escalate", r"Giving up is `panewire escalate <job> --question '<why>'`, not an ESC"),
@@ -302,7 +298,7 @@ REQUIRED = [
     ("ops", "## Invariants (all references)", "test-host-rule",
      r"\*\*Test host rule \(the one home\)\.\*\* Test only what you changed, on a host the spawn preamble allows —.{0,120}Use `remote-gotest` where the repo has it\. DB and full suites run in CI \(`ci-any-ref`\)\. A brief adds no host rules of its own\. On macOS keep `-p 2`"),
     ("ops", "## Invariants (all references)", "steps-need-no-approval",
-     r"\*\*Steps that need no approval and may be repeated:\*\* read-only commands \(`gh … view\|list\|checks`, `git fetch`, `handoffkeep … show\|get\|list\|export`, `panewire … status\|list\|find\|resolve`\), a test or build rerun after an environment failure, `git merge origin/<base>` on your own branch, and a replay of the same saved spawn request after a lost response that is not `failed` or `retryable` \(on `failed` or `retryable` never replay; `wake` §On spawn failure\)\. The no-retry rules in `wake` §On spawn failure, `desk` §Spawn failure and `deploy\.md` cover only what they name: a new spawn attempt and the deploy command\."),
+     r"\*\*Steps that need no approval and may be repeated:\*\* read-only commands \(`gh … view\|list\|checks`, `git fetch`, `handoffkeep … show\|get\|list\|export`, `panewire … status\|list\|find\|resolve`\), a test or build rerun after an environment failure, `git merge origin/<base>` on your own branch, and a replay of the same saved spawn request after a lost response that is not `failed` or `retryable` \(on `failed` or `retryable` never replay; `wake` §On spawn failure\)\. The no-retry rules in `wake` §On spawn failure and `desk` §Spawn failure cover only what they name: a new spawn attempt\."),
     # consult §1 (hk 2898): resolve has no --builder-family; the questioner checks the family by hand.
     ("consult", "## 1. 자문처 결정", "consult-resolve-command", r"`panewire resolve --role consult`"),
     ("consult", "## 1. 자문처 결정", "consult-family-check", r"질문자는 계열도 직접 확인한다"),
@@ -398,6 +394,9 @@ FORBIDDEN = [
     ("wake", None, "deploys-go-to-desk", r"Deploys go to operator-desk"),
     ("wake", None, "owner-flag-desk-only", r"--owner operator-desk"),
     ("ops", None, "installer-desk-only", r"spawned by and reporting only to operator-desk"),
+    # hk 4416 / decision 223 / hk 4424: the ops domain overlay and the installer seat stay retired.
+    ("ops", None, "domain-overlay-retired", r"AGENT_SKILLS_DOMAIN"),
+    ("ops", None, "installer-seat-retired", r"installer seat"),
     # r3 (hk:doc decision/2026-11-08/design-session-no-desk-notice): no desk notice before a shared target.
     ("wake", None, "shared-target-desk-notice", r"(?i)before touching a target several projects share"),
     # hk 3613 (panewire#352): a design or desk lane never gets a notification body as pane text.
@@ -406,7 +405,7 @@ FORBIDDEN = [
     ("wake", "## Merge gate", "old-ci-not-a-merge-requirement", r"CI is not a merge requirement"),
     ("reap", "### 6-1. 그 밖의 pane — 스폰한 주체가 거둔다", "reap-old-open-pr-author-rule", r"자문·머지 안 된 PR·실패 잡의 pane 은 \*\*만든 곳이 회수한다\.\*\*"),
     ("relay", None, "relay-file-inbox-fallback-removed", r"에이전트→디자인 세션 방향 보고는 send 금지.{0,180}파일 인박스"),
-    ("events", "## 3. CI·PR 대기", "events-no-github-ci-integration-removed", r"panewire 소스에 GitHub/CI 통합 없음"),
+    ("watching", None, "events-no-github-ci-integration-removed", r"panewire 소스에 GitHub/CI 통합 없음"),
     ("lead", "## Subagents", "lead-second-test-rule-removed", r"\*\*Implementers and verifiers run no `go test` on the lead's host except one single test\.\*\*"),
     ("robin", "## Work boundary", "old-robin-bundle-close-rule",
      r"After merge, the design session transitions every delivered child to `merged` with the PR URL and head SHA"),
@@ -439,7 +438,7 @@ SEAT_FORBIDDEN = re.compile(SEAT_TERMS)
 REF_FORBIDDEN = re.compile(
     SEAT_TERMS + r"|spawn-worker|relay-handoff|consult-advisor|linear-archive|node-ops"
     r"|`builder` 스킬|builder 스킬|director 스킬|checker 스킬|director/(?:SKILL|panewire)"
-    r"|\$AGENT_SKILLS_DOMAIN/(?!ops\.md)"
+    r"|\$AGENT_SKILLS_DOMAIN"
 )
 LINK = re.compile(r"\]\((references/[^)#\s]+)\)")
 
@@ -592,6 +591,7 @@ injections = [
     ("wake-deploys-go-to-desk-readded", "wake", "## The loop\n", "## The loop\n\nDeploys go to operator-desk.\n"),
     ("wake-owner-desk-readded", "wake", "## The loop\n", "## The loop\n\nUse `--owner operator-desk` for every spawn.\n"),
     ("ops-installer-desk-only-readded", "ops", "## Routing table\n", "## Routing table\n\n- installer seat, spawned by and reporting only to operator-desk.\n"),
+    ("ops-domain-overlay-readded", "ops", "## Invariants (all references)\n", "## Invariants (all references)\n\nDomain overlay: if `$AGENT_SKILLS_DOMAIN/ops.md` exists, read it before applying anything here.\n"),
     # r3: the shared-target desk notice must not come back.
     ("wake-shared-target-notice-readded", "wake", "## Escalation and notifications\n", "## Escalation and notifications\n\n- Send the desk a `--type info` line before touching a target several projects share.\n"),
     # hk 3613: the stale pane-text delivery line must not come back.
@@ -620,13 +620,8 @@ old_file_fallback = docs["relay"].replace(
 assert old_file_fallback != docs["relay"], "fixture: parent lane event not found"
 expect_red("relay-file-inbox-fallback-injected", {**docs, "relay": old_file_fallback}, refs)
 count += 1
-old_ci_claim = docs["events"].replace(
-    "## 3. CI·PR 대기\n",
-    "## 3. CI·PR 대기\n\npanewire 소스에 GitHub/CI 통합 없음\n",
-    1,
-)
-assert old_ci_claim != docs["events"], "fixture: CI/PR section not found"
-expect_red("events-no-github-ci-integration-injected", {**docs, "events": old_ci_claim}, refs)
+old_ci_claim = docs["watching"] + "\npanewire 소스에 GitHub/CI 통합 없음\n"
+expect_red("events-no-github-ci-integration-injected", {**docs, "watching": old_ci_claim}, refs)
 count += 1
 
 # The named mutations from hk 2783 and r2: the owner is the design-session lane while it is open,

@@ -24,7 +24,7 @@ request between lanes (§Harvest).
 - A design session uses its lane name as its Claude session name (`claude --name <lane>` or `/rename <lane>`), so others can address it.
 
 Not for: another repo's deploys or infra changes (that repo's design session, else
-operator-desk; `ops` deploy), or decisions (ask the operator).
+operator-desk; `ops` routing table), or decisions (ask the operator).
 
 ## Authority
 
@@ -344,16 +344,10 @@ on `$H` blocks any merge, including a lead merge. A run the ledger needs is wait
 on a host as a substitute. Post-merge CI still runs after the merge, and a red main is reverted (Scion;
 hk 2788 owns the mechanics; today's actors are below).
 
-*Temporary (operator-desk 2026-11-03, hk 2788): ends when the hk 2788 slice 5 cutover ships (hk 2788).*
-
-mergewake's own code still holds on the policy's
-`required_checks` (`mergewake@969c151 internal/pipeline/gate.go:87`), and merging needs its daemon
-acting rather than in shadow. That is the tool's remaining behaviour, not a step for a session here. A PR
-it holds or does not merge in the meantime is the repo's design session's (the desk's while that repo has
-none open). A red main is not yet reverted automatically: mergewake's `watch` opens one revert PR and
-never merges it, and its `mergewake-recovery-latch` tag then stops further recovery until an operator
-inspects it and removes the tag and any `mergewake/recovery` branch (mergewake README). The repo's
-design session merges that revert (the desk while that repo has none open) and takes the latch to the
+mergewake's `watch` opens one revert PR and never merges it. Its `mergewake-recovery-latch` tag then stops
+further recovery until an operator inspects it and removes the tag and any `mergewake/recovery` branch (mergewake README).
+A PR that mergewake holds or does not merge is the repo's design session's (the desk's while that repo has none open).
+The repo's design session merges that revert (the desk while that repo has none open) and takes the latch to the
 operator, and main stays red until then. If `watch` is not running, nothing opens the revert.
 
 ## READY
@@ -469,7 +463,7 @@ Until mergewake hk 4264 ships, at round 7 the worker ESCs and the design session
 - **READY to a design-session lane is recorded, not delivered** (panewire hk 3426): it stays in the job
   record and `panewire inbox list`. ESC (`--type decision`), `SPAWN_FAILED` and failures that need action
   still reach the owner lane. The desk still receives READY from a worker it owns.
-*Temporary (operator 2026-11-12, hk 4114): ends when hk closes children on merge (hk 3294).*
+*Temporary (operator 2026-11-12, hk 4114): ends when hk 4172 ships the close-gate recovery and the automatic case is verified (hk 4172).*
 After a bundle PR merges, the design session moves each delivered child that has not reached `reviewing` in three steps: `handoffkeep tasks transition <child> --to developing --no-job 'Delivered by bundle PR <url>'`, then `handoffkeep tasks transition <child> --to reviewing --pr <PR URL>`, then `handoffkeep tasks transition <child> --to merged --pr <PR URL> --head-sha <H>` (hk refuses a direct move from `backlog` to `merged` with `task_conflict`). It finds the children from the bundle parent task's child list and the PR body. If that design session has closed, `operator-desk` makes the same transitions from the same records. The PR URL and head SHA on the last step let the deploy record's `included_prs` move the children to `deployed`.
 
 ## Brief rules

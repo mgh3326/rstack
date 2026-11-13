@@ -13,6 +13,22 @@ def install_list():
             if n and not n.startswith('#')]
 
 
+# Operator decision 224 (hk 4424): these names leave every install set. Their files stay vendored in
+# third_party/pstack, so they remain in INSTALL; the full set is the core skills plus INSTALL minus these.
+REMOVED_FROM_SETS = [
+    'teach', 'unslop', 'technical-writing', 'sharpen', 'in-your-own-words', 'correct',
+    'typescript-best-practices', 'create-verification-skill', 'maintain-verification-skill',
+    'create-formal-verification-skill', 'maintain-formal-verification-skill',
+    'no-comments', 'recall', 'reflect', 'statechart',
+]
+
+
+def assert_removed_names_stay_out(sets):
+    for setname, names in sets.items():
+        leaked = set(REMOVED_FROM_SETS) & set(names)
+        assert not leaked, f'{setname} set still names removed skills: {sorted(leaked)}'
+
+
 class Manifest(unittest.TestCase):
     """INSTALL is the pstack allowlist; sets.json must not drift from it."""
 
@@ -20,7 +36,17 @@ class Manifest(unittest.TestCase):
         core = sorted(p.name for p in (ROOT / 'skills').iterdir() if (p / 'SKILL.md').is_file())
         full = M['sets']['full']
         self.assertEqual(len(full), len(set(full)), 'duplicate names in the full set')
-        self.assertEqual(set(full), set(core) | set(install_list()))
+        self.assertEqual(set(full), set(core) | (set(install_list()) - set(REMOVED_FROM_SETS)))
+
+    def test_removed_names_stay_out_of_every_set(self):
+        assert_removed_names_stay_out(M['sets'])
+        self.assertLessEqual(set(REMOVED_FROM_SETS), set(install_list()))
+
+    def test_readded_removed_name_goes_red(self):
+        mutated = {name: list(names) for name, names in M['sets'].items()}
+        mutated['full'].append('teach')
+        with self.assertRaises(AssertionError):
+            assert_removed_names_stay_out(mutated)
 
     def test_worker_set_is_a_subset_of_full(self):
         worker = M['sets']['worker']
