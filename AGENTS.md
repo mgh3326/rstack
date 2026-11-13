@@ -8,7 +8,7 @@ Fleet skills, their contract tests, and the installer that links them into each 
 - `tests/` — contract tests (`test-*.sh`, `test-*.py`) and `tests/lib/contract.py` (section scoping, row deletion,
   mutant checks).
 - `install.sh`, `install/sets.json`, `scripts/` — the installer and its manifest.
-- `bin/` — retained tools (`pr-trailers`, deprecated `fleet-install` and `fleet-rev`).
+- `bin/` — retained tools (`pr-trailers`, `containment-check`).
 - `third_party/pstack/` — pinned upstream skills. Do not edit them; the adapter is in `skills/robin-mode/SKILL.md`.
 
 ## Build and test
