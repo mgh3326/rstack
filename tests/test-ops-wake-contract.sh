@@ -71,7 +71,7 @@ REQUIRED = [
     ("wake", "## The loop", "grade-a-integrity-raise-grade-auto", r"When such a task needs deeper reasoning than its grade suggests, raise the grade \(A to A\+ or S\) and spawn with `-m auto`; any row rated for that grade may take it"),
     ("wake", "## The loop", "grade-a-integrity-pin-scope", r"A pin remains for a host need \(a device, Unity\) and for an experiment"),
     # Tier and floor.
-    ("wake", "## Tier — by revert cost", "t0-no-spawn", r"\*\*T0\*\* \| [^|]+\| no spawn — the design session does it and still opens a PR"),
+    ("wake", "## Tier — by revert cost", "t0-no-spawn", r"\*\*T0\*\* \| local script or config, revert = copy a file \| no spawn — the design session does it and still opens a PR"),
     ("wake", "## Tier — by revert cost", "t3-question", r"must a person intervene in an external system to undo it\?\* Yes → T3"),
     ("wake", "## Tier — by revert cost", "floor-no-downgrade", r"sets a minimum T and nobody lowers it"),
     ("wake", "## Tier — by revert cost", "t3-unblocked-escalates", r"not covered by a `blocking\[\]\.paths` entry .{0,80}escalate to the operator before spawning it"),
@@ -151,6 +151,8 @@ REQUIRED = [
     ("wake", "## The loop", "owner-closed-inbox", r"the repo's next design session opens on the same `<repo>-design` lane and reads them first \(`panewire inbox list --lane <repo>-design --unread`\), and until one opens the desk reads them there\."),
     ("wake", "## The loop", "quota-front-door", r"`panewire quota status --json` shows quota; `panewire quota refresh <pool>` re-measures a stale pool"),
     ("spawn", "## 4. 기동·주입·감시", "quota-front-door", r"쿼타 확인은 `panewire quota status --json`.{0,60}낡은 풀은 `panewire quota refresh <풀>`"),
+    # hk 4397 (operator decision 196): landing is proven by the hub spawn state and the task claim, not by a timer.
+    ("spawn", "## 4. 기동·주입·감시", "landing-proof-pointer", r"스폰 landing 은 hub 스폰 상태와 hk task 클레임으로 증명한다\(`wake` loop step 6\)"),
     ("wake", "## The loop", "no-unlanded-blocker", r"Spawn only tickets with no unlanded blocker"),
     ("wake", "## The loop", "accepted-proves-nothing", r"it proves nothing about a pane"),
     ("wake", "## The loop", "landing-proof", r"you read it from the exit of the step 5 run with `--wait --wait-timeout 2m` \(one launch, not a second spawn\), never with your own HTTP call"),
@@ -378,6 +380,10 @@ FORBIDDEN = [
     ("wake", None, "wake-no-pacelever", r"pacelever"),
     ("ops", None, "ops-no-pacelever", r"pacelever"),
     ("spawn", None, "spawn-no-pacelever-quota", r"pacelever (?:--json|refresh)"),
+    # hk 4397 (operator decision 196): the T0 line count and the two spawn-watch timers are gone.
+    ("wake", "## Tier — by revert cost", "t0-line-count", r"≤ ?30 lines"),
+    ("spawn", "## 4. 기동·주입·감시", "spawn-stuck-5min-rule", r"5분 내 실 툴호출"),
+    ("spawn", "## 4. 기동·주입·감시", "spawn-watch-2min-condition", r"2분 지속"),
     ("consult", None, "consult-no-builder-family", r"--builder-family"),
     # finding 4545951839: consult §1 SS pin must give --effort, matching wake's pin-names-rung-with-effort.
     ("consult", "## 1. 자문처 결정", "consult-ss-pin-no-effort-clause", r"(?i)--effort (?:는|는\s*)주지\s*않고"),
@@ -564,6 +570,9 @@ injections = [
     ("ops-pacelever-home-readded", "ops", "## Routing table\n", "## Routing table\n\n- `pacelever` uses the real HOME.\n"),
     ("wake-pacelever-json-readded", "wake", "## The loop\n", "## The loop\n\nRun `pacelever --json` for quota.\n"),
     ("spawn-pacelever-refresh-readded", "spawn", "## 4. 기동·주입·감시\n", "## 4. 기동·주입·감시\n\n- 낡은 풀은 `pacelever refresh <풀>`.\n"),
+    ("wake-t0-line-count-readded", "wake", "## Tier — by revert cost\n", "## Tier — by revert cost\n\n- T0 is local config of ≤30 lines.\n"),
+    ("spawn-stuck-5min-rule-readded", "spawn", "## 4. 기동·주입·감시\n", "## 4. 기동·주입·감시\n\n- 스폰 후 5분 내 실 툴호출 없으면 stuck 으로 판정하고 스폰 실패로 다룬다.\n"),
+    ("spawn-watch-2min-condition-readded", "spawn", "## 4. 기동·주입·감시\n", "## 4. 기동·주입·감시\n\n- 감시는 `agent_status` 전이 기반(working→비working 2분 지속 시 확인).\n"),
     ("wake-role-builder-readded", "wake", "## Rules\n", "## Rules\n\nSpawn with `panewire spawn --role builder --lane x`.\n"),
     ("ops-role-builder-readded", "ops", "## Routing table\n", "## Routing table\n\nSpawn with `panewire spawn --role builder --lane x`.\n"),
     ("wake-panewire-lead-readded", "wake", "## Rules\n", "## Rules\n\nRun `panewire lead <task-id>`.\n"),

@@ -81,7 +81,7 @@ operator-desk; `ops` deploy), or decisions (ask the operator).
 
 | T | Surface | Spawn mode |
 |---|---|---|
-| **T0** | local script or config, ≤30 lines, revert = copy a file | no spawn — the design session does it and still opens a PR |
+| **T0** | local script or config, revert = copy a file | no spawn — the design session does it and still opens a PR |
 | **T1** | tool repo, runtime-independent | one worker + one mergewake review |
 | **T2** | non-trading application path | one worker + one mergewake review |
 | **T3** | irreversible external mutation, deploy, safety guard | one worker per split piece (§T3 split) + mergewake review |

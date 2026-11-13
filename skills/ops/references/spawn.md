@@ -94,10 +94,10 @@ mergewake reap 이 한다.
   relay 한다 — relay 실패는 `job.relay_failed` 와 `relay=file-only` 로 남는다. herdr 서버가 비기본
   세션에 사는 호스트에서는 `HERDR_SESSION` 을 넘긴다. 감시자의 공개 판정 로그나 상태 파일은 없다 —
   판정은 잡 이벤트로 본다.
-- 감시는 `agent_status` **전이 기반**(working→비working 2분 지속 시 확인). kiro/agy는 status
+- 감시는 `agent_status` **전이 기반**(working→비working 전이를 본다). kiro/agy는 status
   플랩(작업 중 idle/done 오표시) — 완료 판정은 상태가 아니라 **산출물/화면 마커**(PR URL·
-  최종보고·inbox 파일)로. 스폰 후 5분 내 실 툴호출 없으면 stuck 으로 판정하고 스폰 실패로 다룬다 — 자동 재스폰하지 않는다
-  (`wake` §On spawn failure, desk 는 `desk` §Spawn failure).
+  최종보고·inbox 파일)로. 스폰 landing 은 hub 스폰 상태와 hk task 클레임으로 증명한다(`wake` loop step 6).
+  스폰 실패는 자동 재스폰하지 않는다(`wake` §On spawn failure, desk 는 `desk` §Spawn failure).
 - herdr 공식 시맨틱(0.8 번들 스킬, `herdr --skill` 이 정본): **`done` = 미열람 idle**
   (백그라운드 완료 후 아직 UI 에서 안 봄; CLI read 는 seen 처리 안 함) — done/idle 은 같은
   비-working 상태다. 특정 문자열 대기는 반복적인 read 루프 대신
