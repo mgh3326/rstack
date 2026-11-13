@@ -2,8 +2,9 @@
 """Retired-name contract: removed tools, flags and harnesses stay removed.
 
 Each check is a FORBIDDEN row. It must hold on the real tree and go RED on a
-mutant that reintroduces the retired text. Whole-word matching keeps the live
-`fleet-review` skill from matching `fleet-rev`.
+mutant that reintroduces the retired text. `fleet-rev(?!iew)` keeps the live
+`fleet-review` skill from matching, and `agent-skills` not preceded by
+`addyosmani/` keeps the upstream attribution from matching.
 """
 import json
 import re
@@ -14,7 +15,8 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tests/lib"))
 from contract import expect_red  # noqa: E402
 
-RETIRED_TOOL = re.compile(r"fleet-rev\b|fleet-install\b")
+RETIRED_TOOL = re.compile(r"fleet-rev(?!iew)|fleet-install")
+RETIRED_CHECKOUT = re.compile(r"(?<!addyosmani/)agent-skills")
 RETIRED_INSTALLER = re.compile(r"--prune-old|agent-skills-backup")
 RETIRED_BIN = {"fleet-install", "fleet-rev"}
 
@@ -34,6 +36,7 @@ def skill_and_doc_texts():
 def check_skills_name_no_retired_tool(docs):
     for name, text in docs.items():
         assert not RETIRED_TOOL.search(text), f"{name}: names a retired tool"
+        assert not RETIRED_CHECKOUT.search(text), f"{name}: names the retired agent-skills checkout"
 
 
 def check_installer_has_no_move_code(files):
@@ -58,7 +61,11 @@ def main():
                {**docs, "skills/wake/SKILL.md": docs["skills/wake/SKILL.md"] + "\nRun `fleet-rev --json` first.\n"})
     expect_red("readme-names-fleet-install", check_skills_name_no_retired_tool,
                {**docs, "README.md": docs["README.md"] + "\nfleet-install mergewake v1.2.3\n"})
-    print("RED skill and README retired-tool mutants (expected)")
+    expect_red("skill-names-agent-skills", check_skills_name_no_retired_tool,
+               {**docs, "skills/wake/SKILL.md": docs["skills/wake/SKILL.md"] + "\nClone agent-skills first.\n"})
+    check_skills_name_no_retired_tool({**docs, "skills/fleet-review/SKILL.md": docs["skills/fleet-review/SKILL.md"]
+                                       + "\nSee https://github.com/addyosmani/agent-skills and fleet-review.\n"})
+    print("RED skill and README retired-tool mutants; PASS upstream citation and fleet-review controls (expected)")
 
     installer = {name: read(name) for name in ("scripts/install-skills.py", "install.sh", "README.md")}
     check_installer_has_no_move_code(installer)
