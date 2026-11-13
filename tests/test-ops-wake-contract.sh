@@ -331,7 +331,6 @@ REQUIRED = [
     # hk:doc decision/2026-11-10/wake-vs-lead items 2 and 3.
     # hk 3919 (A17 items 3, 4, 8 with A10, A11).
     ("wake", "## The loop", "pin-names-rung-with-effort", r"The pin names a rung that has a catalog row: `-m <profile> --effort <e>`\. A pin without an effort launches with no effort and matches no catalog row"),
-    ("wake", "## The loop", "no-omp-pin-for-esc-brief", r"Until hk 3917 item 1 is fixed, do not pin an omp rung for a brief that can end in an ESC"),
     ("consult", "## 1. 자문처 결정", "consult-ss-rung", r"S\+ 급 질문자의 자문은 SS 급 rung 으로 간다\. SS 급 질문자는 다른 계열의 SS 급 rung 에 묻는다\."),
     ("consult", "## 1. 자문처 결정", "consult-session-ss-rule", r"task 가 없는 다른 세션은 S\+ 에 머문다\. 어느 좌석이 SS 인지는 hk:doc `policy/model-families` §Consult 가 정한다 — 이 문서는 모델명을 적지 않는다"),
     ("consult", "## 1. 자문처 결정", "consult-ss-pin-scope", r"\*\*예외 — 디자인 세션의 SS 고정\.\*\* resolve 의 답이 다른 계열의 SS 좌석이 아니면, 디자인 세션은 hk:doc `policy/model-families` §Consult 가 다른 계열의 SS 좌석으로 이름한 프로필과 effort 를 `-m <profile> --effort <e>` 로 고정하고 `--override-reason 'consult SS, decision 124' --containment hk:<task>` 를 줄 수 있다\(`<task>` 는 자문의 hk task\)\."),
@@ -356,6 +355,8 @@ REQUIRED = [
 
 # Rows that must be absent: panewire resolve refuses --builder-family with --role consult.
 FORBIDDEN = [
+    # hk 4397 W21 (operator decision 196): hk 3917 item 1 fixed by hk 3925 (panewire v0.0.233); the omp-pin ban is removed.
+    ("wake", "## The loop", "omp-pin-ban-esc-brief", r"(?i)do\s+not\s+pin\s+an\s+omp\s+rung"),
     ("wake", "## The loop", "grade-a-integrity-strong-profile", r"Grade A work on state machines, ledgers, idempotency or data integrity runs on a strong profile, not a waste-tier pick: until panewire can express this on the task, pass an explicit `-m <profile>` with `--override-reason`"),
     ("wake", "## Rules", "blocked-after-ready", r"(?i)after READY.{0,100}(?:becomes|send|emit|ends with).{0,20}blocked"),
     ("ops", "## Invariants (all references)", "ops-blocked-after-ready", r"(?i)after READY.{0,100}(?:becomes|send|emit|ends with).{0,20}blocked"),
@@ -548,6 +549,7 @@ injections = [
     ("wake-old-hk-4256-escalation", "wake", "## Escalation and notifications\n", "## Escalation and notifications\n\nUntil mergewake hk 4256 ships.\n"),
     ("reap-open-pr-author-reapable", "reap", "### 6-1. 그 밖의 pane — 스폰한 주체가 거둔다\n", "### 6-1. 그 밖의 pane — 스폰한 주체가 거둔다\n\n자문·머지 안 된 PR·실패 잡의 pane 은 **만든 곳이 회수한다.**\n"),
     ("wake-old-dotfiles", "wake", "## Rules\n", "## Rules\n\nnever read real agent " + "dotfiles\n"),
+    ("wake-omp-pin-ban-esc-brief-readded", "wake", "## The loop\n", "## The loop\n\nUntil hk 3917 item 1 is fixed, do not pin an omp rung for a brief that can end in an ESC.\n"),
     ("wake-grade-a-integrity-strong-profile-readded", "wake", "## The loop\n", "## The loop\n\nGrade A work on state machines, ledgers, idempotency or data integrity runs on a strong profile, not a waste-tier pick: until panewire can express this on the task, pass an explicit `-m <profile>` with `--override-reason`.\n"),
     ("wake-old-ci-no-requirement-readded", "wake", "## Merge gate\n", "## Merge gate\n\nCI is not a merge requirement.\n"),
     ("lead-covering-ci-rule-duplicated", "lead", "## Subagents\n", "## Subagents\n\nA local or remote test run uses the flags of the CI job that covers it, including `-timeout`.\n"),
