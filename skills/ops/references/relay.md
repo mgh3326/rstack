@@ -101,9 +101,11 @@ panewire find <이름|라벨> --pane-only  # 스크립트용
 
 ### 2.x 원격 호스트 세션 (2026-09-02)
 
-원격 호스트의 세션에 릴레이할 때는 §3 을 그대로 수행하되, 주입은
-`ssh <host> 'herdr --session <s> agent prompt <원격 pane> ...'` 로 하고 도착은
-`ssh <host> herdr agent read <원격 pane>` 로 확인한다.
+원격 호스트의 세션에 릴레이할 때는 §3 을 그대로 수행한다. 주입 전에 대상 pane 을 확인한다:
+`ssh <host> herdr --session <s> agent read <원격 pane>` 로 화면을 읽어 대상이 맞는지(§3 의 화면 실판별)
+확인하고, 확인된 pane 에만 `ssh <host> 'herdr --session <s> agent prompt <원격 pane> ...'` 로 주입한다.
+대상이 확인되지 않으면 주입하지 않는다. 도착은 같은 `--session` 으로
+`ssh <host> herdr --session <s> agent read <원격 pane>` 에서 확인한다.
 
 ## 3. herdr 주입 + 제출 검증 (생략 절대 금지)
 
