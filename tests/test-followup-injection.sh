@@ -89,8 +89,8 @@ def check_injection(text: str) -> None:
     assert "harnessHasSubmissionEvidence" in sec, (
         "harnessHasSubmissionEvidence citation missing"
     )
-    assert "devin·grok·kimi" in sec and "unproven" in sec, (
-        "devin/grok/kimi unproven group missing"
+    assert "devin 등 그 외 하네스" in sec and "unproven" in sec, (
+        "devin unproven group missing"
     )
     assert "composer_residue" in sec, "composer_residue outcome missing"
     assert re.search(r"queued 배너로 판정", sec), (
@@ -100,8 +100,8 @@ def check_injection(text: str) -> None:
     assert "Enter 를 보내지 않" in sec and "툴 호출을 취소" in sec, (
         "no-Enter-during-tool-call rule missing"
     )
-    assert "command still running" in sec and "소비 마커" in sec, (
-        "grok banner/landing-marker reconciliation missing"
+    assert "착지 주장은 배너가 아니라 소비 마커로 한다" in sec, (
+        "landing claim must rest on the consume marker, not the banner"
     )
     assert "§3-2 하네스별 제출 마커 표" in sec, "§3-2 marker-table pointer missing"
 

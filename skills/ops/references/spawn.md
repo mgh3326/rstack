@@ -20,7 +20,6 @@ mergewake reap 이 한다.
 
 ## 무인 실행·task 기록
 
-- kiro 워커: "Linear는 읽기만, 이슈·코멘트 변경 금지" 필수(kiro Linear MCP는 write 가능).
 - 무인 워커의 승인 우회 플래그는 panewire 하네스 launch 에 내장돼 있다. mock 레인은 `-L mock` +
   `MOCK_MCP_PROFILE` + `PANEWIRE_MOCK_MCP_CONFIG` 이고 claude·codex 만 된다(그 외·원격 mock 은 rc 79).
 - **스폰 = handoffkeep tasks 기록 의무**: panewire spawn 은 숫자 task binding 없이는 거부한다. 자기
@@ -66,7 +65,7 @@ mergewake reap 이 한다.
   worktree 인 것으로 워커를 찾는다. `-l` 은 잡 id 의 기본값이자 pane 이름이고 mergewake 는
   `<jobs>/<pane 이름>` 이 있어야 닫으므로 `--job` 을 라벨과 다르게 주지 않는다.
 - workspace는 실행 host의 설정이 기본이다. `-w <label|id>`는 명시 override이며 label은 실행 host에서 id로 해석한다. 다른 host의 workspace id를 추측하지 않는다.
-- 🔴 **`--owner <내 레인>` 을 항상 붙여라**(ROB-1206). arbiter 의 `owner_lane` 으로 기록되어 회수
+- 🔴 **`--owner <내 레인>` 을 항상 붙여라**(ROB-1206). `owner_lane` 으로 기록되어 회수
   조회 키(`reap.md`)이자 worker 레인의 parent 가 된다. 빠뜨리면 `default` 로 들어가 네 워커를
   다시 찾을 수 없고 완료 push 도 오지 않는다 — 2026-08-02 에 기록 22건이 전부 `default` 라 잔여
   세션 11개를 손으로 걷어냈다. `-L live|mock` 은 **실행 레인**이고 `--owner` 는 **스폰 주체**다.
@@ -77,7 +76,7 @@ mergewake reap 이 한다.
 - 브리프 주입과 제출 검증은 **`relay.md` 절차**를 따른다(제출 검증 생략 금지,
   접수 확인 도구 1회 지시 포함).
 - 지시·중단·답변 통지는 하네스와 무관하게 **`relay.md` §3-1 정본**을 참조한다 —
-  `panewire emit --kind lane.event --type <type>` 가 claude·codex·devin·grok·omp·cmd pane 으로
+  `panewire emit --kind lane.event --type <type>` 가 claude·codex·devin·omp·cmd pane 으로
   릴레이된다.
   **후속 라운드·보충 지시의 주입은
   `panewire prompt --from <sender-lane> --to <agent-name> --file <prompt-file> --uptake status-transition --timeout 60s` 으로 한다** — `relay.md`

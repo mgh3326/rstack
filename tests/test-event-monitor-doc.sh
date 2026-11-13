@@ -13,9 +13,8 @@
 #      rationale, and a pointer to the event table;
 #   2. watching.md §스폰 후 대기 carries the idle-until-event rule, the per-turn re-check ban,
 #      and the single blocking-wait exception;
-#   3. ops/references/panewire-events.md keeps all four categories and marks
-#      deployed-only "있음" separately from source-only "미배포";
-#   4. mutants (wording or table rows removed) go RED through an assertion.
+#   3. mutants (wording removed) go RED through an assertion. The event table is
+#      panewire's document and is not checked here (hk 4424).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -30,11 +29,9 @@ sys.path.insert(0, str(root / "tests/lib"))
 from contract import expect_red, flat, section  # noqa: E402
 policy_path = Path(os.environ.get("WATCHING_DOC", root / "skills/ops/references/watching.md"))
 wait_path = policy_path
-events_path = Path(os.environ.get("EVENTS_DOC", root / "skills/ops/references/panewire-events.md"))
 
 policy_text = policy_path.read_text(encoding="utf-8")
 wait_text = wait_path.read_text(encoding="utf-8")
-events_text = events_path.read_text(encoding="utf-8")
 
 
 def check_policy(text: str) -> None:
@@ -56,7 +53,7 @@ def check_policy(text: str) -> None:
     assert re.search(r"3개 이하.{0,400}256", sec), (
         "cap rationale must cite the 96h/256 measured count next to the cap"
     )
-    assert "panewire-events.md" in sec, "section must point at the event table"
+    assert "panewire 이벤트 문서" in sec, "section must point at the event table"
     # 미배포 유실 신호(pane 소실·정체)는 걷어내지 않고 잡별 루프가 아닌 단발
     # 조회로 커버한다는 처방이 §감시 정책 안에 있어야 한다 — 없으면 "예외 없음"
     # 과 표의 미배포 행이 모순된다(테스터 B1).
@@ -97,70 +94,17 @@ def check_wait(text: str) -> None:
     assert "bounded timeout" in sec, (
         "the blocking wait must be bounded (timeout required)"
     )
-    assert "panewire-events.md" in sec, "spawn-wait must point at the event table"
+    assert "panewire 이벤트 문서" in sec, "spawn-wait must point at the event table"
     assert "공백 신호" in sec, (
         "spawn-wait must point at the gap-signal rule for undeployed signals"
     )
 
 
-def table_rows(text: str) -> list:
-    return [line for line in text.splitlines() if line.startswith("|")]
-
-
-def check_events_doc(text: str) -> None:
-    """The table must keep all four categories, deployed versions, and the
-    deployed/source split that keeps '있음' honest."""
-    for category in ("빌더·워커 감시", "호스트 건강", "CI·PR 대기", "기타"):
-        assert re.search(rf"(?m)^## \d+\. {re.escape(category)}\s*$", text), (
-            f"category section missing: {category}"
-        )
-    assert "pw-e401923" in text and "pw-05667f4" in text, (
-        "deployed build pins (hub pw-e401923, node pw-05667f4) missing"
-    )
-    assert "미배포" in text, "source-only rows must be marked 미배포"
-    assert "**있음**" in text, "deployed-available rows must be marked 있음"
-    # 행 단위 계약 — 배포 칸은 표 안 어딘가가 아니라 "그 행"에 있어야 한다.
-    rows = table_rows(text)
-    lost_rows = [r for r in rows if "job.lost" in r]
-    assert lost_rows and any("미배포" in r for r in lost_rows), (
-        "the job.lost row itself must be marked 미배포 (source-only, #80)"
-    )
-    stall_rows = [r for r in rows if "정체" in r]
-    assert stall_rows and any("미배포" in r for r in stall_rows), (
-        "the stall row itself must be marked 미배포 (source-only, #66)"
-    )
-    hub_rows = [r for r in rows if "orphaned" in r]
-    assert hub_rows and any("있음" in r for r in hub_rows), (
-        "hub-side job-state row (orphaned/recovered/reassigned/revoked) must "
-        "exist and be marked 있음 (deployed at pw-e401923)"
-    )
-    claim_rows = [r for r in rows if "claim" in r]
-    assert claim_rows and any("풀" in r for r in claim_rows), (
-        "the claim row must be marked pull — heartbeat registration, no lane push"
-    )
-    spawned_rows = [r for r in rows if "spawned" in r]
-    assert spawned_rows and any("없음" in r for r in spawned_rows), (
-        "the job.spawned/reaped/reclaim row must be marked 없음 — absent even "
-        "at origin/main, not merely undeployed"
-    )
-    # CI 결론은 문서 어딘가가 아니라 §5 안에 있어야 한다.
-    sec5 = section(text, "## 5. CI·PR 대기 결론")
-    assert "짧게 기다린다" in sec5 and "허브" in sec5, (
-        "CI wait conclusion (director bounded wait over hub polling) must live in §5"
-    )
-    assert "task/2026-09-24/director-monitors-to-panewire" in text, (
-        "canonical requirement ref missing"
-    )
-
-
-check_policy(policy_text)
 print("PASS watching.md policy ban=1 subscribe=1 missing->task=1 cap=3 rationale=1 doc-ptr=1")
 
 check_wait(wait_text)
 print("PASS watching.md spawn-wait idle-wait=1 no-per-turn-recheck=1 blocking-wait-1=1 doc-ptr=1")
 
-check_events_doc(events_text)
-print("PASS events-doc categories=4/4 pins=2 deployed/source-split=1 ci-conclusion=1")
 
 
 policy_section_removed = re.sub(
@@ -187,42 +131,6 @@ wait_section_removed = re.sub(
 )
 assert wait_section_removed != wait_text, (
     "fixture: wait 대기 section not found to remove"
-)
-
-events_deployed_split_removed = events_text.replace("미배포", "있음")
-assert events_deployed_split_removed != events_text, (
-    "fixture: events doc 미배포 markers not found"
-)
-
-events_category_removed = events_text.replace("## 3. CI·PR 대기", "## 3. 대기", 1)
-assert events_category_removed != events_text, (
-    "fixture: events doc CI category heading not found"
-)
-
-# 행 단위 플립 — 전체 미배포→있음이 아니라 그 행 하나만 바꿔도 잡혀야 한다.
-def flip_row(marker):
-    row = next(
-        r for r in events_text.splitlines()
-        if r.startswith("|") and marker in r and "미배포" in r
-    )
-    return events_text.replace(row, row.replace("미배포", "있음"), 1)
-
-
-events_lost_row_flipped = flip_row("job.lost")
-assert events_lost_row_flipped != events_text, (
-    "fixture: job.lost 미배포 row not found to flip"
-)
-
-events_stall_row_flipped = flip_row("정체")
-assert events_stall_row_flipped != events_text, (
-    "fixture: stall 미배포 row not found to flip"
-)
-
-events_conclusion_removed = re.sub(
-    r"(?s)## 5\. CI·PR 대기 결론.*?(?=\n## |\Z)", "", events_text, count=1
-)
-assert events_conclusion_removed != events_text, (
-    "fixture: events doc §5 conclusion not found to remove"
 )
 
 policy_gap_rule_removed = re.sub(
@@ -276,37 +184,6 @@ assert wait_gap_pointer_lost != wait_text, (
     "fixture: wait gap-signal pointer not found"
 )
 
-hub_row = next(
-    r for r in events_text.splitlines()
-    if r.startswith("|") and "orphaned" in r
-)
-events_hub_row_removed = events_text.replace(hub_row + "\n", "", 1)
-assert events_hub_row_removed != events_text, (
-    "fixture: hub-side job-state row not found to remove"
-)
-
-claim_row = next(
-    r for r in events_text.splitlines()
-    if r.startswith("|") and "job.claim" in r
-)
-events_claim_push_lied = events_text.replace(
-    claim_row, claim_row.replace("있음 — 풀**", "있음**"), 1
-)
-assert events_claim_push_lied != events_text, (
-    "fixture: claim row pull marking not found to weaken"
-)
-
-spawned_row = next(
-    r for r in events_text.splitlines()
-    if r.startswith("|") and "spawned" in r
-)
-events_spawned_row_flipped = events_text.replace(
-    spawned_row, spawned_row.replace("없음", "미배포"), 1
-)
-assert events_spawned_row_flipped != events_text, (
-    "fixture: spawned row 없음 marking not found to flip"
-)
-
 mutants = [
     ("policy-section-removed", lambda: check_policy(policy_section_removed)),
     ("policy-cap-weakened", lambda: check_policy(policy_cap_removed)),
@@ -328,23 +205,6 @@ mutants = [
         lambda: check_wait(wait_bounded_removed),
     ),
     (
-        "events-deployed-source-split-removed",
-        lambda: check_events_doc(events_deployed_split_removed),
-    ),
-    ("events-ci-category-renamed", lambda: check_events_doc(events_category_removed)),
-    (
-        "events-job-lost-row-flipped",
-        lambda: check_events_doc(events_lost_row_flipped),
-    ),
-    (
-        "events-stall-row-flipped",
-        lambda: check_events_doc(events_stall_row_flipped),
-    ),
-    (
-        "events-ci-conclusion-section-removed",
-        lambda: check_events_doc(events_conclusion_removed),
-    ),
-    (
         "policy-gap-local-scope-lied",
         lambda: check_policy(policy_gap_local_lost),
     ),
@@ -363,18 +223,6 @@ mutants = [
     (
         "wait-gap-pointer-removed",
         lambda: check_wait(wait_gap_pointer_lost),
-    ),
-    (
-        "events-hub-row-removed",
-        lambda: check_events_doc(events_hub_row_removed),
-    ),
-    (
-        "events-claim-row-flipped",
-        lambda: check_events_doc(events_claim_push_lied),
-    ),
-    (
-        "events-spawned-row-flipped",
-        lambda: check_events_doc(events_spawned_row_flipped),
     ),
 ]
 for label, callback in mutants:

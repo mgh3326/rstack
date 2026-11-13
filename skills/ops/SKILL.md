@@ -1,6 +1,6 @@
 ---
 name: ops
-description: Lane mechanics every session needs whatever method it runs — spawn a worker or consult pane and prove the brief landed, relay or inject a prompt with the 5-element packet and comms-contract v1, ask a stronger model for advice, record an operator decision request, wait without polling, reap finished panes, and run one deploy as the installer seat. Read the routing table, then only the reference you need. Triggers - "워커 띄워/스폰해", "작업 시켜", "orch에 전달/넘겨줘", "세션에 릴레이", "워커에게 회신", "herdr로 보내", "자문 받아줘", "강모델에 물어봐", "fable/astra/opus/sol에 확인해줘", "배포해", "결정 요청", panewire spawn·herdr agent start·herdr agent prompt 사용 전.
+description: Lane mechanics every session needs whatever method it runs — spawn a worker or consult pane and prove the brief landed, relay or inject a prompt with the 5-element packet and comms-contract v1, ask a stronger model for advice, record an operator decision request, wait without polling, reap finished panes. Read the routing table, then only the reference you need. Triggers - "워커 띄워/스폰해", "작업 시켜", "orch에 전달/넘겨줘", "세션에 릴레이", "워커에게 회신", "herdr로 보내", "자문 받아줘", "강모델에 물어봐", "fable/astra/opus/sol에 확인해줘", "배포해", "결정 요청", panewire spawn·herdr agent start·herdr agent prompt 사용 전.
 ---
 
 # ops — lane mechanics
@@ -11,9 +11,6 @@ Deciding *what* to build is the `wake` skill's job, not this one; mergewake merg
 the lead merges its own PRs directly under `lead` §Ledger, including T3 and `deploy_approval` PRs.
 The repo's design session orders the rollout, or operator-desk while that repo has no design session
 open; the lead never deploys or performs the live mutation.
-
-Domain overlay: if `$AGENT_SKILLS_DOMAIN/ops.md` exists, read it before applying
-anything here. Unset or missing is normal — the abstract rules below apply alone.
 
 ## Invariants (all references)
 
@@ -32,7 +29,7 @@ anything here. Unset or missing is normal — the abstract rules below apply alo
   the hub records delivery and holds or batches it while the desk is busy. `herdr agent prompt`,
   `herdr pane send-text` or `send-keys` into the desk pane land in the operator's input box,
   bypass hold/batching and can mix with what the operator is typing (2026-11-02 incident).
-  The same holds for any parent lane — every relay harness (claude, codex, devin, grok, omp,
+  The same holds for any parent lane — every relay harness (claude, codex, devin, omp,
   cmd) receives `lane.event` (`relay.md` §3-1). If you cannot see the receiver (another host,
   `panewire find` misses it), `emit` rc 0 is sufficient — no fallback channel, no ESC about
   delivery.
@@ -83,8 +80,8 @@ anything here. Unset or missing is normal — the abstract rules below apply alo
   failure, `git merge origin/<base>` on your own branch, and a replay of the same
   saved spawn request after a lost response that is not `failed` or `retryable`
   (on `failed` or `retryable` never replay; `wake` §On spawn failure). The no-retry
-  rules in `wake` §On spawn failure, `desk` §Spawn failure and `deploy.md` cover only
-  what they name: a new spawn attempt and the deploy command.
+  rules in `wake` §On spawn failure and `desk` §Spawn failure cover only
+  what they name: a new spawn attempt.
 
 ## Routing table
 
@@ -97,13 +94,13 @@ anything here. Unset or missing is normal — the abstract rules below apply alo
 | Ask a stronger model for advice | [`consult.md`](references/consult.md) | profile from `panewire resolve --role consult`, self-contained packet, pane by default |
 | Escalate a decision from a pane | §Escalate a decision (below) | ESC event `--type decision`, never an in-pane question |
 | Ask the operator to choose | [`decision-request.md`](references/decision-request.md) | `handoffkeep tasks decision-request` first, then notify with the request_id |
-| Wait for a worker, job or CI; handle an `[inbox]` wake line | [`watching.md`](references/watching.md), [`panewire-events.md`](references/panewire-events.md) | push events, one bounded wait, at most 3 temporary waits; design and desk lanes are inbox-only |
+| Wait for a worker, job or CI; handle an `[inbox]` wake line | [`watching.md`](references/watching.md) | push events (the event table is panewire's own docs), one bounded wait, at most 3 temporary waits; design and desk lanes are inbox-only |
 | Reap finished panes | [`reap.md`](references/reap.md) | mergewake reaps merged PRs' workers; the spawner reaps the rest with `panewire reap --lane`, preview then `--apply` |
-| Deploy one change | [`deploy.md`](references/deploy.md) (+ [`deploy-checklist.md`](references/deploy-checklist.md)) | installer seat, spawned by and reporting to the ordering session (the repo's design session, else operator-desk); fixed 9 steps, no judgement |
+| Deploy a repository's change | none in this repo (decision 223) | a repo deploys through its own GitHub Actions after `deploy-ok`, ordered and recorded by its design session (else operator-desk); fleet-host installs are panewire's |
 
 ## Escalate a decision
 
-A spawned pane (worker, installer seat, consultant) **never opens an interactive question**
+A spawned pane (worker, consultant) **never opens an interactive question**
 — no confirmation prompt and no chooser (AskUserQuestion or any picker). Only the operator
 sees a pane, so the question blocks silently (operator 2026-10-29). Instead:
 
@@ -114,7 +111,7 @@ panewire emit --kind lane.event --lane <parent-lane> --type decision \
 ```
 
 - Name the question, the options and the default in that one event.
-- `lane.event` reaches every relay harness — claude, codex, devin, grok, omp and cmd
+- `lane.event` reaches every relay harness — claude, codex, devin, omp and cmd
   (`relay.md` §3-1). Emit once; do not also inject the same text into the parent pane.
 - If the default is safe (reversible, inside the brief's scope, no spend or external
   effect), continue with it and say so in the report. Otherwise stop and wait for the reply.
@@ -132,7 +129,9 @@ panewire emit --kind lane.event --lane <parent-lane> --type decision \
 ## Who does what
 
 Authority of the design session, lead, workers, operator-desk and the operator is
-`wake` §Authority; what READY means is `wake` §READY. The repo's design session spawns the installer seat,
-or operator-desk when that repo has none open; the **Installer** executes one deploy and judges
-nothing (`deploy.md`). The lead merges its own PRs under `lead` §Ledger; its T3 and `deploy_approval`
-PRs are not routed to another merger, and the lead never deploys or performs the live mutation.
+`wake` §Authority; what READY means is `wake` §READY. The design session does not merge. The one exception
+is merging the revert PR that mergewake `watch` opens for its own repo. Only the lead merges directly
+(`lead` §Ledger). A repository deploys through its own GitHub Actions after `deploy-ok`; its design
+session orders and records that deploy (else operator-desk). Fleet-host installs are panewire's. No separate
+deploy role exists (operator decision 223). The lead merges its own PRs under `lead` §Ledger; its T3 and
+`deploy_approval` PRs are not routed to another merger, and the lead never deploys or performs the live mutation.

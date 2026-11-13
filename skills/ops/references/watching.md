@@ -11,7 +11,7 @@
 - **잡별 폴링 감시 상한은 0이다.** 잡마다 새 폴링 루프를 만들지 않는다. 완료·
   에스컬레이션·JOIN·레인 통지는 자기 레인으로 push 되는 `job.*`·`lane.event`·
   `idle-wake` 알림을 소비한다 — 어떤 신호가 배포 판에서 실제로 오는지는
-  `panewire-events.md` 표가 정본이다(소스에만 있는 이벤트는 "미배포").
+  panewire 의 이벤트 문서(표)가 정본이다. 이 레포에는 사본이 없다(소스에만 있는 이벤트는 "미배포").
 - **부족한 이벤트는 폴링으로 대체하지 말고 태스크로 낸다.** 표에서
   "없음/미배포"인 신호가 필요하면 그것은 panewire 에 이벤트를 추가하는 일이다.
   폴링으로 돌이키는 순간 상한 0의 의미가 사라진다.
@@ -44,7 +44,7 @@
   확인)와 bounded timeout 있는 블로킹 대기(`panewire wait` 등) 1개는 이 상한의
   대상이지만 폴링 루프가 아니다 — 반복 호출로 루프를 만들면 위반이다.
 - 예외는 없다 — 위 공백 신호 규칙도 잡별 폴링을 허용하지 않는다. CI·PR 대기도
-  폴링 루프를 만들지 않는다 — 방침은 `panewire-events.md` §5 결론을
+  폴링 루프를 만들지 않는다 — 방침은 panewire 이벤트 문서의 CI·PR 대기 결론을
   따른다.
 
 ## 스폰 후 대기 — 유휴와 이벤트 기상
@@ -79,7 +79,7 @@ attempt를 먼저 대조한다. 새 워커 재시도 루프를 만들지 않는�
 - 배포 판에서 push 되지 않는 신호(예: job.lost·revoked·정체)가 필요하면 그
   공백을 브리프·보고서에 명시하고, 임시 수단은 위 §감시 정책의
   "공백 신호" 규칙(단발 조회, 잡별 루프 금지)을 따른다. 커버 범위는
-  `panewire-events.md` 표가 정본이다.
+  panewire 이벤트 문서의 표가 정본이다.
 - design·desk 레인의 세션은 알림 본문 대신 `[inbox]` 기상 줄로 깨어난다 — 처리는 아래
   §Inbox wake line.
 
@@ -105,15 +105,3 @@ since panewire#352 (deployed v0.0.195).
   Ack an item only after you acted on it.
 - Worker lanes keep body injection. Operator chat and operator HTTP ingress still type into
   the pane.
-
-## 이벤트 모양 (panewire R19a)
-
-panewire R19a 계약은 두 종류의 이벤트를 같이 소비한다.
-
-- arbiter 산출물은 envelope이다: `job_id`, `seq`, `kind`, `payload`, `created_at`.
-- `panewire done`·`panewire escalate`는 `arbiter event`로 기록하므로 같은 envelope이다(panewire에는
-  `joined`가 없다). 평면 레코드는 옛 launcher 잡의 events 디렉터리에만 있다.
-  R19a는 panewire의 `lanes.json`으로 owner 레인의 parent를 해석해 상위 pane으로 주입한다.
-
-`tests/fixtures/panewire-r19a/`의 claim fixture는 실제 `arbiter claim` artifact와 같은 envelope
-shape다. 소비자는 flat completion event를 arbiter envelope이라고 가정하면 안 된다.

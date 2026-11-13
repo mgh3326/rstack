@@ -13,7 +13,6 @@ from contract import delete_row, expect_red, flat  # noqa: E402
 
 PATHS = {
     "fleet": root / "skills/fleet-review/SKILL.md",
-    "deploy": root / "skills/ops/references/deploy-checklist.md",
     "wake": root / "skills/wake/SKILL.md",
     "roles": root / "skills/robin-mode/roles.md",
     "lead": root / "skills/lead/SKILL.md",
@@ -46,8 +45,6 @@ REQUIRED = [
     ("fleet", "ladder-model-cap", r"effort up to that model's ladder cap"),
     ("fleet", "ladder-not-computed", r"\*\*panewire does not compute the step yet\*\* \(hk 3917 item 4\)"),
     ("fleet", "non-converging-pr-to-lead", r"\*\*Then the lead:\*\* when the ladder has no step left, or the cause is a correctness design the brief left open \(`wake` §Brief rules\), the session hands the PR, its open findings and the brief to a lead"),
-    ("fleet", "reviewer-family-receiver", r"checks them all, the repo's design session, else operator-desk, does"),
-    ("deploy", "join-receiver", r"레포 디자인 세션, 없으면 operator-desk로 전달한 경로/시각"),
     ("wake", "ready-receiver", r"repo's design session, else operator-desk, says you are done"),
     ("roles", "lead-in-session-only", r"A lead uses in-session subagents only, as `lead` §Subagents specifies; it never delegates or spawns workers"),
     ("roles", "lead-excluded-from-self-fallback", r"This fallback does not apply to a lead: a lead writes product code only for a small hotfix within the threshold in `lead` §Authority"),
@@ -67,6 +64,7 @@ FORBIDDEN = [
     ("fleet", "old-desk-review-check", r"the desk checks it"),
     ("fleet", "old-desk-esc", r"ESC to the desk"),
     ("fleet", "old-desk-round", r"the desk decides"),
+    ("fleet", "reviewer-family-receiver-retired", r"checks them all, the repo's design session, else operator-desk, does"),
     ("fleet", "old-desk-family-check", r"the desk does\. Which reviewer"),
     ("wake", "old-ready-desk", r"or the desk says you are done"),
     ("roles", "lead-spawns", r"A lead delegates and spawns"),
@@ -104,6 +102,7 @@ INJECTIONS = {
     "old-desk-esc": "ESC to the desk",
     "old-desk-round": "the desk decides",
     "old-desk-family-check": "checks them all, the desk does. Which reviewer",
+    "reviewer-family-receiver-retired": "checks them all, the repo's design session, else operator-desk, does.",
     "old-ready-desk": "or the desk says you are done",
     "lead-spawns": "A lead delegates and spawns under robin-mode.",
     "lead-spawn-worker-claim": "Lead delegates and spawns workers.",

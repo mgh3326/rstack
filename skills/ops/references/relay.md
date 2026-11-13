@@ -99,12 +99,11 @@ panewire find <이름|라벨> --pane-only  # 스크립트용
 이름이 유실돼도 `panewire find`가 찾고 `panewire name-sync --apply`로 일괄 복구된다. 이름이 좋아도
 화면 실판별은 생략 금지.
 
-### 2.x 원격 호스트 세션 (herdr-mirror, 2026-09-02)
+### 2.x 원격 호스트 세션 (2026-09-02)
 
-원격 herdr(NCP/RPi/M1/데스크탑)의 세션에 릴레이할 때는 로컬 사이드바의 미러 워크스페이스
-(`<host>: <name>`)에 있는 **미러 pane 의 로컬 pane_id** 로 §3 을 그대로 수행한다(주입·
-`agent read` 검증 동일). 미러가 없으면(호스트 다운·데몬 미기동) `herdr-mirror status` 로
-먼저 확인하고, 폴백은 `ssh <host> 'herdr --session <s> agent prompt <원격 pane> ...'`.
+원격 호스트의 세션에 릴레이할 때는 §3 을 그대로 수행하되, 주입은
+`ssh <host> 'herdr --session <s> agent prompt <원격 pane> ...'` 로 하고 도착은
+`ssh <host> herdr agent read` 로 확인한다.
 
 ## 3. herdr 주입 + 제출 검증 (생략 절대 금지)
 
@@ -115,7 +114,7 @@ panewire find <이름|라벨> --pane-only  # 스크립트용
 그 pane 에 `herdr agent prompt`·`pane send-text`·`send-keys` 로 쓰지 않는다 — 운영자 입력창에 꽂혀
 제출되지 않은 채 남고, 허브의 보류·묶음 전달을 우회하며, 운영자가 치던 글과 섞인다.
 수신 pane 이 안 보이면(다른 호스트, `panewire find` 미검출) `emit` rc 0 으로 충분하다 — 폴백 채널을 만들거나
-"전달 미확인" ESC 를 내지 않는다. 하네스가 달라도 규칙은 하나다 — 허브가 아래 여섯 pane kind 로 릴레이한다.
+"전달 미확인" ESC 를 내지 않는다. 하네스가 달라도 규칙은 하나다 — 허브가 아래 다섯 pane kind 로 릴레이한다.
 
 **배달 확인 — 지시를 보낸 쪽만.** `emit` rc 0 은 전달 증거가 아니다. 그 이벤트의 `event_id=` 로
 ①허브 로그의 `relay delivered`, 미확인일 때는 `relay unconfirmed` 를 보고
@@ -148,11 +147,10 @@ v1 의 요지: **완료를 아는 쪽(답변자·워커)이 요청자 레인으�
 | claude | ✅ |
 | codex | ✅ |
 | devin | ✅ |
-| grok | ✅ |
 | omp | ✅ |
 | cmd | ✅ |
 
-근거: panewire@828f5a8 `relay_harness_adapter.go:90-95` 가 여섯 하네스의 relay 어댑터를 등록하고
+근거: panewire@828f5a8 `relay_harness_adapter.go:90-95` 가 다섯 하네스의 relay 어댑터를 등록하고
 `hub_client.go:700` `relayInjectForHarness` 가 이벤트를 pane 에 넣는다(devin 은 자체 경로,
 cmd 는 pane transport — panewire #286, hk 3330). 2026-11-07 실측에서 다른 호스트의 codex 워커가
 `relay delivered` 4건을 받았다.
@@ -222,15 +220,10 @@ messages`·상태 전이)는 **claude 행**의 내용이다. 다른 하네스는
 | codex | 미측정(관측된 빈 컴포저: `› Ask Codex to do anything`) | `• Messages to be submitted after next tool call (press esc to interrupt and send immediately)` + `↳ <메시지>` | 전사에 `› <메시지>` 줄로 남고 응답이 이어짐 | 대기 중 esc → 즉시 제출(힌트 문구). 같은 메시지 두 번 소비 증거: 미측정 | 오표시 미관측 — 20:51·21:04 `agent list`↔화면 일치(idle 3건·working 2건) | 대기: codex pane 20:52 `↳ <메시지>` + `• Messages to be submitted after next tool call (press esc to interrupt and send immediately)`. 소비: codex pane 전사 `› <메시지>` → 응답(09-17, 2pane) |
 | kiro | 미측정 | 미측정 | 미측정 | 미측정 | 미측정 | 현재 pane 없음 — `herdr agent list` 20:51 kiro 0건 |
 | opencode(oc-*) | 미측정(관측된 빈 컴포저: 좌측 `┃` 입력란) | 미측정 | 전사 좌측에 `┃ <메시지>` + 응답 | 미측정 | `idle`↔idle 화면 일치 관측(21:04) — 진행 중 상태는 미측정 | 소비: opencode pane 20:52 전사 `┃ <메시지>` → 응답 |
-| kimi | 미측정 | 미측정 | 미측정 | 미측정 | 미측정 | 현재 pane 없음 — `herdr agent list` 20:51 kimi 0건 |
-| grok | 미측정(관측된 빈 컴포저: `❯` 입력란 + `Grok 4.6 (high) · always-approve` 푸터) | `○ 1 command still running · 1 queued, Enter to send now`(`──` 머리 없음) | 전사에 `❯ <메시지>` 줄(시각 표기)로 남고 `◆ Thought for …`/`◆ Run …` 응답이 이어짐 | `herdr agent send-keys <pane> return` → 즉시 제출·소비 확인(푸터 `Enter to send now` 가 지시). 중복 위험은 claude 와 동일 — 대기 중 페이로드 재주입 금지 | `working` ↔ `⠧ Waiting for response…` 진행 표시 일치 관측 — 그 외 상태 미측정 | 대기·즉시제출: grok 4.6 pane, 2026-09-18, director 실측(#406). 소비·빈 컴포저: grok pane 읽기 전용 관측 4건(09-18). 상태: `agent list`=working ↔ 화면 `⠧ Waiting for response… 4.2s`(09-18 20:16, grok pane 1건) |
-
-grok 의 대기 상태(`N queued, Enter to send now`)는 공유 화면에서 페이로드 귀속이 불가능하므로 착지 증거가 아니다 — "무언가 대기 중" 이라는 모호 신호로만 읽고, 이 queued 푸터로는 착지를 주장하지 않는다 (#406, 2026-09-18).
 
 🔴 이 표의 "대기 중 즉시 제출 방법" 열은 하네스가 제공하는 수단의 관측 기록이다.
 후속·보충 지시의 제출 타이밍(queued 배너 확인 후 명시 제출, 툴 실행 중 Enter 금지)은
-§3-3 후속 라운드·보충 지시의 주입이 정본이다 — #406 의 grok Enter
-실측은 제출이 동작함을 보일 뿐, 실행 중이던 명령의 무사를 보증하지 않는다.
+§3-3 후속 라운드·보충 지시의 주입이 정본이다.
 
 ### 3-3. 후속 라운드·보충 지시의 주입
 
@@ -267,14 +260,11 @@ grok 의 대기 상태(`N queued, Enter to send now`)는 공유 화면에서 페
   0건이었다(터미널에 붙은 사람의 키 입력은 그 로그에 남지 않는다).
 - **하네스 차이 — 제출 증명은 claude·codex 에서만 나온다**
   (`harnessHasSubmissionEvidence`). 미제출이면 rc≠0 + `composer_residue`,
-  제출·작업 시작이면 `confirmed` 다. devin·grok·kimi 등 그 외 하네스는 착지해도
+  제출·작업 시작이면 `confirmed` 다. devin 등 그 외 하네스는 착지해도
   `unproven` 만 나오므로(rc≠0) **visible pane 의 queued 배너로 판정**한다.
   배너가 있으면 `send-keys <pane> return`(Enter)으로 명시 제출하되, **툴 실행
-  중에는 Enter 를 보내지 않는다** — Enter 가 실행 중 툴 호출을 취소한다. grok 의
-  queued 배너는 `command still running` 을 동반하므로 배너에 실행 중 표시가 있으면
-  그 표시가 사라진 뒤에만 제출한다. 🔴 grok 의 queued 푸터는 공유 화면에서
-  페이로드 귀속이 불가하므로 착지 주장은 배너가 아니라 소비 마커로 한다 — 배너·
-  소비 마커 원문의 정본은 §3-2 하네스별 제출 마커 표다.
+  중에는 Enter 를 보내지 않는다** — Enter 가 실행 중 툴 호출을 취소한다.
+  🔴 착지 주장은 배너가 아니라 소비 마커로 한다 — 배너·소비 마커 원문의 정본은 §3-2 하네스별 제출 마커 표다.
 - **fix·재작업 라운드의 보고 경로는 그대로 둬도 된다(#1014).** 워커가 같은
   report 경로(`report.md`)를 갱신해 `panewire done` 하면, 같은 내용은 걸러지고 바뀐
   내용은 스냅샷 경로로 레코드·업로드·relay 된다 — 같은 경로+다른 내용의

@@ -28,8 +28,8 @@ pane 메시지는 그 알림이다. 콘솔(큐 drawer · Decisions)은 이 기�
 - 재전송은 같은 명령을 그대로 다시 실행한다 — 같은 request_id 가 돌아온다(`duplicate`).
   질문·선택지를 바꾸려면 `--supersedes <이전 request_id>`로 새 revision 을 만든다. 옛 답은 새
   요청에 붙지 않는다.
-- 작업을 멈추는 요청이면 `--block`(같은 기록에서 `needs_decision` 전이). 멈추지 않는 요청은 태스크
-  상태를 그대로 둔다 — backlog·in_progress 의 열린 요청도 콘솔에 뜬다.
+- 작업을 멈추는 요청이면 `--block`(같은 기록에서 그 태스크가 `awaiting_decision` 으로 표시된다). 멈추지 않는 요청은 태스크
+  상태를 그대로 둔다 — 열린 요청은 어떤 상태의 태스크에서도 콘솔에 뜬다.
 - 답이 오면 `handoffkeep tasks decision-resolve <task-id> --request <request_id> --kind answered
   --option A --responder operator`로 닫는다. 기본값을 적용했으면 `--kind default_applied
   --receipt <적용 증거>` — **기한 경과는 적용이 아니다.** 영수증 없이는 "적용됨"으로 기록되지
