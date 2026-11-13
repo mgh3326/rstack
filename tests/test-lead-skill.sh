@@ -134,7 +134,7 @@ REQUIRED = [
     ("lead", "## When to use", "non-converging-pr-exception", r"\*\*Exception — a non-converging PR:\*\* a PR whose review did not converge in 3 review rounds comes here although it has a brief, but only after the escalation ladder has no step left or when the cause is a correctness design the brief left open"),
     # hk 3919 (A17 request 2): a hard single PR is a higher-grade implementer or a ladder step.
     ("lead", "## When to use", "hard-single-pr-not-lead", r"\*\*A hard single PR is not a lead's\.\*\* It is an implementer at a higher grade or an escalation-ladder step"),
-    # hk 3749 (handoffkeep-design 2026-11-10): the merged transition carries refs.pr for the R12 deploy record.
+    # hk 3749 (requested 2026-11-10): the merged transition carries refs.pr for the R12 deploy record.
     ("lead", "## After the merge", "merged-transition-refs-pr", r"`handoffkeep tasks transition <id> --to merged --pr <PR URL> --head-sha <H>`"),
     # PR trailers.
     ("lead", "## PR trailers", "trailers-home", r"The PR body ends with the Mergewake trailers exactly as a worker's does \(`wake` §Worker brief Rules\)"),
