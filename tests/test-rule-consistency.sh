@@ -51,8 +51,8 @@ REQUIRED = [
      r"no session merges, except a lead under `lead` §Ledger"),
     ("deploy", "## 발주자 측 — 발주 세션 (레포의 디자인 세션, 없으면 operator-desk)", "merge-exception",
      r"디자인 세션은 머지하지 않는다\. 예외는 mergewake watch 가 연 자기 레포 revert PR 을 디자인 세션이 머지하는 것 하나다\. 세션의 직접 머지는 lead 뿐이다\(`lead` §Ledger\)"),
-    ("spawn", "## 4. 기동·주입·감시", "stuck-no-respawn",
-     r"stuck 으로 판정하고 스폰 실패로 다룬다 — 자동 재스폰하지 않는다"),
+    ("spawn", "## 4. 기동·주입·감시", "no-auto-respawn",
+     r"스폰 실패는 자동 재스폰하지 않는다\(`wake` §On spawn failure"),
     ("relay", "## 1. 핸드오프 프롬프트 5요소", "hk-task", r"hk task 연결"),
     ("relay", None, "relay-wake-handoff-pointer", r"`wake` §Escalation and notifications에 있다\. 요청 종류, 교차 레포 의존성, 미해결 전달 추적은 해당 절을 따른다"),
     ("relay", "### 3-1. 완료 통지·pane kind 분기 정본", "sender-checks",
@@ -91,6 +91,9 @@ FORBIDDEN = [
     # r2: the design session deploys its own repo; the old "does not deploy" rule is gone.
     ("deploy", "design-never-deploys", r"디자인 세션은 배포하지 않는다", "\n디자인 세션은 배포하지 않는다.\n"),
     ("spawn", "auto-respawn", r"→ ?재스폰", "\n- stuck 판정→재스폰.\n"),
+    # hk 4397: the 5-minute stuck-equals-spawn-failure rule and the 2-minute watch condition are gone.
+    ("spawn", "spawn-stuck-5min-rule", r"5분 내 실 툴호출", "\n- 스폰 후 5분 내 실 툴호출 없으면 stuck.\n"),
+    ("spawn", "spawn-watch-2min-condition", r"2분 지속", "\n- 감시는 working→비working 2분 지속 시 확인.\n"),
     ("relay", "linear", r"Linear 이슈", "\n5. Linear 이슈 등록.\n"),
     ("wake", "old-grade-scale", r"\(S\+\.\.C\)", "\n**Grade** (S+..C) is the reasoning difficulty.\n"),
     ("relay", "old-grade-scale-relay", r"급\(S\+~C\)", "\n- 급(S+~C) 표식.\n"),
