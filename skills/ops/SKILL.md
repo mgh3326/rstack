@@ -70,10 +70,7 @@ open; the lead never deploys or performs the live mutation.
   (`--body "… $(date '+%F %T %Z')"`) or is the record's own server timestamp. A relative time is
   computed: `date -v+30M '+%F %T %Z'` on macOS, `date -d '+30 min' '+%F %T %Z'` on Linux. Estimated times
   written into records were later read as fact (2026-11-03).
-- **Test host rule (the one home).** Test only what you changed, on a host the spawn preamble allows —
-  e.g. `go test -p 2 ./<changed pkg>/...` or the touched pytest files. Use `remote-gotest` where the repo
-  has it. DB and full suites run in CI (`ci-any-ref`). A brief adds no host rules of its own. On macOS
-  keep `-p 2`: wider parallelism stalls in syspolicyd.
+- **Test host rule (the one home): one rule on every host.** Test only what you changed, on every host — e.g. `go test -p 2 ./<changed pkg>/...` or the touched pytest files. `remote-gotest` is an option where the repo has it. Full suites, `-race` sweeps and DB tests run in CI (`ci-any-ref`). A brief adds no host rules of its own. On macOS keep `-p 2`: wider parallelism stalls in syspolicyd.
 - **Steps that need no approval and may be repeated:** read-only commands
   (`gh … view|list|checks`, `git fetch`, `handoffkeep … show|get|list|export`,
   `panewire … status|list|find|resolve`), a test or build rerun after an environment

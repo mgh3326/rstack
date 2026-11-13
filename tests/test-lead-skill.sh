@@ -69,12 +69,12 @@ REQUIRED = [
     ("lead", "## Subagents", "model-choice-home", r"\*\*Model choice follows `robin-mode` `roles\.md` §Models and effort for in-session subagents\*\*"),
     # Subagents: local vs remote tests (operator 2026-11-09; hk 3656 round 1 fixes).
     # New rows are literal text through L() (re.escape), so a pinned `.` or `|` cannot match another character.
-    ("lead", "## Subagents", "lead-test-host-rule-one-home", L("**The test host rule is `ops` §Invariants (the one home).** On a host the spawn preamble forbids, implementers and verifiers run no `go test` at all; on any other host they run at most the changed packages (`ops` §Invariants).")),
-    ("lead", "## Subagents", "no-local-go-test", L("The lead's own choice to keep local runs to one single test is a load limit for the lead's host, not a second host rule: say so in the subagent brief when you apply it. On the lead's host when the lead's brief sets that load cap, on a host the spawn preamble allows they run locally only `go build`, `go vet`, gofmt and at most one `go test -run '^TestX$' -p 1 <pkg>`")),
+    ("lead", "## Subagents", "lead-test-host-rule-one-home", L("**The test host rule is `ops` §Invariants (the one home).** On every host implementers and verifiers run at most the changed packages (`ops` §Invariants).")),
+    ("lead", "## Subagents", "no-local-go-test", L("The lead's own choice to keep local runs to one single test is a load limit for the lead's host, not a second host rule: say so in the subagent brief when you apply it. On the lead's host when the lead's brief sets that load cap, they run locally only `go build`, `go vet`, gofmt and at most one `go test -run '^TestX$' -p 1 <pkg>`")),
     ("lead", "## Subagents", "implementer-hands-back-predictions", L("The implementer hands back a red/green prediction per test, the remote commands and the mutant diffs (operator 2026-11-09)")),
-    ("lead", "## Subagents", "lead-runs-remote", L("**The lead pushes, then runs the tests remotely.**")),
+    ("lead", "## Subagents", "lead-runs-remote", L("**The lead pushes, then runs the targeted tests locally or remotely.**")),
     ("lead", "## Subagents", "remote-gotest-explicit-args", L("Package and race tests: `remote-gotest <host> <repo> <sha> -race -count=3 -run '<tests>' <pkgs>`; run Linux and macOS in parallel when platform behaviour matters")),
-    ("lead", "## Subagents", "remote-gotest-fallback", L("If the repo has no `remote-gotest`, run `ssh <host> 'git -C ~/work/<repo> fetch origin <branch> && git -C ~/work/<repo> checkout --detach <sha> && cd ~/work/<repo> && go test -race -count=3 -run \"<tests>\" <pkgs>'` on a host allowed by the spawn preamble; record the host, sha and exact command.")),
+    ("lead", "## Subagents", "remote-gotest-fallback", L("If the repo has no `remote-gotest`, run `ssh <host> 'git -C ~/work/<repo> fetch origin <branch> && git -C ~/work/<repo> checkout --detach <sha> && cd ~/work/<repo> && go test -race -count=3 -run \"<tests>\" <pkgs>'`; record the host, sha and exact command.")),
     ("lead", "## Subagents", "red-at-test-only-sha", L("Red: the new tests run at the pushed test-only commit's sha")),
     ("lead", "## Subagents", "mutant-applied-on-host", L("Mutants: copy each diff to the host, `git apply` it in a throwaway worktree at `$H` on that host and run the named tests; record the mutant caught apart from the green run on `$H`")),
     ("lead", "## Subagents", "ci-any-ref-dispatch", L("Full or DB suites: `gh workflow run ci-any-ref.yml --repo mgh3326/<repo> -f ref=<sha> -f suite=<suite>`, then `gh run watch <id> --repo mgh3326/<repo> --exit-status`")),
@@ -181,6 +181,8 @@ FORBIDDEN = {
     "never-merges-deploy-approval": re.compile(r"(?i)never merges a PR that touches a `deploy_approval` path"),
     "watch-revert-merged-by-desk": re.compile(r"(?i)(?:revert PR|revert that .*watch).{0,100}merged by the desk"),
     "second-test-rule": re.compile(r"\*\*Implementers and verifiers run no `go test` on the lead's host except one single test\.\*\*"),
+    "preamble-forbids-no-go-test": re.compile(r"(?i)preamble forbids[^.\n]{0,120}run no `go test` at all"),
+    "host-gated-test-rule": re.compile(r"(?i)on a host the spawn preamble (?:allows|forbids)"),
     "writes-no-product-code": re.compile(r"(?i)\b(?:writes no product code(?: itself)?|never the code)\b"),
 }
 FLEET_FORBIDDEN = {
@@ -228,6 +230,8 @@ for name, injected in [
     ("never-merges-deploy-approval-injected", "- The lead never merges a PR that touches a `deploy_approval` path.\n"),
     ("watch-revert-merged-by-desk-injected", "- A revert PR that `watch` opens is merged by the desk.\n"),
     ("second-test-rule-injected", "- **Implementers and verifiers run no `go test` on the lead's host except one single test.**\n"),
+    ("preamble-forbids-no-go-test-injected", "- On a host the spawn preamble forbids, implementers and verifiers run no `go test` at all.\n"),
+    ("host-gated-test-rule-injected", "- On a host the spawn preamble allows, implementers run `go test` locally.\n"),
     ("writes-no-product-code-injected", "- The lead writes no product code itself.\n"),
 ]:
     expect_red(name, check,

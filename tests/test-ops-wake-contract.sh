@@ -90,7 +90,7 @@ REQUIRED = [
     ("wake", "## When to use", "wake-session-name", r"A design session uses its lane name as its Claude session name \(`claude --name <lane>` or `/rename <lane>`\), so others can address it"),
     ("wake", "## Subagent vs worker", "subagent-rule-home", r"`robin-mode` \(rstack\)\s+§Subagents versus spawned workers"),
     ("lead", "## Subagents", "lead-test-host-rule-pointer",
-     r"\*\*The test host rule is `ops` §Invariants \(the one home\)\.\*\* On a host the spawn preamble forbids, implementers and verifiers run no `go test` at all; on any other host they run at most the changed packages \(`ops` §Invariants\)\. The lead's own choice to keep local runs to one single test is a load limit for the lead's host, not a second host rule"),
+     r"\*\*The test host rule is `ops` §Invariants \(the one home\)\.\*\* On every host implementers and verifiers run at most the changed packages \(`ops` §Invariants\)\. The lead's own choice to keep local runs to one single test is a load limit for the lead's host, not a second host rule"),
     # READY contract (operator 2026-11-01, hk task 2485).
     ("wake", "## READY", "ready-keeps-author", r"\*\*the author stays the PR owner until merge, an explicit hand-off, or abandonment\*\*"),
     ("wake", "## READY", "ready-explicit-handoff", r"명시적 인계\*\*는 새 담당자를 이름으로 적은 같은 `hk task` 의 comment 와, 그 task 에서 수신자가 남긴 수락 comment 둘 다를 뜻한다\. 수신자가 같은 task 에서 수락하기 전까지 PR 작성자가 소유권을 유지한다\."),
@@ -296,7 +296,7 @@ REQUIRED = [
     ("ops", "## Invariants (all references)", "unity-busy-waits-quietly", r"Wait for a busy Unity slot without an event and report it only after the brief's limit"),
     ("ops", "## Invariants (all references)", "review-unavailable-routes-to-tool", r"If a review command cannot run on the worker's host, report it to the review tool's design lane, not this repository's lane"),
     ("ops", "## Invariants (all references)", "test-host-rule",
-     r"\*\*Test host rule \(the one home\)\.\*\* Test only what you changed, on a host the spawn preamble allows —.{0,120}Use `remote-gotest` where the repo has it\. DB and full suites run in CI \(`ci-any-ref`\)\. A brief adds no host rules of its own\. On macOS keep `-p 2`"),
+     r"\*\*Test host rule \(the one home\): one rule on every host\.\*\* Test only what you changed, on every host —.{0,120}`remote-gotest` is an option where the repo has it\. Full suites, `-race` sweeps and DB tests run in CI \(`ci-any-ref`\)\. A brief adds no host rules of its own\. On macOS keep `-p 2`: wider parallelism stalls in syspolicyd\."),
     ("ops", "## Invariants (all references)", "steps-need-no-approval",
      r"\*\*Steps that need no approval and may be repeated:\*\* read-only commands \(`gh … view\|list\|checks`, `git fetch`, `handoffkeep … show\|get\|list\|export`, `panewire … status\|list\|find\|resolve`\), a test or build rerun after an environment failure, `git merge origin/<base>` on your own branch, and a replay of the same saved spawn request after a lost response that is not `failed` or `retryable` \(on `failed` or `retryable` never replay; `wake` §On spawn failure\)\. The no-retry rules in `wake` §On spawn failure and `desk` §Spawn failure cover only what they name: a new spawn attempt\."),
     # consult §1 (hk 2898): resolve has no --builder-family; the questioner checks the family by hand.
@@ -371,6 +371,7 @@ FORBIDDEN = [
     ("wake", None, "esc-ends-job", r"(?i)ESC (?:ends|completes|closes) the (?:current )?job"),
     ("ops", None, "ops-esc-ends-job", r"(?i)ESC (?:ends|completes|closes) the (?:current )?job"),
     ("ops", None, "test-any-host", r"(?i)test only what you changed, on any host"),
+    ("ops", None, "test-host-gated", r"(?i)on a host the spawn preamble (?:allows|forbids)"),
     # hk 3000: quota guidance goes through `panewire quota`. hk 3779: pacelever is retired (2026-11-10,
     # hk:doc deploy/2026-11-10/pacelever-retirement-cutover); reps moved to `panewire reps`.
     ("wake", None, "wake-no-pacelever-quota", r"pacelever (?:--json|refresh)"),
@@ -567,6 +568,7 @@ injections = [
     ("wake-esc-ends-job", "wake", "## Escalation and notifications\n", "## Escalation and notifications\n\n- ESC ends the job.\n"),
     ("ops-esc-completes-job", "ops", "## Escalate a decision\n", "## Escalate a decision\n\nAn ESC completes the job.\n"),
     ("ops-test-any-host-restored", "ops", "## Invariants (all references)\n", "## Invariants (all references)\n\n- Test only what you changed, on any host.\n"),
+    ("ops-test-host-gated-readded", "ops", "## Invariants (all references)\n", "## Invariants (all references)\n\n- Test only what you changed, on a host the spawn preamble allows.\n"),
     ("wake-pacelever-reps-readded", "wake", "## Rules\n", "## Rules\n\nCount real use with `pacelever reps`.\n"),
     ("ops-pacelever-home-readded", "ops", "## Routing table\n", "## Routing table\n\n- `pacelever` uses the real HOME.\n"),
     ("wake-pacelever-json-readded", "wake", "## The loop\n", "## The loop\n\nRun `pacelever --json` for quota.\n"),
