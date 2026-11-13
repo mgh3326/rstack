@@ -95,8 +95,6 @@ FORBIDDEN = [
     ("fleet", "independence-relief-wording", r"While this relief stands", "\nWhile this relief stands, a same-family pass counts.\n"),
     # decision 223 / hk 2788 and hk 3294: the temporary rules whose end tasks are closed.
     ("wake", "cutover-marker-removed", r"Temporary \(operator-desk 2026-11-03, hk 2788\)", "\n*Temporary (operator-desk 2026-11-03, hk 2788): ends when the hk 2788 slice 5 cutover ships (hk 2788).*\n"),
-    ("wake", "manual-bundle-transition-removed", r"the design session moves each delivered child that has not reached", "\nAfter a bundle PR merges, the design session moves each delivered child that has not reached `reviewing` in three steps.\n"),
-    ("robin", "manual-bundle-close-removed", r"the design session moves every delivered child", "\nAfter merge, the design session moves every delivered child to `merged`.\n"),
     # T2 (hk state names): desk and decision-request use the current names only.
     ("desk", "legacy-needs-decision", r"needs_decision", "\n`needs_decision` is the open-decision state.\n"),
     ("desk", "legacy-in-progress", r"\bin_progress\b", "\nA task in_progress waits.\n"),

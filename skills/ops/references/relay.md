@@ -103,7 +103,7 @@ panewire find <이름|라벨> --pane-only  # 스크립트용
 
 원격 호스트의 세션에 릴레이할 때는 §3 을 그대로 수행하되, 주입은
 `ssh <host> 'herdr --session <s> agent prompt <원격 pane> ...'` 로 하고 도착은
-`ssh <host> herdr agent read` 로 확인한다.
+`ssh <host> herdr agent read <원격 pane>` 로 확인한다.
 
 ## 3. herdr 주입 + 제출 검증 (생략 절대 금지)
 

@@ -463,7 +463,8 @@ Until mergewake hk 4264 ships, at round 7 the worker ESCs and the design session
 - **READY to a design-session lane is recorded, not delivered** (panewire hk 3426): it stays in the job
   record and `panewire inbox list`. ESC (`--type decision`), `SPAWN_FAILED` and failures that need action
   still reach the owner lane. The desk still receives READY from a worker it owns.
-A bundle PR's body lists every child it delivers. hk closes each child when all its implement changes are merged or deployed (hk 3294).
+*Temporary (operator 2026-11-12, hk 4114): ends when hk 4172 ships the close-gate recovery and the automatic case is verified (hk 4172).*
+After a bundle PR merges, the design session moves each delivered child that has not reached `reviewing` in three steps: `handoffkeep tasks transition <child> --to developing --no-job 'Delivered by bundle PR <url>'`, then `handoffkeep tasks transition <child> --to reviewing --pr <PR URL>`, then `handoffkeep tasks transition <child> --to merged --pr <PR URL> --head-sha <H>` (hk refuses a direct move from `backlog` to `merged` with `task_conflict`). It finds the children from the bundle parent task's child list and the PR body. If that design session has closed, `operator-desk` makes the same transitions from the same records. The PR URL and head SHA on the last step let the deploy record's `included_prs` move the children to `deployed`.
 
 ## Brief rules
 
