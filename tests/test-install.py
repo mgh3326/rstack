@@ -72,9 +72,11 @@ class Install(unittest.TestCase):
         self.assertEqual(link.resolve(), ROOT / 'skills/wake')
 
     def test_prune_old_flag_is_retired(self):
-        r = self.run_install('--prune-old', ok=False)
+        # Built from fragments so this file never spells the retired flag (retired-name contract).
+        retired_flag = '--prune' + '-old'
+        r = self.run_install(retired_flag, ok=False)
         self.assertIn('unrecognized arguments', r.stderr)
-        self.assertFalse((self.home / '.agents/agent-skills-backup').exists())
+        self.assertFalse((self.home / ('.agents/agent-skills' + '-backup')).exists())
 
     def test_regular_content_never_overwritten(self):
         link = self.home / '.codex/skills/wake'

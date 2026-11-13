@@ -67,12 +67,15 @@ def main():
                                        + "\nSee https://github.com/addyosmani/agent-skills and fleet-review.\n"})
     print("RED skill and README retired-tool mutants; PASS upstream citation and fleet-review controls (expected)")
 
-    installer = {name: read(name) for name in ("scripts/install-skills.py", "install.sh", "README.md")}
+    installer = {name: read(name) for name in ("scripts/install-skills.py", "install.sh", "README.md", "tests/test-install.py")}
     check_installer_has_no_move_code(installer)
     print("PASS installer-and-readme-have-no-move-code")
     expect_red("installer-restores-prune-old", check_installer_has_no_move_code,
                {**installer, "scripts/install-skills.py": installer["scripts/install-skills.py"]
                 + "\n    parser.add_argument('--prune-old', action='store_true')\n"})
+    expect_red("installer-test-restores-prune-old", check_installer_has_no_move_code,
+               {**installer, "tests/test-install.py": installer["tests/test-install.py"]
+                + "\n        self.run_install('--prune-old', ok=False)\n"})
     expect_red("readme-restores-prune-old", check_installer_has_no_move_code,
                {**installer, "README.md": installer["README.md"] + "\n./install.sh --prune-old\n"})
     print("RED installer and README prune-old mutants (expected)")
