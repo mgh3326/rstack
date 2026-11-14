@@ -83,12 +83,12 @@ REQUIRED = [
     ("decision", "## 데스크 결정 루프", "resume-review", r"resume 마다 열린 요청을 검토한다"),
     ("ops", "## Invariants (all references)", "clock-invariant", r"A clock time in a record comes from `date` or the server, never from your head"),
     ("roles", "## Rules", "multi-turn", r"Leads and implementers must run on harnesses that keep going across turns"),
-    ("roles", "## Rules", "one-turn-limit", r"One-turn profiles may take explorer and consult roles only"),
+    ("roles", "## Rules", "one-turn-limit", r"One-turn profiles may take read-only searcher and consult roles only"),
     ("roles", "## Rules", "contract-writer", r"A design session \(with the operator\) or a lead \(opened by the operator, following the `lead` skill\) writes the closed contract"),
     ("roles", "## Rules", "higher-grade-not-lead", r"A hard single PR is an implementer with a higher grade, not a lead"),
-    ("roles", "## Rules", "resolve-only", r"Explorer, verifier and judge are resolve-only: they name an in-session subagent's `panewire resolve` role \(below\), never a spawned seat"),
+    ("roles", "## Rules", "resolve-only", r"Verifier and judge.*?resolve-only in-session subagent roles, never spawned seats"),
     ("roles", "## Rules", "seat-vocabulary", r"seat roles are lead, implementer, reviewer, consult and design"),
-    ("roles", None, "one-turn-row", r"\| One-turn \(stops after its first turn\) \| \*\*Explorer\*\* and \*\*Consult\*\* only"),
+    ("roles", None, "one-turn-row", r"\| One-turn \(stops after its first turn\) \| \*\*Read-only searcher\*\* and \*\*Consult\*\* only"),
     ("robin", "## Where each rule lives", "desk-home", r"\| `desk` \(rstack\) \|"),
 ]
 
@@ -100,6 +100,11 @@ FORBIDDEN = [
     ("desk", None, "old-closed-lane-inbox-scope",
      r"until that repo's next design session opens the desk reads their ESCs and spawn\s+failures in that lane's inbox",
      "so until that repo's next design session opens the desk reads their ESCs and spawn failures in that lane's inbox (`wake` §The loop step 5).\n"),
+    ("roles", None, "role-worker", r"--role worker", "`--role worker`\n"),
+    ("roles", None, "routing-role", r"--routing-role", "`--routing-role consult`\n"),
+    ("roles", None, "builder-family", r"--builder-family", "`--builder-family openai`\n"),
+    ("roles", None, "role-counsel", r"--role counsel", "`--role counsel`\n"),
+    ("roles", None, "explorer-resolve-role", r"panewire resolve --role [^\n`]*explorer", "`panewire resolve --role explorer`\n"),
 ]
 
 

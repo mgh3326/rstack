@@ -76,11 +76,14 @@ REQUIRED = [
     ("wake", "## Authority", "policy divergence record, hold and owner", r"\*\*Policy divergence:\*\* when a design session settles an operator decision that differs from an hk policy doc owned by `fleet-policy` \(`policy/model-routing`, `policy/model-families` or `policy/quota-stop`\), record it in an hk decision doc and tell the lane hk `policy/design-sessions` names for this role\. Hold the conflicting decision until fleet-policy records the operator's explicit yes and updates the owned policy doc; fleet-policy makes that update"),
     ("lead", "## Subagents", "lead spawn cross-reference", r"`panewire spawn` stays the design session's tool \(`wake` §The loop\) and the fleet-policy session's tool for its experiments only \(`fleet-policy` §Experiments\)"),
     ("roles", None, "roles vocabulary", r"\*\*fleet-policy\*\*: operator-opened session that settles cross-repo policy, runs bounded catalog experiments and keeps catalog records"),
-    ("roles", None, "lead no routing role and reviewer resolution", r"A lead has no routing role: the operator opens the lead session; its subagents resolve as implementer, explorer or verifier, and its cross-family reviewer resolves as reviewer with `--builder-family`"),
+    ("roles", "## Rules", "explorer-resolves-as-implementer", r"An explorer is a read-only in-session searcher and resolves as `implementer`;"),
+    ("roles", None, "implementer-verifier-resolve-list", r"panewire resolve --role <implementer\|verifier> --grade <G> --t <Tn>"),
+    ("roles", None, "reviewer-judge-author-family-resolve-list", r"panewire resolve --role <reviewer\|judge> --author-family <author family>"),
+    ("roles", None, "lead no routing role and reviewer resolution", r"A lead has no routing role: the operator opens the lead session; its subagents resolve as implementer or verifier, and its cross-family reviewer resolves as reviewer using the author-family option"),
     ("roles", None, "consult resolve form", r"panewire resolve --role consult\s+# consult takes no --grade"),
-    ("roles", None, "consult verifier and lead refusal names", r"no policy and no cache for `consult`/`verifier` or a lead's implementer/explorer subagent"),
+    ("roles", None, "consult verifier and lead refusal names", r"no policy and no cache for `consult`/`verifier` or a lead's implementer/searcher subagent"),
     ("roles", None, "consult verifier alternate model rule", r"`consult`, `verifier`: do not start that work on any other model"),
-    ("roles", None, "lead implementer explorer refusal path", r"For a lead's implementer or explorer subagent, wait on `role_exhausted_wait` or escalate to the parent lane on `role_exhausted_escalate` or a missing policy; a lead never writes product code because a subagent resolution refused"),
+    ("roles", None, "lead implementer explorer refusal path", r"For a lead's implementer or searcher subagent, wait on `role_exhausted_wait` or escalate to the parent lane on `role_exhausted_escalate` or a missing policy; a lead never writes product code because a subagent resolution refused"),
     ("robin", "## Where each rule lives", "robin rule home", r"Cross-repo policy settling, experiments, catalog records \| `fleet-policy` \(rstack\)"),
     ("robin", "## Where each rule lives", "robin backlog-pass row", r"Backlog pass: who runs it, when, its steps and the intake rules \| hk `policy/backlog-pass`"),
     ("robin", "## Subagents versus spawned workers", "robin experiment spawn exception", r"A `fleet-policy` experiment replay may use `panewire spawn` without an independent PR, as defined in `fleet-policy` §Experiments; no other spawned worker is exempt from the own-PR rule"),
@@ -98,6 +101,11 @@ FORBIDDEN = {
     "operator-desk-creates-hk-records": re.compile(r"(?i)operator-desk (?:creates?|makes?) hk records?"),
     "unconditional-deploy-to-operator-desk": re.compile(r"(?i)deploys? \(operator-desk\)"),
     "stale-catalog-admission-task": re.compile(r"handoffkeep tasks show 3960"),
+    "role-worker": re.compile(r"--role worker"),
+    "routing-role": re.compile(r"--routing-role"),
+    "builder-family": re.compile(r"--builder-family"),
+    "role-counsel": re.compile(r"--role counsel"),
+    "explorer-resolve-role": re.compile(r"panewire resolve --role [^\n`]*explorer"),
 }
 
 def check(current):
@@ -105,6 +113,10 @@ def check(current):
         scope = flat(current[doc] if not heading else section(current[doc], heading))
         assert re.search(pattern, scope), f"{doc}: row '{row}' missing or weakened"
     for name, pattern in FORBIDDEN.items():
+        if name in {"role-worker", "routing-role", "builder-family", "role-counsel", "explorer-resolve-role"}:
+            text = "\n".join(current.values())
+            assert not pattern.search(text), f"skills: forbidden row '{name}' present"
+            continue
         if name == "role-grants-code-push-merge-deploy":
             for doc in ("fleet", "wake", "lead", "roles", "robin"):
                 match = pattern.search(flat(current[doc]))
@@ -145,6 +157,11 @@ for name, injected in [
     ("operator-desk-creates-hk-records", "- operator-desk creates hk records.\n"),
     ("unconditional-deploy-to-operator-desk", "- This session is not for deploys (operator-desk).\n"),
     ("stale-catalog-admission-task", "- Check `handoffkeep tasks show 3960`.\n"),
+    ("role-worker", "- Example: `--role worker`.\n"),
+    ("routing-role", "- Example: `--routing-role consult`.\n"),
+    ("builder-family", "- Example: `--builder-family openai`.\n"),
+    ("role-counsel", "- Example: `--role counsel`.\n"),
+    ("explorer-resolve-role", "- Example: `panewire resolve --role explorer`.\n"),
 ]:
     target = "wake" if name == "role-grants-code-push-merge-deploy" else "fleet"
     expect_red(f"{name}-injected", check, {**docs, target: docs[target] + "\n" + injected})

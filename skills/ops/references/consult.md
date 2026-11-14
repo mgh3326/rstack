@@ -64,7 +64,7 @@ panewire emit --kind lane.event --lane <요청자 레인> --type ready --event-i
 ```bash
 # 이름: consult-<주제> (전역 유일). cwd = 질의 대상 자료가 있는 repo/디렉토리
 panewire spawn -c <dir> -m <프로필> -p <질문패킷파일> -w <ws> -l consult-<주제> --t <task 의 T> \
-  --role counsel --routing-role consult --keep --override-reason '<사유: panewire resolve 결과>' \
+  --role consult --keep --override-reason '<사유: panewire resolve 결과>' \
   [--parent-job <내 잡>] --report ~/work/herdr-inbox/jobs/consult-<주제>/answer.md --effort <resolve 의 rung>
 ```
 - 자문도 task 에 묶인다(`spawn.md` §무인 실행·task 기록). 잡 안의 pane 이면 `ARBITER_JOB` 으로

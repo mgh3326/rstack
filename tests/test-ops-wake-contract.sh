@@ -58,6 +58,14 @@ docs["watching"] = refs["watching.md"]
 docs["relay"] = refs["relay.md"]
 docs["reap"] = refs["reap.md"]
 docs["desk"] = Path(os.environ.get("DESK_SKILL", root / "skills/desk/SKILL.md")).read_text(encoding="utf-8")
+
+ROLE_RENAME_FORBIDDEN = {
+    "role-worker": re.compile(r"--role worker"),
+    "routing-role": re.compile(r"--routing-role"),
+    "builder-family": re.compile(r"--builder-family"),
+    "role-counsel": re.compile(r"--role counsel"),
+    "explorer-resolve-role": re.compile(r"panewire resolve --role [^\n`]*explorer"),
+}
 docs["robin"] = Path(os.environ.get("ROBIN_SKILL", root / "skills/robin-mode/SKILL.md")).read_text(encoding="utf-8")
 
 RETIRED = ("spawn-worker", "relay-handoff", "consult-advisor", "linear-archive",
@@ -143,8 +151,8 @@ REQUIRED = [
     ("wake", "## Settle before spawning", "settle-ticket-fields", r"Current, Desired, Key interfaces, Acceptance, Out of scope and pinned Evidence \(`<repo>@<sha> <path>:<line>`\)"),
     ("wake", "## Settle before spawning", "settle-provenance", r"mattpocock/skills.{0,80}\(MIT, Copyright \(c\) 2026 Matt Pocock"),
     ("wake", "## The loop", "brief-in-hk", r"handoffkeep doc put --key brief/<date>/<job> --kind brief"),
-    ("wake", "## The loop", "spawn-owner-host", r"--role worker --owner <design-session lane> --host auto"),
-    ("wake", "## The loop", "owner-work-sentence", r"`-m auto --host auto --role worker --owner <design-session lane>` flags does the same"),
+    ("wake", "## The loop", "spawn-owner-host", r"--role implementer --owner <design-session lane> --host auto"),
+    ("wake", "## The loop", "owner-work-sentence", r"`-m auto --host auto --role implementer --owner <design-session lane>` flags does the same"),
     ("wake", "## The loop", "owner-why", r"panewire records it at spawn and it stays for the job's life: closing the session does not move it\."),
     ("wake", "## The loop", "owner-closed-inbox", r"the repo's next design session opens on the same `<repo>-design` lane and reads them first \(`panewire inbox list --lane <repo>-design --unread`\), and until one opens the desk reads them there\."),
     ("wake", "## The loop", "quota-front-door", r"`panewire quota status --json` shows quota; `panewire quota refresh <pool>` re-measures a stale pool"),
@@ -299,7 +307,7 @@ REQUIRED = [
      r"\*\*Test host rule \(the one home\): one rule on every host\.\*\* Test only what you changed, on every host —.{0,120}`remote-gotest` is an option where the repo has it\. Full suites, `-race` sweeps and DB tests run in CI \(`ci-any-ref`\)\. A brief adds no host rules of its own\. On macOS keep `-p 2`: wider parallelism stalls in syspolicyd\."),
     ("ops", "## Invariants (all references)", "steps-need-no-approval",
      r"\*\*Steps that need no approval and may be repeated:\*\* read-only commands \(`gh … view\|list\|checks`, `git fetch`, `handoffkeep … show\|get\|list\|export`, `panewire … status\|list\|find\|resolve`\), a test or build rerun after an environment failure, `git merge origin/<base>` on your own branch, and a replay of the same saved spawn request after a lost response that is not `failed` or `retryable` \(on `failed` or `retryable` never replay; `wake` §On spawn failure\)\. The no-retry rules in `wake` §On spawn failure and `desk` §Spawn failure cover only what they name: a new spawn attempt\."),
-    # consult §1 (hk 2898): resolve has no --builder-family; the questioner checks the family by hand.
+    # consult §1 (hk 2898): resolve does not check the questioner's family.
     ("consult", "## 1. 자문처 결정", "consult-resolve-command", r"`panewire resolve --role consult`"),
     ("consult", "## 1. 자문처 결정", "consult-family-check", r"질문자는 계열도 직접 확인한다"),
     ("consult", "## 1. 자문처 결정", "consult-family-escalates", r"같은 계열이면 다른 프로필을 직접 고르지 말고 부모 레인에 결정을 올린다"),
@@ -351,7 +359,7 @@ REQUIRED = [
     ("wake", None, "worker-brief-same-concept-line", r"Open PRs and tasks on the same concept: <PR or task — what to assume about it, e\.g\. \"assume PR <n> is merged: <what exists and decides>\"; or \"none\">"),
 ]
 
-# Rows that must be absent: panewire resolve refuses --builder-family with --role consult.
+# Rows that must be absent: consult resolution does not take an author family.
 FORBIDDEN = [
     # hk 4397 W21 (operator decision 196): hk 3917 item 1 fixed by hk 3925 (panewire v0.0.233); the omp-pin ban is removed.
     ("wake", "## The loop", "omp-pin-ban-esc-brief", r"(?i)do\s+not\s+pin\s+an\s+omp\s+rung"),
@@ -382,7 +390,7 @@ FORBIDDEN = [
     ("wake", "## Tier — by revert cost", "t0-line-count", r"≤ ?30 lines"),
     ("spawn", "## 4. 기동·주입·감시", "spawn-stuck-5min-rule", r"5분 내 실 툴호출"),
     ("spawn", "## 4. 기동·주입·감시", "spawn-watch-2min-condition", r"2분 지속"),
-    ("consult", None, "consult-no-builder-family", r"--builder-family"),
+    ("consult", None, "consult-no-author-family", r"--author-family"),
     # finding 4545951839: consult §1 SS pin must give --effort, matching wake's pin-names-rung-with-effort.
     ("consult", "## 1. 자문처 결정", "consult-ss-pin-no-effort-clause", r"(?i)--effort (?:는|는\s*)주지\s*않고"),
     # decision 124: consult §1 names no model or profile; which seats are SS stays in policy/model-families.
@@ -522,6 +530,9 @@ def check(d: dict, ref_texts: dict) -> None:
     check_design_session(d["wake"])
     check_done_ready(d["wake"])
     check_rows(d)
+    joined_skills = "\n".join(all_skill_docs.values())
+    for row, pattern in ROLE_RENAME_FORBIDDEN.items():
+        assert not pattern.search(joined_skills), f"skills/: forbidden role rename row '{row}' present"
     check_covering_ci_rule_has_one_home(d)
     assert "never read real agent dotfiles" not in d["wake"], "wake: old agent dotfiles prohibition restored"
 
@@ -540,6 +551,24 @@ count = 0
 # not a copy of the same sentence elsewhere.
 for doc, heading, row, pattern in REQUIRED:
     expect_red(f"row-{row}-deleted", {**docs, doc: delete_row(docs[doc], heading, pattern, row)}, refs)
+    count += 1
+
+for row, pattern in ROLE_RENAME_FORBIDDEN.items():
+    needle = {
+        "role-worker": "--role worker",
+        "routing-role": "--routing-role consult",
+        "builder-family": "--builder-family openai",
+        "role-counsel": "--role counsel",
+        "explorer-resolve-role": "panewire resolve --role explorer",
+    }[row]
+    mutated_skills = dict(all_skill_docs)
+    first = next(iter(mutated_skills))
+    mutated_skills[first] += "\n" + needle + "\n"
+    assert pattern.search("\n".join(mutated_skills.values())), f"fixture: {row} mutant did not inject"
+    saved = all_skill_docs
+    all_skill_docs = mutated_skills
+    expect_red(f"forbidden-{row}-injected", docs, refs)
+    all_skill_docs = saved
     count += 1
 
 injections = [
@@ -582,7 +611,7 @@ injections = [
     ("ops-panewire-lead-readded", "ops", "## Routing table\n", "## Routing table\n\nRun `panewire lead <task-id>`.\n"),
     ("wake-delegated-seat-readded", "wake", "## Rules\n", "## Rules\n\n위임 좌석은 PR 을 올린다.\n"),
     ("ops-repo-session-readded", "ops", "## Routing table\n", "## Routing table\n\nrepo 세션이 스폰한다.\n"),
-    ("consult-old-builder-family-line", "consult", "## 1. 자문처 결정\n", "## 1. 자문처 결정\n\n`panewire resolve --role consult --builder-family <질문자 계열>`\n"),
+    ("consult-old-author-family-line", "consult", "## 1. 자문처 결정\n", "## 1. 자문처 결정\n\n`panewire resolve --role consult --author-family <질문자 계열>`\n"),
     ("consult-ss-pin-no-effort-readded", "consult", "## 1. 자문처 결정\n", "## 1. 자문처 결정\n\n--effort 는 주지 않고\n"),
     ("consult-model-name-readded", "consult", "## 1. 자문처 결정\n", "## 1. 자문처 결정\n\n- 디자인 세션의 자문은 `fable` 로 고정한다.\n"),
     ("wake-loop-acts-on-ready", "wake", "## The loop\n", "## The loop\n\nThe design session acts on READY.\n"),
