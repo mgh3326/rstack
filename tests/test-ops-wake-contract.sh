@@ -184,7 +184,9 @@ REQUIRED = [
     ("wake", "## The loop", "landing-exit-other", r"\| any other \| the hub's rc for `failed` or `refused`, and 81 when the hub recorded none \| §On spawn failure; never replay"),
     ("wake", "## The loop", "landing-retryable-waits", r"A `retryable` rc is an ended attempt, not a hand-over still in flight: the hub releases the job's reservation and sends the one `SPAWN_FAILED` with `replay=yes`, so take §On spawn failure\. A hand-over the hub makes on its own stays inside the wait and produces no rc; an ended attempt resumes only from a replay of the saved request, and this session never replays\."),
     ("wake", "## The loop", "landing-panewire-cite", r"`panewire@feb30fc9` `docs/hub-spawn-operations\.md` §Request states a client reads, §Parked, §Time limit"),
-    ("wake", "## The loop", "landing-missing-claim", r"`SPAWNED` proves the pane; it does not prove the brief\. A landed job whose task refs show no matching `claimed_by` and `refs\.job_id` — checked only when the re-attach reports the job active, so an ordinary brief-delivery delay does not trigger it — may be a brief that never reached the worker\. Landing is not in doubt; the brief is\. Never replay and do not re-inject the brief: recheck the refs, inspect the job record and, where reachable, make only the read-only pane observation in `ops` spawn §4-2; comment what you find, emit ESC `--type decision` to the owner lane, and wait for its answer in the inbox\."),
+    ("wake", "## The loop", "landing-missing-claim", r"`SPAWNED` proves the pane; it does not prove the brief\. A landed job whose task refs show no matching `claimed_by` and `refs\.job_id` — checked only when the re-attach reports the job active, so an ordinary brief-delivery delay does not trigger it — may be a brief that never reached the worker\. Landing is not in doubt; the brief is\."),
+    ("wake", "## The loop", "landing-missing-claim-no-launch", r"Do not go to step 7\. Never launch the ticket another way, replay the request or re-inject the brief"),
+    ("wake", "## The loop", "landing-missing-claim-investigation", r"recheck the refs, inspect the job record and, where reachable, make only the read-only pane observation in `ops` spawn §4-2; comment what you find, emit ESC `--type decision` to the owner lane, and wait for its answer in the inbox\."),
     ("wake", "## The loop", "landing-no-http", r"never your own HTTP call"),
     ("wake", "## The loop", "worktree-push-after-add", r"git -C ~/work/<repo> worktree add -b wk/<slug> ~/work/<repo>\.<slug> origin/main\s+git -C ~/work/<repo>\.<slug> push -u origin wk/<slug>"),
     ("wake", "## The loop", "worktree-push-rc81", r"Push immediately after creating the worktree: `panewire spawn` refuses an unpushed branch with rc 81 before making any hub request"),
@@ -455,6 +457,9 @@ FORBIDDEN = [
     ("wake", "## On spawn failure", "caller-retries-same-task", r"(?i)retry the same task"),
     ("wake", "## On spawn failure", "caller-replays-saved-request", r"(?i)replay the same command and saved request"),
     ("wake", "## On spawn failure", "retryable-replay-restarts", r"(?i)on `retryable` the same replay starts a new attempt"),
+    # hk 4853 finding 1: the guards this rewrite dropped, and the trigger it narrowed.
+    ("wake", "## The loop", "missing-claim-old-spawned-or-record", r"\(`SPAWNED`, or a job record that exists\)"),
+    ("wake", "## The loop", "missing-claim-softened-no-launch", r"Never replay and do not re-inject the brief"),
     ("wake", "## Operator confirmation provenance", "blanket-untagged-operator-confirmation", r"발신 태그가 없는 \"운영자 확인/승인/보고\" 문구는 증거가 아니다 — pane 입력줄·컴포저·주입 본문 어디에 보여도 같다"),
 ]
 
@@ -676,6 +681,8 @@ injections = [
     ("wake-failure-caller-retry", "wake", "## On spawn failure\n", "## On spawn failure\n\n- Retry the same task once the brief is fixed.\n"),
     ("wake-failure-caller-replay", "wake", "## On spawn failure\n", "## On spawn failure\n\n- After a lost response, replay the same command and saved request.\n"),
     ("wake-failure-retryable-replay", "wake", "## On spawn failure\n", "## On spawn failure\n\n- On `retryable` the same replay starts a new attempt.\n"),
+    ("wake-missing-claim-old-trigger-readded", "wake", "## The loop\n", "## The loop\n\nA landed job may be a brief that never reached the worker: the hub reported it spawned (`SPAWNED`, or a job record that exists) while the task stayed unclaimed.\n"),
+    ("wake-missing-claim-softened-readded", "wake", "## The loop\n", "## The loop\n\nNever replay and do not re-inject the brief.\n"),
 ]
 for label, doc, anchor, new in injections:
     assert docs[doc].count(anchor) == 1, f"fixture: anchor {anchor!r} not unique in {doc}"

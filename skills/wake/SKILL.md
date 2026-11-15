@@ -276,10 +276,10 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    **Missing claim.** `SPAWNED` proves the pane; it does not prove the brief. A landed job whose task
    refs show no matching `claimed_by` and `refs.job_id` — checked only when the re-attach reports the
    job active, so an ordinary brief-delivery delay does not trigger it — may be a brief that never
-   reached the worker. Landing is not in doubt; the brief is. Never replay and do not re-inject the
-   brief: recheck the refs, inspect the job record and, where reachable, make only the read-only pane
-   observation in `ops` spawn §4-2; comment what you find, emit ESC `--type decision` to the owner
-   lane, and wait for its answer in the inbox.
+   reached the worker. Landing is not in doubt; the brief is. Do not go to step 7. Never launch the
+   ticket another way, replay the request or re-inject the brief: recheck the refs, inspect the job
+   record and, where reachable, make only the read-only pane observation in `ops` spawn §4-2; comment
+   what you find, emit ESC `--type decision` to the owner lane, and wait for its answer in the inbox.
 
    The re-attach reads the hub's own record, never your own HTTP call: panewire reads the hub
    credential from its own config (`panewire@feb30fc9` `docs/hub-spawn-operations.md` §Request states a
@@ -332,8 +332,9 @@ comment the refusal on the task and ESC the same way, never a replay.
 - **The design session makes no fix attempt and ESCs.** The desk files the task against the tool (`desk` §Spawn failure).
 - **Do not retry on the same task.** Re-running the identical command with `--wait` only observes the
   request; never replay the request with changed flags and never file a new job id. The hub holds the
-  job and task reservation until the request ends, so a caller-side attempt only starts what the queue
-  did not choose.
+  job and task reservation until the request ends — except a `retryable` attempt, which releases it
+  while the request stays the hub's (§The loop step 6) — so a caller-side attempt only starts what the
+  queue did not choose.
 - **Never launch with `herdr agent start` or any other route.**
 - **Comment the request id, rc, stage and reason on the task:**
   `handoffkeep tasks comment <id> --body 'spawn failed request=<request_id> rc=<rc> stage=<stage> reason=<reason>'`.
