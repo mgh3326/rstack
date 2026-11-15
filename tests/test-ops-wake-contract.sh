@@ -225,6 +225,7 @@ REQUIRED = [
     ("wake", "## Merge gate", "gate-revert-merger", r"The repo's design session merges that revert \(the desk while that repo has none open\)"),
     ("wake", "## On spawn failure", "failure-spawn-failed-only", r"Act on exactly one `SPAWN_FAILED` for the job, and on nothing else: it means the request ended without landing \(`failed`, `refused` or `given_up`\), or the attempt ended `retryable` \(§The loop step 6\)"),
     ("wake", "## On spawn failure", "failure-no-retry", r"\*\*Do not retry on the same task\.\*\*"),
+    ("wake", "## On spawn failure", "failure-rerun-resubmits", r"Rerunning the identical command with `--wait` resubmits the saved request \(step 6\), so after this event it would resume a `retryable` attempt rather than observe"),
     ("wake", "## On spawn failure", "failure-no-replay-changed-flags", r"never replay the request with changed flags and never file a new job id"),
     ("wake", "## On spawn failure", "failure-no-bypass", r"\*\*Never launch with `herdr agent start` or any other route\.\*\*"),
     ("wake", "## On spawn failure", "failure-comment", r"\*\*Comment the request id, rc, stage and reason on the task"),

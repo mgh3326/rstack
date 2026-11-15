@@ -332,11 +332,12 @@ submission the hub refuses outright exits non-zero before `ACCEPTED`; it has no 
 comment the refusal on the task and ESC the same way, never a replay.
 
 - **The design session makes no fix attempt and ESCs.** The desk files the task against the tool (`desk` §Spawn failure).
-- **Do not retry on the same task.** Re-running the identical command with `--wait` only observes the
-  request; never replay the request with changed flags and never file a new job id. The hub holds the
-  job and task reservation until the request ends — except a `retryable` attempt, which releases it
-  while the request stays the hub's (§The loop step 6) — so a caller-side attempt only starts what the
-  queue did not choose.
+- **Do not retry on the same task.** Rerunning the identical command with `--wait` resubmits the saved
+  request (step 6), so after this event it would resume a `retryable` attempt rather than observe:
+  never replay the request with changed flags and never file a new job id. The hub holds the job and
+  task reservation until the request ends — except a `retryable` attempt, which releases it while the
+  request stays the hub's (§The loop step 6) — so a caller-side attempt only starts what the queue did
+  not choose.
 - **Never launch with `herdr agent start` or any other route.**
 - **Comment the request id, rc, stage and reason on the task:**
   `handoffkeep tasks comment <id> --body 'spawn failed request=<request_id> rc=<rc> stage=<stage> reason=<reason>'`.
