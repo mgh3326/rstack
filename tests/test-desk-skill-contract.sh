@@ -61,7 +61,7 @@ REQUIRED = [
     ("desk", "## Before `tasks add`", "retry-same-task", r"A retry is a new attempt on the same task, never a new task"),
     ("desk", "## Delegation threshold", "threshold", r"Investigation that would keep the desk off its queue for more than about ten minutes, or that needs reading across several files or logs, goes to a background subagent \(or a worker when it needs another host\), with the result written to an hk doc"),
     ("desk", "## Delegation threshold", "known-target-lookups", r"Short lookups whose target is known stay with the desk"),
-    ("desk", "## Spawn failure", "spawn-failed-only", r"On one `SPAWN_FAILED` — the hub already retried the request with back-off and gave up"),
+    ("desk", "## Spawn failure", "spawn-failed-only", r"On one `SPAWN_FAILED` — the request ended without landing \(`failed`, `refused`, `given_up` or `retryable`"),
     ("desk", "## Spawn failure", "comment-request-reason", r"comment the request id and reason on the task"),
     ("desk", "## Spawn failure", "file-and-stop", r"\*\*File a task against the tool and stop\*\*"),
     ("desk", "## Spawn failure", "non-tool-branch", r"\*\*A cause that is not in the tool gets no tool task and no trigger\*\*"),

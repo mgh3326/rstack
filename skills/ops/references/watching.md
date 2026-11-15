@@ -70,8 +70,7 @@ attempt를 먼저 대조한다. 새 워커 재시도 루프를 만들지 않는�
 
 - 허용되는 유일한 능동 대기는 **bounded timeout 있는 블로킹 명령 1개**
   (`panewire wait --agent <이름> --status idle --settle 60s --timeout <한계>`
-  등 — `--timeout` 은 필수 인자다)다. `panewire spawn … --wait --wait-timeout <한계>` 도
-  같은 1개로 센다(rc 0 완료·READY, 83 ESC, 84 lost·revoked, 85 timeout). 그 종료는 완료
+  등 — `--timeout` 은 필수 인자다)다. 그 종료는 완료
   증거가 아니라 깨어남 신호다 — wait 종료 후의 판정은 언제나 산출물이다. `panewire wait --agent`는
   로컬 herdr 소켓만 본다 — 원격 배치 워커에는 쓸 수 없다.
 - 기다리는 동안 턴을 소비하지 않는다. 확인이 필요하면 블로킹 명령으로 묶거나,

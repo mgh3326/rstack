@@ -123,8 +123,8 @@ else it owed waited.
 
 ## Spawn failure
 
-On one `SPAWN_FAILED` — the hub already retried the request with back-off and gave up (`ops` spawn
-§4-2):
+On one `SPAWN_FAILED` — the request ended without landing (`failed`, `refused`, `given_up` or
+`retryable`; `ops` spawn §4-2):
 
 1. Read the request id, reason and saved pane screen in the job directory once, and comment the
    request id and reason on the task.
@@ -136,8 +136,9 @@ On one `SPAWN_FAILED` — the hub already retried the request with back-off and 
    paths. The design session does not: it makes no fix attempt and ESCs to the desk (`wake` §On spawn failure).
 
 **Never replay the request** — not with another flag, not under a new job id — and never launch it by
-another route. The hub holds the job and task reservation until the request ends, and a caller-side
-attempt escapes its back-off, cross-attempt exclusions and time limit.
+another route. The hub holds the job and task reservation until the request ends — except a
+`retryable` attempt, which releases it while the request stays the hub's (`wake` §The loop step 6) —
+and a caller-side attempt escapes its back-off, cross-attempt exclusions and time limit.
 
 **No host or model hopping, and no new task per attempt.** Another host or model hides the failure.
 
