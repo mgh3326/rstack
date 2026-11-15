@@ -207,15 +207,19 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    experiment. The pin names a rung that has a
    catalog row: `-m <profile> --effort <e>`. A pin without an effort launches with no effort and matches no
    catalog row (dry-run baseline 2026-11-11, hk 3917).
-5. **Preview, then spawn** (`ops` spawn). Spawn only tickets with no unlanded blocker. Later tickets
-   are spawned when their blockers merge, by whichever session is open (the design session if still
-   open, otherwise the desk). Two tasks that change the same concept are not spawned at the same time (even as first steps of a series bundle in different files); the second is spawned after the first has merged, and its brief is written against the merged state. Record the order with `handoffkeep tasks relate <first> --kind blocks --other <second>`. Tasks that only share files stay under the existing one-PR rule; tasks on different concepts still dispatch in parallel (decision 80).
+5. **Preview, then spawn** (`ops` spawn). Spawn only tickets with no unlanded blocker, or hand a
+   ticket to the queue now and let it start later: `--after blockers` starts it when every task that
+   blocks it in hk reaches `merged`, and `--after task:<id>=merged|deployed|done` or `--after
+   time:<RFC3339>` names one condition each (several are ANDed). A conditioned request is accepted as
+   `waiting` and holds no placement slot until its condition holds. Later tickets without a start
+   condition are spawned when their blockers merge, by whichever session is open (the design session if
+   still open, otherwise the desk). Two tasks that change the same concept are not spawned at the same time (even as first steps of a series bundle in different files); the second is spawned after the first has merged, and its brief is written against the merged state. Record the order with `handoffkeep tasks relate <first> --kind blocks --other <second>`. Tasks that only share files stay under the existing one-PR rule; tasks on different concepts still dispatch in parallel (decision 80).
    Omit `-w` to use the executing host's configured workspace. `-w <label|id>` remains an
    optional override, resolved on that host; it does not select the model or quota pool.
    ```sh
    panewire spawn -c ~/work/<repo>.<slug> -m auto -p hk:doc/brief/<date>/<job> \
      -l <job> --t <T> --task <id> --role implementer --owner <design-session lane> --host auto [--tags unity] \
-     --report ~/work/herdr-inbox/jobs/<job>/report.md --dry-run
+     [--after blockers] --report ~/work/herdr-inbox/jobs/<job>/report.md --dry-run
    ```
    `panewire work <task-id>` with the same `-c`, `-p`, `-l`, `--report` and
    `-m auto --host auto --role implementer --owner <design-session lane>` flags does the same. Pass them all: its
@@ -228,32 +232,48 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    its lane and open jobs. A job the desk spawns while the repo has no design session open is owned
    by `operator-desk`.
    `-l <job>` is also the job id and the pane name mergewake looks up. Check profile, host and
-   the prepended host-safety preamble, then run that same command once without `--dry-run` and with
-   `--wait --wait-timeout 2m` (step 6 reads its exit). A refusal is read from its exit code (panewire
-   `docs/config.md`); it is never a reason to launch the task another way.
-6. **Landing proof.** `ACCEPTED job=… request=…` confirms only a durable reservation; it proves nothing
-   about a pane. The proof is the hub's spawn state (`GET /v1/spawns/<request_id>`) reaching a terminal
-   state, and you read it from the exit of the step 5 run with `--wait --wait-timeout 2m` (one launch, not a
-   second spawn), never with your own HTTP call: panewire reads the hub credential from its own
-   config. It first follows the spawn state until it is terminal, then waits for the job, so its exit
-   says which one ended it (panewire `internal/fleet/submission.go` `WaitSpawn`, `internal/fleet/wait.go`).
-   Run it in the background and wait for it to exit; do not loop around it. `--wait-timeout` bounds only
-   the job wait; the spawn-state phase ends by the hub's request deadline (600 s).
-   A second proof needs no credential: the executing node claims the hk task only after the brief is
-   delivered, so `handoffkeep tasks show <id>` with `claimed_by` and `refs.job_id` equal to `<job>`
-   means it landed; a task still `backlog` with empty `refs` did not.
+   the prepended host-safety preamble, then run that same command once without `--dry-run` and without
+   `--wait`: once the hub commits the reservation it prints `ACCEPTED job=<job> request=<request>` and
+   returns at once. `ACCEPTED` means the hub now owns the request until it lands — placement, retries
+   with back-off, the host and pool exclusions it carries from attempt to attempt, `parked` with a
+   reason and `next_check_at`, and the request's `expires_at` — so the submitting session's turn can
+   end on it. The signal that wakes the owner lane, and the only one this turn waits on, is one inbox
+   event: `SPAWNED` when the request landed, or exactly one `SPAWN_FAILED` when it ended without
+   landing; a parked request sends no notice. Name that signal before ending the turn (`ops`
+   §Invariants). A refusal is read from its exit code (panewire `docs/config.md`); it is never a reason
+   to replay the request with changed flags, to file a new job id, or to launch the task another way.
+6. **Landing proof.** `ACCEPTED job=… request=…` confirms only the hub's reservation; it proves nothing
+   about a pane. Landing is one of two facts: the owner lane's `SPAWNED` event, or the hk task claim —
+   the executing node claims the task only after the brief is delivered, so `handoffkeep tasks show
+   <id>` with `claimed_by` and `refs.job_id` equal to `<job>` means it landed; a task still `backlog`
+   with empty `refs` did not. A request that ends without landing sends exactly one `SPAWN_FAILED`.
+
+   To observe a request that has not landed, rerun the identical step 5 command with
+   `--wait --wait-timeout <d>`: it re-attaches to the same request — one observation, not a retry and
+   not a second spawn — and exits:
 
    | Exit | Meaning | Do |
    |---|---|---|
-   | `85` (`wait timeout for job`) | `WaitSpawn` returned `succeeded`, and the job wait expired while the job remained active | If the task refs show matching `claimed_by` and `refs.job_id`, comment the request id and go to step 7. If the claim is missing, do not go to step 7: recheck task refs, inspect the job record and, where reachable, make only the read-only pane observation in `ops` spawn §4-2; do not re-inject the brief. Comment what you find, emit ESC `--type decision` to the owner lane, and wait for its answer in the inbox. Never launch or replay |
-   | `0`, `83`, `84` | Landed, then the job completed, escalated or was lost (`83` escalated means `panewire escalate`; an ESC alone no longer ends the job) | Comment the request id; on `0` mergewake takes the PR (step 7); handle the ESC or the loss |
-   | Any other, with `spawn refused: <reason> (operation <id>)` | `failed` or `retryable`: not landed | §On spawn failure; never replay |
-   | Any other, with `spawn ownership is unresolved` | `deadline_exceeded`: the hub keeps ownership after its request deadline | Never launch; §On spawn failure |
+   | `0`, `83` | landed, then the job completed or escalated (`83` escalated means `panewire escalate`; an ESC alone no longer ends the job) | Comment the request id; on `0` mergewake takes the PR (step 7); handle the ESC |
+   | `85` | the wait expired while the request stayed queued, or while the landed job stayed active | If the task refs show matching `claimed_by` and `refs.job_id`, comment the request id and go to step 7; if the claim is missing, take the missing-claim path below |
+   | `91` | the request was still `parked` at the bound; the client printed its park reason and `next_check_at` | Leave it to the hub: nothing to do, and it keeps its place and its reservation |
+   | `84` | `cancelled` or `given_up`: the request ended before it landed and nothing was spawned | §On spawn failure |
+   | `75` | `deadline_exceeded`: ownership is unresolved, so the node may still have started it | never launch; wait for `SPAWNED` or `SPAWN_FAILED` |
+   | any other | the hub's rc for `failed`, `refused` or `retryable`, and 81 when the hub recorded none | §On spawn failure; never replay |
 
    Spawn state `reconciling`: `--wait` keeps polling and emits no `SPAWN_FAILED` while ownership remains unresolved. Wait for a terminal outcome; never launch another way or replay as a retry.
 
-   `--wait` timeout code 85 is the job wait deadline, not a spawn-state result (`panewire` `internal/fleet/command.go:82`). A task claim is still required as landing proof. (`panewire` main `2b76a6341972b61f8f520b228383d0b599d510ac`, `internal/fleet/submission.go` `WaitSpawn`; #372, hk 3676.) Where the pane's host is reachable, `ops` spawn §4-2 adds one read-only look at the pane.
-7. **Close.** The design session may close once landing is proven. It sends no success notice:
+   **Missing claim.** After exit `85` with no matching claim in the task refs, do not go to step 7:
+   recheck the refs, inspect the job record and, where reachable, make only the read-only pane
+   observation in `ops` spawn §4-2; do not re-inject the brief. Comment what you find, emit ESC
+   `--type decision` to the owner lane, and wait for its answer in the inbox. Never launch or replay.
+
+   The re-attach reads the hub's own record, never your own HTTP call: panewire reads the hub
+   credential from its own config (`panewire` `docs/hub-spawn-operations.md` §Request states a client
+   reads; #372, hk 3676). Where the pane's host is reachable, `ops` spawn §4-2 adds one read-only look
+   at the pane.
+7. **Close.** The design session may close once the request is accepted and its work is recorded in
+   hk; the hub owns the request until it lands. It sends no success notice:
    mergewake already notifies the owner lane. The worker opens the PR and reports READY (§READY).
    After READY, mergewake picks the PR up from the PR itself and reviews it, sends findings to the
    author and merges it on §Merge gate. A design session does not wait for or act on READY, and it
@@ -287,12 +307,17 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
 
 ## On spawn failure
 
-`failed`, `SPAWN_FAILED`, a non-zero refusal, or a status still not terminal past the deadline:
+Act on exactly one `SPAWN_FAILED` for the job, and on nothing else: it means the request ended without
+landing after the hub's own retries (`failed`, `refused` or `given_up`). A `retryable` attempt, a
+parked request and unresolved ownership are the hub's to work through, not signals to act. A
+submission the hub refuses outright exits non-zero before `ACCEPTED`; it has no request to wait on, so
+comment the refusal on the task and ESC the same way, never a replay.
 
-- **The design session makes no fix attempt and ESCs.** The desk makes the one fix attempt (`desk` §Spawn failure).
-- **Do not retry on the same task.** Replaying the same command and saved request after a lost response
-  is not a retry; it reuses the reservation (`ops` spawn). On `retryable` the same replay starts a new
-  attempt, so it is a retry: do not run it.
+- **The design session makes no fix attempt and ESCs.** The desk files the task against the tool (`desk` §Spawn failure).
+- **Do not retry on the same task.** Re-running the identical command with `--wait` only observes the
+  request; never replay the request with changed flags and never file a new job id. The hub holds the
+  job and task reservation until the request ends, so a caller-side attempt only starts what the queue
+  did not choose.
 - **Never launch with `herdr agent start` or any other route.**
 - **Comment the request id, rc, stage and reason on the task:**
   `handoffkeep tasks comment <id> --body 'spawn failed request=<request_id> rc=<rc> stage=<stage> reason=<reason>'`.

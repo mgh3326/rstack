@@ -84,7 +84,7 @@ open; the lead never deploys or performs the live mutation.
 
 | Need | Read | Gist |
 |---|---|---|
-| Spawn a worker or consult pane | [`spawn.md`](references/spawn.md) | `panewire spawn` flags, auto model selection, `--task` binding, `--owner`, landing check §4-2 |
+| Spawn a worker or consult pane | [`spawn.md`](references/spawn.md) | `panewire spawn` submits without `--wait`; `ACCEPTED` means the hub owns the request; flags, auto model selection, `--task` binding, `--owner`, landing check §4-2 |
 | Place on another host, wake a sleeping one | [`spawn-hosts.md`](references/spawn-hosts.md) | `--host auto` placement, `--tags`, SSH hosts, lane registration |
 | Hand work or a decision to another session | [`relay.md`](references/relay.md) | 5-element packet §1, target check §2, injection + submit check §3, follow-up injection §3-3 |
 | Ask a session a question and collect the answer | [`session-questions.md`](references/session-questions.md) | single answer file, deadline, no silence-as-answer |

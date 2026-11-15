@@ -75,7 +75,7 @@ REQUIRED = [
     ("wake", "## Settle before spawning", "blocks-edge-command",
      r"`handoffkeep tasks relate <blocker-id> --kind blocks --other <blocked-id>`"),
     ("wake", "## On spawn failure", "design-no-fix-attempt",
-     r"The design session makes no fix attempt and ESCs\.\*\* The desk makes the one fix attempt \(`desk` §Spawn failure\)"),
+     r"The design session makes no fix attempt and ESCs\.\*\* The desk files the task against the tool \(`desk` §Spawn failure\)"),
     ("desk", "## Spawn failure", "design-does-not",
      r"The design session does not: it makes no fix attempt and ESCs to the desk \(`wake` §On spawn failure\)"),
 ]
@@ -99,6 +99,9 @@ FORBIDDEN = [
     ("desk", "legacy-needs-decision", r"needs_decision", "\n`needs_decision` is the open-decision state.\n"),
     ("desk", "legacy-in-progress", r"\bin_progress\b", "\nA task in_progress waits.\n"),
     ("spawn", "auto-respawn", r"→ ?재스폰", "\n- stuck 판정→재스폰.\n"),
+    # hk 4378 / operator decision 185: the hub owns the request; no caller-side fix attempt on a SPAWN_FAILED.
+    ("wake", "desk-makes-one-fix-attempt", r"(?i)the desk makes the one fix attempt",
+     "\nThe desk makes the one fix attempt (`desk` §Spawn failure).\n"),
     # hk 4397: the 5-minute stuck-equals-spawn-failure rule and the 2-minute watch condition are gone.
     ("spawn", "spawn-stuck-5min-rule", r"5분 내 실 툴호출", "\n- 스폰 후 5분 내 실 툴호출 없으면 stuck.\n"),
     ("spawn", "spawn-watch-2min-condition", r"2분 지속", "\n- 감시는 working→비working 2분 지속 시 확인.\n"),
