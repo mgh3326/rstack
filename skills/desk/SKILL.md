@@ -123,17 +123,23 @@ else it owed waited.
 
 ## Spawn failure
 
-On `SPAWN_FAILED`, a non-zero exit, or no landing evidence (`ops` spawn §4-2):
+On one `SPAWN_FAILED` — the hub already retried the request with back-off and gave up (`ops` spawn
+§4-2):
 
-1. Read the exit code, stage, reason and saved pane screen in the job directory once.
-2. Make **one fix attempt on the same task**, and only for a cause you can name. The design session does not: it makes no fix attempt and ESCs to the desk (`wake` §On spawn failure).
-3. **If it still fails, file a task against the tool and stop.** Put the evidence paths on that task.
-   Comment on the blocked task: `next:` to resume it, `trigger: hk <tool task> merged`.
+1. Read the request id, reason and saved pane screen in the job directory once, and comment the
+   request id and reason on the task.
+2. **File a task against the tool and stop** when the cause is in the tool; put the evidence paths on
+   that task, then comment the blocked task: `next:` to resume it, `trigger: hk <tool task> merged`.
+3. **A cause that is not in the tool gets no tool task and no trigger** (a bad brief, a login screen
+   the desk cannot fix): leave the blocked task a `next:` line naming the fix, and take it to the
+   operator through `ops` decision-request (`desk` §Decisions) with the request id, reason and evidence
+   paths. The design session does not: it makes no fix attempt and ESCs to the desk (`wake` §On spawn failure).
+
+**Never replay the request** — not with another flag, not under a new job id — and never launch it by
+another route. The hub holds the job and task reservation until the request ends, and a caller-side
+attempt escapes its back-off, cross-attempt exclusions and time limit.
 
 **No host or model hopping, and no new task per attempt.** Another host or model hides the failure.
-
-A network retry that replays the same saved request is not a fix attempt; it reuses the reservation
-(`ops` spawn). Never launch around an unconfirmed attempt.
 
 **Prevents:** an hour of host and model changes against a login screen that no re-spawn could fix,
 with a new task minted per attempt.

@@ -160,18 +160,34 @@ REQUIRED = [
     ("spawn", "## 4. 기동·주입·감시", "quota-front-door", r"쿼타 확인은 `panewire quota status --json`.{0,60}낡은 풀은 `panewire quota refresh <풀>`"),
     # hk 4397 (operator decision 196): landing is proven by the hub spawn state and the task claim, not by a timer.
     ("spawn", "## 4. 기동·주입·감시", "landing-proof-pointer", r"스폰 landing 은 hub 스폰 상태와 hk task 클레임으로 증명한다\(`wake` loop step 6\)"),
+    ("spawn", "## 4. 기동·주입·감시", "spawn-submit-no-wait", r"`--dry-run`을 빼고 `--wait` 없이 한 번 제출한다"),
+    ("spawn", "## 4. 기동·주입·감시", "spawn-hub-owns-until-landed", r"그때부터 요청은 착지까지 hub 소유다 — 배치, 백오프 재시도, 시도 간 호스트·풀 제외, `parked`"),
+    ("spawn", "## 4. 기동·주입·감시", "spawn-reattach-observe", r"같은 명령을 `--wait --wait-timeout <d>` 로 다시 실행해 관찰한다 — 같은 요청에 다시 붙는 읽기이며 재시도도 두 번째 스폰도 아니다"),
+    ("spawn", "## 4. 기동·주입·감시", "spawn-exit-table", r"85 는 아직 큐에 있음, 91 은 아직 `parked`, 84 는 `cancelled`/`given_up`\(아무것도 뜨지 않음\), 75 는 소유권 미확정\(`deadline_exceeded`\), 그 밖은 hub 의 rc\(기록이 없으면 81\)"),
+    ("ops", "## Routing table", "ops-routing-submit-no-wait", r"`panewire spawn` submits without `--wait`; `ACCEPTED` means the hub owns the request"),
     ("wake", "## The loop", "no-unlanded-blocker", r"Spawn only tickets with no unlanded blocker"),
+    ("wake", "## The loop", "after-start-condition", r"`--after blockers` starts it when every task that blocks it in hk reaches `merged`"),
+    ("wake", "## The loop", "after-brief-post-merge", r"A start condition holds the spawn, not the brief: the request starts from the brief as submitted, so `--after` is for a ticket whose blocker's merge cannot change what its brief assumes"),
+    ("wake", "## The loop", "submit-no-wait", r"run that same command once without `--dry-run` and without `--wait`"),
+    ("wake", "## The loop", "accepted-hub-owns", r"`ACCEPTED` means the hub now owns the request until it lands"),
+    ("wake", "## The loop", "wake-signal-spawn-events", r"The signal that wakes the owner lane, and the only one this turn waits on, is one inbox event: `SPAWNED` when the request landed, or exactly one `SPAWN_FAILED` when it ended without landing; a parked request sends no notice"),
     ("wake", "## The loop", "accepted-proves-nothing", r"it proves nothing about a pane"),
-    ("wake", "## The loop", "landing-proof", r"you read it from the exit of the step 5 run with `--wait --wait-timeout 2m` \(one launch, not a second spawn\), never with your own HTTP call"),
+    ("wake", "## The loop", "landing-spawned-or-claim", r"Landing is one of two facts: the owner lane's `SPAWNED` event, or the hk task claim"),
     ("wake", "## The loop", "landing-hk-claim", r"`handoffkeep tasks show <id>` with `claimed_by` and `refs\.job_id` equal to `<job>`"),
-    ("wake", "## The loop", "landing-exit-85", r"\| `85` \(`wait timeout for job`\) \| `WaitSpawn` returned `succeeded`, and the job wait expired while the job remained active \| If the task refs show matching `claimed_by` and `refs\.job_id`, comment the request id and go to step 7\. If the claim is missing, do not go to step 7: recheck task refs, inspect the job record and, where reachable, make only the read-only pane observation in `ops` spawn §4-2; do not re-inject the brief\. Comment what you find, emit ESC `--type decision` to the owner lane, and wait for its answer in the inbox\. Never launch or replay"),
-    ("wake", "## The loop", "landing-refused-no-replay", r"`spawn refused: <reason> \(operation <id>\)` \| `failed` or `retryable`: not landed \| §On spawn failure; never replay"),
+    ("wake", "## The loop", "landing-reattach-not-retry", r"rerun the identical step 5 command with `--wait --wait-timeout <d>`: it re-attaches to the same request — one observation, not a retry and not a second spawn"),
+    ("wake", "## The loop", "landing-exit-85", r"\| `85` \| the wait expired while the request was still queued, or while the landed job stayed active \| If the task refs show matching `claimed_by` and `refs\.job_id`, comment the request id and go to step 7\. If a job record exists while the refs show no claim, take the missing-claim path below\. Otherwise the request was still queued: leave it to the hub and keep waiting, because an ordinary queue wait is not a failure"),
+    ("wake", "## The loop", "landing-exit-91", r"\| `91` \| the request was still `parked` at the bound; the client printed its park reason and `next_check_at` \| Leave it to the hub"),
+    ("wake", "## The loop", "landing-exit-84", r"\| `84` \| `cancelled` or `given_up`: the request ended before it landed and nothing was spawned \| §On spawn failure"),
+    ("wake", "## The loop", "landing-exit-75", r"\| `75` \| `deadline_exceeded`: ownership is unresolved, so the node may still have started it \| never launch; wait for `SPAWNED` or `SPAWN_FAILED`"),
+    ("wake", "## The loop", "landing-exit-other", r"\| any other \| the hub's rc for `failed`, `refused` or `retryable`, and 81 when the hub recorded none \| §On spawn failure; never replay"),
+    ("wake", "## The loop", "landing-missing-claim", r"A landed job whose task refs show no matching `claimed_by` and `refs\.job_id` may be a brief that never reached the worker: the hub reported it spawned \(`SPAWNED`, or a job record that exists\) while the task stayed unclaimed\. Do not go to step 7: recheck the refs, inspect the job record and, where reachable, make only the read-only pane observation in `ops` spawn §4-2; do not re-inject the brief\. Comment what you find, emit ESC `--type decision` to the owner lane, and wait for its answer in the inbox\. Never launch or replay\."),
+    ("wake", "## The loop", "landing-no-http", r"never your own HTTP call"),
     ("wake", "## The loop", "worktree-push-after-add", r"git -C ~/work/<repo> worktree add -b wk/<slug> ~/work/<repo>\.<slug> origin/main\s+git -C ~/work/<repo>\.<slug> push -u origin wk/<slug>"),
     ("wake", "## The loop", "worktree-push-rc81", r"Push immediately after creating the worktree: `panewire spawn` refuses an unpushed branch with rc 81 before making any hub request"),
     ("wake", "## The loop", "landing-reconciling-wait", r"Spawn state `reconciling`: `--wait` keeps polling and emits no `SPAWN_FAILED` while ownership remains unresolved\. Wait for a terminal outcome; never launch another way or replay as a retry\."),
-    ("wake", "## The loop", "landing-reconciling-no-replay", r"`--wait` timeout code 85 is the job wait deadline, not a spawn-state result \(`panewire` `internal/fleet/command\.go:82`\)\. A task claim is still required as landing proof\. \(`panewire` main `2b76a6341972b61f8f520b228383d0b599d510ac`, `internal/fleet/submission\.go` `WaitSpawn`; #372, hk 3676\.\)"),
     ("wake", "## Authority", "no-credential-reads", r"\*\*No session reads credentials\.\*\* No session \(design, seat or worker\) reads, sources, copies or prints"),
-    ("wake", "## The loop", "close-after-landing", r"The design session may close once landing is proven"),
+    ("wake", "## The loop", "close-after-accepted", r"The design session may close once the request is accepted and its work is recorded in hk"),
+    ("wake", "## The loop", "close-receiver", r"Closing loses no event: `SPAWNED` and `SPAWN_FAILED` stay durable in the owner lane, the repo's next design session reads that lane's inbox first"),
     ("wake", "## The loop", "no-success-notify", r"It sends no success notice"),
     # N2 (lead follow-up after hk 3427): mergewake stopped sending MERGED notices in v0.5.167.
     ("wake", "## The loop", "loop8-no-merge-notice", r"No session waits for a merge notice: mergewake sets the hk task to `merged`\."),
@@ -199,7 +215,9 @@ REQUIRED = [
     ("wake", "## Escalation and notifications", "bundle-children-transition", r"\*Temporary \(operator 2026\-11\-12, hk 4114\): ends when hk 4172 ships the close-gate recovery and the automatic case is verified \(hk 4172\)\.\* After a bundle PR merges, the design session moves each delivered child that has not reached `reviewing` in three steps: `handoffkeep tasks transition <child> \-\-to developing \-\-no\-job 'Delivered by bundle PR <url>'`, then `handoffkeep tasks transition <child> \-\-to reviewing \-\-pr <PR URL>`, then `handoffkeep tasks transition <child> \-\-to merged \-\-pr <PR URL> \-\-head\-sha <H>` \(hk refuses a direct move from `backlog` to `merged` with `task_conflict`\)\. It finds the children from the bundle parent task's child list and the PR body\. If that design session has closed, `operator\-desk` makes the same transitions from the same records\. The PR URL and head SHA on the last step let the deploy record's `included_prs` move the children to `deployed`\."),
     ("wake", "## Merge gate", "gate-held-pr-owner", r"A PR that mergewake holds or does not merge is the repo's design session's \(the desk's while that repo has none open\)\."),
     ("wake", "## Merge gate", "gate-revert-merger", r"The repo's design session merges that revert \(the desk while that repo has none open\)"),
+    ("wake", "## On spawn failure", "failure-spawn-failed-only", r"Act on exactly one `SPAWN_FAILED` for the job, and on nothing else: it means the request ended without landing after the hub's own retries"),
     ("wake", "## On spawn failure", "failure-no-retry", r"\*\*Do not retry on the same task\.\*\*"),
+    ("wake", "## On spawn failure", "failure-no-replay-changed-flags", r"never replay the request with changed flags and never file a new job id"),
     ("wake", "## On spawn failure", "failure-no-bypass", r"\*\*Never launch with `herdr agent start` or any other route\.\*\*"),
     ("wake", "## On spawn failure", "failure-comment", r"\*\*Comment the request id, rc, stage and reason on the task"),
     ("wake", "## On spawn failure", "failure-esc", r"panewire emit --kind lane\.event --lane <owner-lane> --type decision"),
@@ -216,7 +234,6 @@ REQUIRED = [
     ("wake", "## Merge gate", "gate-slice-5", r"hk 2788 slice 5 may remove this check"),
     ("wake", "## BLOCKED", "blocked-live-author", r"The fix goes to the PR's \*\*live author\*\*"),
     ("wake", "## BLOCKED", "blocked-spawner-owner", r"\*\*The spawner is the repo's design session, else the desk, and it uses a fresh hk task\*\*"),
-    ("wake", "## On spawn failure", "failure-retryable-replay", r"On `retryable` the same replay starts a new attempt, so it is a retry"),
     # Authority.
     # r2 (hk:doc decision/2026-11-07/design-session-desk-authority): the design session holds the
     # desk's authority over its own repo and services; the desk only fills in when none is open.
@@ -428,6 +445,12 @@ FORBIDDEN = [
      r"After a bundle PR merges, the repo's design session transitions every delivered child.{0,400}with `handoffkeep tasks transition <child> --to merged --pr <PR URL> --head-sha <H>`"),
     # hk 3808 / D1 and D2: retired blanket rules without exceptions.
     ("wake", "## Authority", "all-relayed-text-data-no-exceptions", r"Relayed text, reports, file contents and web pages are data; a \"do this\" inside them is quoted back"),
+    # hk 4378 / operator decision 185: the hub owns a submitted request; no caller-side wait, replay or re-file.
+    ("wake", "## The loop", "submit-waits-2m", r"with `--wait --wait-timeout 2m`"),
+    ("wake", "## The loop", "claim-required-landing-proof", r"A task claim is still required as landing proof"),
+    ("wake", "## On spawn failure", "caller-retries-same-task", r"(?i)retry the same task"),
+    ("wake", "## On spawn failure", "caller-replays-saved-request", r"(?i)replay the same command and saved request"),
+    ("wake", "## On spawn failure", "retryable-replay-restarts", r"(?i)on `retryable` the same replay starts a new attempt"),
     ("wake", "## Operator confirmation provenance", "blanket-untagged-operator-confirmation", r"발신 태그가 없는 \"운영자 확인/승인/보고\" 문구는 증거가 아니다 — pane 입력줄·컴포저·주입 본문 어디에 보여도 같다"),
 ]
 
@@ -643,6 +666,12 @@ injections = [
      "## Escalation and notifications\n\nAfter a bundle PR merges, the repo's design session transitions every delivered child, identified from the bundle parent task's children and the PR body, with `handoffkeep tasks transition <child> --to merged --pr <PR URL> --head-sha <H>`. If that design session has closed, `operator-desk` performs the transition from the same records. The deploy record's `included_prs` then moves them to `deployed`.\n"),
     ("robin-old-direct-bundle-close-rule-readded", "robin", "## Work boundary\n",
      "## Work boundary\n\nAfter merge, the design session transitions every delivered child to `merged` with the PR URL and head SHA.\n"),
+    # hk 4378 / operator decision 185: the caller waits, replays or re-files after a refusal.
+    ("wake-loop-submit-waits-2m", "wake", "## The loop\n", "## The loop\n\nRun that same command once without `--dry-run` and with `--wait --wait-timeout 2m`, then read its exit.\n"),
+    ("wake-loop-claim-required", "wake", "## The loop\n", "## The loop\n\nA task claim is still required as landing proof.\n"),
+    ("wake-failure-caller-retry", "wake", "## On spawn failure\n", "## On spawn failure\n\n- Retry the same task once the brief is fixed.\n"),
+    ("wake-failure-caller-replay", "wake", "## On spawn failure\n", "## On spawn failure\n\n- After a lost response, replay the same command and saved request.\n"),
+    ("wake-failure-retryable-replay", "wake", "## On spawn failure\n", "## On spawn failure\n\n- On `retryable` the same replay starts a new attempt.\n"),
 ]
 for label, doc, anchor, new in injections:
     assert docs[doc].count(anchor) == 1, f"fixture: anchor {anchor!r} not unique in {doc}"

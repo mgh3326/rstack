@@ -43,11 +43,17 @@ mergewake reap 이 한다.
 
 ## 4. 기동·주입·감시
 
-- 기동 — 미리보기 후 `--dry-run`을 빼고 실행한다. 기본 실행은 hub의 durable 예약 뒤 `ACCEPTED`를 반환한다. `SPAWNED`/`SPAWN_FAILED`를 기다리고 아래 착지 확인을 수행한다:
+- 기동 — 미리보기 후 `--dry-run`을 빼고 `--wait` 없이 한 번 제출한다. hub 가 예약을 커밋하면
+  `ACCEPTED job=… request=…`를 찍고 즉시 반환하며, 그때부터 요청은 착지까지 hub 소유다 — 배치, 백오프
+  재시도, 시도 간 호스트·풀 제외, `parked`(사유와 `next_check_at`), `expires_at` 시간 제한. 제출한
+  세션의 턴은 여기서 끝낼 수 있다. 깨우는 신호는 owner 레인의 inbox 이벤트 `SPAWNED`(착지) 또는 정확히
+  하나의 `SPAWN_FAILED`(실패·거절·`given_up`)다(`ops` §Invariants: 턴을 끝내기 전에 깨울 신호를 이름으로
+  적는다). `parked` 자체는 통지를 보내지 않는다. 착지 증명과 실패 처리는 `wake` loop step 6 과
+  §On spawn failure 가 정본이다:
   ```bash
   panewire spawn -c <worktree> -m auto -p hk:doc/<키> -l <라벨> --t <T0..T3> \
     --task <id> --role implementer --owner <내 레인> --host auto [--tags a,b] \
-    [--report ~/work/herdr-inbox/jobs/<라벨>/report.md] [--effort <레벨>] [-L live|mock] --dry-run
+    [--after blockers] [--report ~/work/herdr-inbox/jobs/<라벨>/report.md] [--effort <레벨>] [-L live|mock] --dry-run
   ```
   `-p hk:doc/<키>` 가 권장 형태다 — 브리프는 `handoffkeep doc put --kind brief` 로 hk 에 두고 그 문서를 읽힌다. 로컬 파일 경로도 여전히 유효하다.
   `--dry-run` 은 고른 호스트·프로필·selection 기록과 host-safety preamble 이 붙은 최종 브리프를
@@ -106,6 +112,12 @@ mergewake reap 이 한다.
   미등록으로 착지하므로 라벨은 소문자·숫자·`-` 32자 안에서 짓는다(#1010).
 
 ### 4-2. 🔴 착지 검증 — 스폰 직후 필수
+
+요청이 아직 착지하지 않았으면 같은 명령을 `--wait --wait-timeout <d>` 로 다시 실행해 관찰한다 — 같은
+요청에 다시 붙는 읽기이며 재시도도 두 번째 스폰도 아니다. 종료 코드: 85 는 아직 큐에 있음, 91 은 아직
+`parked`, 84 는 `cancelled`/`given_up`(아무것도 뜨지 않음), 75 는 소유권 미확정(`deadline_exceeded`), 그
+밖은 hub 의 rc(기록이 없으면 81)다. 실패 통지는 `SPAWN_FAILED` 하나뿐이고, hub 가 이미 재시도하고
+포기했다는 뜻이므로 같은 요청을 다른 flag 로 다시 내거나 새 잡 id 를 만들지 않는다(`wake` §On spawn failure).
 
 스폰 명령이 정상 반환됐다고 해서 워커가 브리프를 실제로 받은 것은 아니다. panewire 는 idle pane 에
 `herdr agent prompt` 로 브리프를 넣고(cmd 는 `pane send-text` 후 `send-keys return`), pasted-text
