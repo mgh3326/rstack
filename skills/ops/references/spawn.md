@@ -47,7 +47,7 @@ mergewake reap 이 한다.
   `ACCEPTED job=… request=…`를 찍고 즉시 반환하며, 그때부터 요청은 착지까지 hub 소유다 — 배치, 백오프
   재시도, 시도 간 호스트·풀 제외, `parked`(사유와 `next_check_at`), `expires_at` 시간 제한. 제출한
   세션의 턴은 여기서 끝낼 수 있다. 깨우는 신호는 owner 레인의 inbox 이벤트 `SPAWNED`(착지) 또는 정확히
-  하나의 `SPAWN_FAILED`(실패·거절·`given_up`)다(`ops` §Invariants: 턴을 끝내기 전에 깨울 신호를 이름으로
+  하나의 `SPAWN_FAILED`(실패·거절·`given_up`·`retryable`)다(`ops` §Invariants: 턴을 끝내기 전에 깨울 신호를 이름으로
   적는다). `parked` 자체는 통지를 보내지 않는다. 착지 증명과 실패 처리는 `wake` loop step 6 과
   §On spawn failure 가 정본이다:
   ```bash
@@ -113,8 +113,10 @@ mergewake reap 이 한다.
 
 ### 4-2. 🔴 착지 검증 — 스폰 직후 필수
 
-요청이 아직 착지하지 않았으면 같은 명령을 `--wait --wait-timeout <d>` 로 다시 실행해 관찰한다 — 같은
-요청에 다시 붙는 읽기이며 재시도도 두 번째 스폰도 아니다. 종료 코드: 85 는 아직 큐에 있음, 91 은 아직
+요청이 아직 착지하지 않았으면 owner 레인 inbox 에 그 `SPAWN_FAILED` 가 있는지 먼저 읽는다 — 있으면 `wake`
+§On spawn failure 로 가고 다시 실행하지 않는다. 없으면 같은 명령을 `--wait --wait-timeout <d>` 로 다시 실행해
+관찰한다 — 저장된 요청을 다시 내지만 hub 는 같은 request id 로 답하며, 그 요청이 살아 있는 동안에는 아무것도
+시작하지 않는다(재시도도 두 번째 스폰도 아니다). 종료 코드: 85 는 아직 큐에 있음, 91 은 아직
 `parked`, 84 는 `cancelled`/`given_up`(아무것도 뜨지 않음)이거나 착지한 뒤 잡을 잃거나 회수된 경우, 75 는
 소유권 미확정(`deadline_exceeded`), 그 밖은 hub 의 rc(기록이 없으면 81)다. 실패 통지는 `SPAWN_FAILED`
 하나이고, 요청이 착지 없이 끝났거나(`failed`·`refused`·`given_up`) 시도가 `retryable` 로 끝났다는

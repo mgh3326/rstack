@@ -251,10 +251,12 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    settles both, while a task still `backlog` with empty `refs` leaves the brief unproven (missing
    claim below). A request that ends without landing sends exactly one `SPAWN_FAILED`.
 
-   To observe a request that has not landed, rerun the identical step 5 command with
-   `--wait --wait-timeout <d>`: it re-attaches to the same request — one observation, not a retry and
-   not a second spawn. The bound ends the request phase first and then the job wait again, so a short
-   bound can end in either; it exits:
+   To observe a request that has not landed, first read the owner lane's inbox for its `SPAWN_FAILED`:
+   with one, take §On spawn failure and rerun nothing. Otherwise rerun the identical step 5 command
+   with `--wait --wait-timeout <d>`: it resubmits the saved request, the hub answers the same request
+   id, and while that request is live it starts nothing — one observation, not a second spawn. The
+   bound ends the request phase first and then the job wait again, so a short bound can end in either;
+   it exits:
 
    | Exit | Meaning | Do |
    |---|---|---|
