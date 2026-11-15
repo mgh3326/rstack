@@ -266,8 +266,10 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    | `75` | `deadline_exceeded`: ownership is unresolved, so the node may still have started it | never launch; wait for `SPAWNED` or `SPAWN_FAILED` |
    | any other | the hub's rc for `failed` or `refused`, and 81 when the hub recorded none | §On spawn failure; never replay |
 
-   A `retryable` rc is the hub moving the request to another host: the request and its reservation
-   stay, so keep waiting for `SPAWNED` or `SPAWN_FAILED` and never replay it.
+   A `retryable` rc is an ended attempt, not a hand-over still in flight: the hub releases the job's
+   reservation and sends the one `SPAWN_FAILED` with `replay=yes`, so take §On spawn failure. A
+   hand-over the hub makes on its own stays inside the wait and produces no rc; an ended attempt
+   resumes only from a replay of the saved request, and this session never replays.
 
    Spawn state `reconciling`: `--wait` keeps polling and emits no `SPAWN_FAILED` while ownership remains unresolved. Wait for a terminal outcome; never launch another way or replay as a retry.
 
@@ -322,7 +324,7 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
 ## On spawn failure
 
 Act on exactly one `SPAWN_FAILED` for the job, and on nothing else: it means the request ended without
-landing (`failed`, `refused` or `given_up`). A `retryable` attempt, a
+landing (`failed`, `refused` or `given_up`), or the attempt ended `retryable` (§The loop step 6). A
 parked request and unresolved ownership are the hub's to work through, not signals to act. A
 submission the hub refuses outright exits non-zero before `ACCEPTED`; it has no request to wait on, so
 comment the refusal on the task and ESC the same way, never a replay.
