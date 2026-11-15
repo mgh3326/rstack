@@ -27,7 +27,11 @@ REQUIRED = [
     ("fleet", "round-receiver", r"repo's design session, else operator-desk, decides"),
     ("fleet", "ladder-trigger", r"\*\*Trigger:\*\* 3 review rounds without convergence \(a new critical/high on each\)"),
     ("fleet", "rounds-not-heads", r"Review rounds are counted, not heads; a head that only merges the base is not a round"),
-    ("fleet", "worker-round-3-consult-only", r"at round 3 without a pass, stop patching and ask for a consult one grade above your own seat in another family \(`ops` consult\), giving it every finding so far and asking for the root cause\. Nothing else happens at round 3"),
+    ("fleet", "worker-round-3-consult-esc", r"at round 3 without a pass, stop patching; ask your design lane for a consult one grade above your seat in another family: ESC --type decision to your owner lane with the packet as an hk doc key \(every finding so far, ask for the root cause\); do not run panewire consult request and do not call any model API yourself"),
+    ("fleet", "design-session-takes-round-3-consult", r"On the worker's round-3 ESC, the design session takes the consult one grade above the worker's seat in another family \(`ops` consult\), with the packet the worker put in hk, and answers the worker"),
+    ("wake", "design-session-takes-round-3-consult", r"On the worker's round-3 ESC, the design session takes the consult one grade above the worker's seat in another family \(`ops` consult\), with the packet the worker put in hk, and answers the worker"),
+    ("wake", "worker-round-3-consult-esc", r"At round 3 without a pass, the worker stops patching and ESCs its design lane for a consult one grade above its seat in another family, with the packet as an hk doc key \(every finding and a question about the root cause\)"),
+    ("wake", "worker-review-not-run", r"Review: do not run mergewake review yourself; the daemon reviews the PR before merge and sends findings to your lane\."),
     ("fleet", "defer-follow-up-worker-owns", r"The worker files at most one follow-up hk task per PR, in the same project and lane and related to the parent task; put the findings in its list"),
     ("fleet", "defer-disposition-info", r"For a deferred finding, the worker replies `Disposition: defer <id>`\. The worker sends one `info` to the design session naming the task"),
     ("fleet", "defer-asks-fact-or-choice", r"Ask the design session only for a missing fact or a design choice"),
@@ -55,6 +59,10 @@ REQUIRED = [
 ]
 FORBIDDEN = [
     ("fleet", "old-round-3-ladder-step", r"round-3 ESC.{0,160}re-spawns the PR's work pinned to the next rung"),
+    ("fleet", "old-worker-round-3-ops-consult", r"(?i)stop patching and ask(?: for)? a consult one grade above (?:your own|your|its) seat in another family \(`ops` consult\)"),
+    ("wake", "old-worker-round-3-ops-consult", r"(?i)stop patching and ask(?: for)? a consult one grade above (?:your own|your|its) seat in another family \(`ops` consult\)"),
+    ("wake", "worker-runs-mergewake-review", r"(?i)(?<!not )run (?:once )?`[^`]*mergewake review"),
+    ("wake", "skip-review-when-config-missing", r"(?i)config is missing, skip the review"),
     ("fleet", "old-round-5-scope-choice", r"In both states, at round 5 without a pass.{0,260}the design session cuts the scope"),
     ("fleet", "old-hk-4256-marker", r"hk 4256"),
     ("fleet", "old-round-3-same-seat-rule", r"same worker keeps patching at the same seat after round 3"),
@@ -92,6 +100,9 @@ for doc, name, pattern in REQUIRED:
     count += 1
 INJECTIONS = {
     "old-round-3-ladder-step": "On the round-3 ESC the session re-spawns the PR's work pinned to the next rung.",
+    "old-worker-round-3-ops-consult": "At round 3 without a pass, stop patching and ask a consult one grade above your seat in another family (`ops` consult), giving it every finding so far.",
+    "worker-runs-mergewake-review": "Run `mergewake review --apply` on your PR.",
+    "skip-review-when-config-missing": "If the config is missing, skip the review and say so in the report.",
     "old-round-5-scope-choice": "In both states, at round 5 without a pass, the design session cuts the scope or takes one SS consult.",
     "old-hk-4256-marker": "Temporary (operator 2026-11-12, hk 4257): ends when mergewake hk 4256 ships.",
     "old-round-3-same-seat-rule": "The same worker keeps patching at the same seat after round 3 is not allowed.",
