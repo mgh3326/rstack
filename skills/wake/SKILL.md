@@ -211,9 +211,11 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    ticket to the queue now and let it start later: `--after blockers` starts it when every task that
    blocks it in hk reaches `merged`, and `--after task:<id>=merged|deployed|done` or `--after
    time:<RFC3339>` names one condition each (several are ANDed). A conditioned request is accepted as
-   `waiting` and holds no placement slot until its condition holds. Later tickets without a start
-   condition are spawned when their blockers merge, by whichever session is open (the design session if
-   still open, otherwise the desk). Two tasks that change the same concept are not spawned at the same time (even as first steps of a series bundle in different files); the second is spawned after the first has merged, and its brief is written against the merged state. Record the order with `handoffkeep tasks relate <first> --kind blocks --other <second>`. Tasks that only share files stay under the existing one-PR rule; tasks on different concepts still dispatch in parallel (decision 80).
+   `waiting` and holds no placement slot until its condition holds. A start condition holds the spawn,
+   not the brief: the request starts from the brief as submitted, so `--after` is for a ticket whose
+   blocker's merge cannot change what its brief assumes; otherwise keep the manual path — whichever
+   session is open spawns that ticket after the merge and writes its brief against the merged state
+   (the design session if still open, otherwise the desk). Two tasks that change the same concept are not spawned at the same time (even as first steps of a series bundle in different files); the second is spawned after the first has merged, and its brief is written against the merged state. Record the order with `handoffkeep tasks relate <first> --kind blocks --other <second>`. Tasks that only share files stay under the existing one-PR rule; tasks on different concepts still dispatch in parallel (decision 80).
    Omit `-w` to use the executing host's configured workspace. `-w <label|id>` remains an
    optional override, resolved on that host; it does not select the model or quota pool.
    ```sh
@@ -255,7 +257,7 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    | Exit | Meaning | Do |
    |---|---|---|
    | `0`, `83` | landed, then the job completed or escalated (`83` escalated means `panewire escalate`; an ESC alone no longer ends the job) | Comment the request id; on `0` mergewake takes the PR (step 7); handle the ESC |
-   | `85` | the wait expired while the request stayed queued, or while the landed job stayed active | If the task refs show matching `claimed_by` and `refs.job_id`, comment the request id and go to step 7; if the claim is missing, take the missing-claim path below |
+   | `85` | the wait expired while the request was still queued, or while the landed job stayed active | If the task refs show matching `claimed_by` and `refs.job_id`, comment the request id and go to step 7. If a job record exists while the refs show no claim, take the missing-claim path below. Otherwise the request was still queued: leave it to the hub and keep waiting, because an ordinary queue wait is not a failure |
    | `91` | the request was still `parked` at the bound; the client printed its park reason and `next_check_at` | Leave it to the hub: nothing to do, and it keeps its place and its reservation |
    | `84` | `cancelled` or `given_up`: the request ended before it landed and nothing was spawned | §On spawn failure |
    | `75` | `deadline_exceeded`: ownership is unresolved, so the node may still have started it | never launch; wait for `SPAWNED` or `SPAWN_FAILED` |
@@ -263,17 +265,22 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
 
    Spawn state `reconciling`: `--wait` keeps polling and emits no `SPAWN_FAILED` while ownership remains unresolved. Wait for a terminal outcome; never launch another way or replay as a retry.
 
-   **Missing claim.** After exit `85` with no matching claim in the task refs, do not go to step 7:
-   recheck the refs, inspect the job record and, where reachable, make only the read-only pane
-   observation in `ops` spawn §4-2; do not re-inject the brief. Comment what you find, emit ESC
-   `--type decision` to the owner lane, and wait for its answer in the inbox. Never launch or replay.
+   **Missing claim.** A landed job whose task refs show no matching `claimed_by` and `refs.job_id`
+   may be a brief that never reached the worker: the hub reported it spawned (`SPAWNED`, or a job
+   record that exists) while the task stayed unclaimed. Do not go to step 7: recheck the refs, inspect
+   the job record and, where reachable, make only the read-only pane observation in `ops` spawn §4-2;
+   do not re-inject the brief. Comment what you find, emit ESC `--type decision` to the owner lane, and
+   wait for its answer in the inbox. Never launch or replay.
 
    The re-attach reads the hub's own record, never your own HTTP call: panewire reads the hub
    credential from its own config (`panewire` `docs/hub-spawn-operations.md` §Request states a client
    reads; #372, hk 3676). Where the pane's host is reachable, `ops` spawn §4-2 adds one read-only look
    at the pane.
 7. **Close.** The design session may close once the request is accepted and its work is recorded in
-   hk; the hub owns the request until it lands. It sends no success notice:
+   hk; the hub owns the request until it lands. Closing loses no event: `SPAWNED` and `SPAWN_FAILED`
+   stay durable in the owner lane, the repo's next design session reads that lane's inbox first, and
+   until one opens `operator-desk` reads it there (§The loop step 5; §Authority close hand-off), so a
+   request that ends without landing still has a receiver. It sends no success notice:
    mergewake already notifies the owner lane. The worker opens the PR and reports READY (§READY).
    After READY, mergewake picks the PR up from the PR itself and reviews it, sends findings to the
    author and merges it on §Merge gate. A design session does not wait for or act on READY, and it

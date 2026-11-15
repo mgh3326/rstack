@@ -129,9 +129,11 @@ On one `SPAWN_FAILED` — the hub already retried the request with back-off and 
 1. Read the request id, reason and saved pane screen in the job directory once, and comment the
    request id and reason on the task.
 2. **File a task against the tool and stop** when the cause is in the tool; put the evidence paths on
-   that task.
-3. Comment on the blocked task: `next:` to resume it, `trigger: hk <tool task> merged`.
-   The design session does not: it makes no fix attempt and ESCs to the desk (`wake` §On spawn failure).
+   that task, then comment the blocked task: `next:` to resume it, `trigger: hk <tool task> merged`.
+3. **A cause that is not in the tool gets no tool task and no trigger** (a bad brief, a login screen
+   the desk cannot fix): leave the blocked task a `next:` line naming the fix, and take it to the
+   operator through `ops` decision-request (`desk` §Decisions) with the request id, reason and evidence
+   paths. The design session does not: it makes no fix attempt and ESCs to the desk (`wake` §On spawn failure).
 
 **Never replay the request** — not with another flag, not under a new job id — and never launch it by
 another route. The hub holds the job and task reservation until the request ends, and a caller-side

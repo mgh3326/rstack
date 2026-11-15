@@ -64,6 +64,7 @@ REQUIRED = [
     ("desk", "## Spawn failure", "spawn-failed-only", r"On one `SPAWN_FAILED` — the hub already retried the request with back-off and gave up"),
     ("desk", "## Spawn failure", "comment-request-reason", r"comment the request id and reason on the task"),
     ("desk", "## Spawn failure", "file-and-stop", r"\*\*File a task against the tool and stop\*\*"),
+    ("desk", "## Spawn failure", "non-tool-branch", r"\*\*A cause that is not in the tool gets no tool task and no trigger\*\*"),
     ("desk", "## Spawn failure", "no-hopping", r"No host or model hopping, and no new task per attempt"),
     ("desk", "## Spawn failure", "no-replay", r"\*\*Never replay the request\*\* — not with another flag, not under a new job id"),
     ("desk", "## Decisions", "resolve-same-turn", r"An answer given in chat is resolved in hk in the same turn"),
