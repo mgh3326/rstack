@@ -245,37 +245,44 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    §Invariants). A refusal is read from its exit code (panewire `docs/config.md`); it is never a reason
    to replay the request with changed flags, to file a new job id, or to launch the task another way.
 6. **Landing proof.** `ACCEPTED job=… request=…` confirms only the hub's reservation; it proves nothing
-   about a pane. Landing is one of two facts: the owner lane's `SPAWNED` event, or the hk task claim —
-   the executing node claims the task only after the brief is delivered, so `handoffkeep tasks show
-   <id>` with `claimed_by` and `refs.job_id` equal to `<job>` means it landed; a task still `backlog`
-   with empty `refs` did not. A request that ends without landing sends exactly one `SPAWN_FAILED`.
+   about a pane. The owner lane's `SPAWNED` event alone is landing proof. The hk task claim is a second
+   proof that also covers the brief: the executing node claims the task only after the brief is
+   delivered, so `handoffkeep tasks show <id>` with `claimed_by` and `refs.job_id` equal to `<job>`
+   settles both, while a task still `backlog` with empty `refs` leaves the brief unproven (missing
+   claim below). A request that ends without landing sends exactly one `SPAWN_FAILED`.
 
    To observe a request that has not landed, rerun the identical step 5 command with
    `--wait --wait-timeout <d>`: it re-attaches to the same request — one observation, not a retry and
-   not a second spawn — and exits:
+   not a second spawn. The bound ends the request phase first and then the job wait again, so a short
+   bound can end in either; it exits:
 
    | Exit | Meaning | Do |
    |---|---|---|
    | `0`, `83` | landed, then the job completed or escalated (`83` escalated means `panewire escalate`; an ESC alone no longer ends the job) | Comment the request id; on `0` mergewake takes the PR (step 7); handle the ESC |
    | `85` | the wait expired while the request was still queued, or while the landed job stayed active | If the task refs show matching `claimed_by` and `refs.job_id`, comment the request id and go to step 7. If a job record exists while the refs show no claim, take the missing-claim path below. Otherwise the request was still queued: leave it to the hub and keep waiting, because an ordinary queue wait is not a failure |
    | `91` | the request was still `parked` at the bound; the client printed its park reason and `next_check_at` | Leave it to the hub: nothing to do, and it keeps its place and its reservation |
-   | `84` | `cancelled` or `given_up`: the request ended before it landed and nothing was spawned | §On spawn failure |
+   | `84`, never landed | `cancelled` or `given_up`: the request ended before it landed and nothing was spawned | §On spawn failure |
+   | `84`, landed | the job was lost or revoked after landing | Comment the request id and handle the loss; never respawn the ticket |
    | `75` | `deadline_exceeded`: ownership is unresolved, so the node may still have started it | never launch; wait for `SPAWNED` or `SPAWN_FAILED` |
-   | any other | the hub's rc for `failed`, `refused` or `retryable`, and 81 when the hub recorded none | §On spawn failure; never replay |
+   | any other | the hub's rc for `failed` or `refused`, and 81 when the hub recorded none | §On spawn failure; never replay |
+
+   A `retryable` rc is the hub moving the request to another host: the request and its reservation
+   stay, so keep waiting for `SPAWNED` or `SPAWN_FAILED` and never replay it.
 
    Spawn state `reconciling`: `--wait` keeps polling and emits no `SPAWN_FAILED` while ownership remains unresolved. Wait for a terminal outcome; never launch another way or replay as a retry.
 
-   **Missing claim.** A landed job whose task refs show no matching `claimed_by` and `refs.job_id`
-   may be a brief that never reached the worker: the hub reported it spawned (`SPAWNED`, or a job
-   record that exists) while the task stayed unclaimed. Do not go to step 7: recheck the refs, inspect
-   the job record and, where reachable, make only the read-only pane observation in `ops` spawn §4-2;
-   do not re-inject the brief. Comment what you find, emit ESC `--type decision` to the owner lane, and
-   wait for its answer in the inbox. Never launch or replay.
+   **Missing claim.** `SPAWNED` proves the pane; it does not prove the brief. A landed job whose task
+   refs show no matching `claimed_by` and `refs.job_id` — checked only when the re-attach reports the
+   job active, so an ordinary brief-delivery delay does not trigger it — may be a brief that never
+   reached the worker. Landing is not in doubt; the brief is. Never replay and do not re-inject the
+   brief: recheck the refs, inspect the job record and, where reachable, make only the read-only pane
+   observation in `ops` spawn §4-2; comment what you find, emit ESC `--type decision` to the owner
+   lane, and wait for its answer in the inbox.
 
    The re-attach reads the hub's own record, never your own HTTP call: panewire reads the hub
-   credential from its own config (`panewire` `docs/hub-spawn-operations.md` §Request states a client
-   reads; #372, hk 3676). Where the pane's host is reachable, `ops` spawn §4-2 adds one read-only look
-   at the pane.
+   credential from its own config (`panewire@feb30fc9` `docs/hub-spawn-operations.md` §Request states a
+   client reads, §Parked, §Time limit; #372, hk 3676). Where the pane's host is reachable,
+   `ops` spawn §4-2 adds one read-only look at the pane.
 7. **Close.** The design session may close once the request is accepted and its work is recorded in
    hk; the hub owns the request until it lands. Closing loses no event: `SPAWNED` and `SPAWN_FAILED`
    stay durable in the owner lane, the repo's next design session reads that lane's inbox first, and
@@ -315,7 +322,7 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
 ## On spawn failure
 
 Act on exactly one `SPAWN_FAILED` for the job, and on nothing else: it means the request ended without
-landing after the hub's own retries (`failed`, `refused` or `given_up`). A `retryable` attempt, a
+landing (`failed`, `refused` or `given_up`). A `retryable` attempt, a
 parked request and unresolved ownership are the hub's to work through, not signals to act. A
 submission the hub refuses outright exits non-zero before `ACCEPTED`; it has no request to wait on, so
 comment the refusal on the task and ESC the same way, never a replay.

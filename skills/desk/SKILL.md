@@ -123,8 +123,8 @@ else it owed waited.
 
 ## Spawn failure
 
-On one `SPAWN_FAILED` — the hub already retried the request with back-off and gave up (`ops` spawn
-§4-2):
+On one `SPAWN_FAILED` — the request ended without landing (`failed`, `refused` or `given_up`; `ops`
+spawn §4-2):
 
 1. Read the request id, reason and saved pane screen in the job directory once, and comment the
    request id and reason on the task.
