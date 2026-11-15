@@ -119,8 +119,8 @@ only because it lies outside the delta.
 - **Trigger:** 3 review rounds without convergence (a new critical/high on each); mergewake's ESC after the
   third round is the signal. The number is set again from data once mergewake records real round counts
   (hk 3908).
-- **Worker side at round 3:** at round 3 without a pass, stop patching and ask for a consult one grade above your own seat in another family (`ops` consult), giving it every finding so far and asking for the root cause. Nothing else happens at round 3 (operator decision 148).
-- **Design-session side:**
+- **Worker side at round 3:** at round 3 without a pass, stop patching; ask your design lane for a consult one grade above your seat in another family: ESC --type decision to your owner lane with the packet as an hk doc key (every finding so far, ask for the root cause); do not run panewire consult request and do not call any model API yourself. Nothing else happens at round 3 (operator decision 148).
+- **Design-session side:** On the worker's round-3 ESC, the design session takes the consult one grade above the worker's seat in another family (`ops` consult), with the packet the worker put in hk, and answers the worker; the answer is advice for the root cause and the worker then continues.
 *Temporary (operator 2026-11-12, hk 4268): ends when panewire hk 4262 ships (hk 4262).*
 Until panewire hk 4262 ships, at round 5 without a pass the worker ESCs with every finding; the design session re-spawns the PR's work pinned to the next rung with `--override-reason 'ladder step <from> → <to>, PR <n>'` and records the failed rung (hk 3887). After panewire hk 4262 ships, the hub moves the worker one ladder step up on the same worktree; the design lane gets an inbox record and no interrupt.
 *Temporary (operator 2026-11-12, hk 4268): ends when mergewake hk 4264 ships (hk 4264).*

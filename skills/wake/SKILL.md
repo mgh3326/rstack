@@ -430,7 +430,7 @@ When a lane finishes a blocker, it tells the waiting lane with an `order` that n
 - If the receiver settles something different from the ask with the operator, it tells the sender lane with an `order`.
 - Decisions (scope, trade-offs, anything irreversible) go to the operator directly from the
   design session. Workers escalate to their parent lane and wait; they do not guess.
-- **Review non-convergence (the round rule):** At round 3 without a pass, the worker stops patching and asks a consult one grade above its seat in another family, with every finding and a question about the root cause; nothing else happens at round 3. At round 5 without a pass, the worker moves one ladder step up. At round 7 without a pass, the PR is held and the design session cuts scope or takes one SS consult (`fleet-review` §Escalation ladder; operator decision 148).
+- **Review non-convergence (the round rule):** At round 3 without a pass, the worker stops patching and ESCs its design lane for a consult one grade above its seat in another family, with the packet as an hk doc key (every finding and a question about the root cause). On the worker's round-3 ESC, the design session takes the consult one grade above the worker's seat in another family (`ops` consult), with the packet the worker put in hk, and answers the worker; the answer is advice for the root cause and the worker then continues. Nothing else happens at round 3. At round 5 without a pass, the worker moves one ladder step up. At round 7 without a pass, the PR is held and the design session cuts scope or takes one SS consult (`fleet-review` §Escalation ladder; operator decision 148).
 *Temporary (operator 2026-11-12, hk 4268): ends when panewire hk 4262 ships (hk 4262).*
 Until panewire hk 4262 ships, at round 5 the worker ESCs with every finding and the design session re-spawns the PR's work pinned to the next rung. After panewire hk 4262 ships, the hub moves the worker one step up on the same worktree and the design lane gets an inbox record, no interrupt.
 *Temporary (operator 2026-11-12, hk 4268): ends when mergewake hk 4264 ships (hk 4264).*
@@ -599,14 +599,10 @@ When the Acceptance list is met and checked, stop and report. Do not add feature
   Mergewake-Grade: <G from the hk task title marker (grade G, Tn)>
   Mergewake-Tier: <Tn from the same marker>
   Mergewake-Experiment: <id>/<arm>  (only when the spawn preamble assigns an arm; otherwise omit the line)
-- First review: if `~/.config/mergewake/config.yaml` exists on this host, after opening the PR
-  run once
-  `GITHUB_TOKEN=$(gh auth token) mergewake review --repo <owner>/<repo> --pr <n> --author-family <family> --apply`.
-  Handle every finding by `fleet-review` §Triage rubric, then push. Do not start a later round
-  yourself; mergewake runs it on your fix delta (`fleet-review` §Rounds). If the config is
-  missing, skip the review and say so in the report; a skipped review never satisfies the merge
-  gate — mergewake runs it before merging.
-- **Review non-convergence at round 3 (worker side):** At round 3 without a pass, stop patching and ask a consult one grade above your seat in another family (`ops` consult), giving it every finding so far and asking for the root cause; nothing else happens at round 3. At round 5 without a pass, the worker moves one ladder step up. At round 7 without a pass, the PR is held and the design session cuts scope or takes one SS consult. The same worker does not keep patching at the same seat after round 5.
+- Review: do not run mergewake review yourself; the daemon reviews the PR before merge and sends findings to your lane.
+- Findings: handle every finding by `fleet-review` §Triage rubric, then push. Do not start a later round
+  yourself; mergewake runs it on your fix delta (`fleet-review` §Rounds).
+- **Review non-convergence at round 3 (worker side):** At round 3 without a pass, stop patching; ask your design lane for a consult one grade above your seat in another family: ESC --type decision to your owner lane with the packet as an hk doc key (every finding so far, ask for the root cause); do not run panewire consult request and do not call any model API yourself. Nothing else happens at round 3. At round 5 without a pass, the worker moves one ladder step up. At round 7 without a pass, the PR is held and the design session cuts scope or takes one SS consult. The same worker does not keep patching at the same seat after round 5.
 *Temporary (operator 2026-11-12, hk 4268): ends when panewire hk 4262 ships (hk 4262).*
 Until panewire hk 4262 ships, at round 5 the worker ESCs with every finding so the design session can re-spawn the PR's work pinned to the next rung. After panewire hk 4262 ships, the hub moves the worker one step up on the same worktree and the design lane gets an inbox record, no interrupt.
 *Temporary (operator 2026-11-12, hk 4268): ends when mergewake hk 4264 ships (hk 4264).*
@@ -617,7 +613,7 @@ Until mergewake hk 4264 ships, at round 7 the worker ESCs so the design session 
 - A refactor that moves or replaces existing checks: put the preservation table (`wake`
   §READY, Preservation evidence) in the report and PR body before the first READY, and rerun it
   after every fix.
-- Do not wait for CI. Done = pushed + review handled (or skipped, said so) + report + one READY.
+- Do not wait for CI. Done = pushed + report + one READY; review findings arrive from the daemon afterwards.
 - Never read, print or copy env, token or credential files, never print env vars. Reading skill files under
   an installed skill root (rstack `install/sets.json` `scan_dirs`, e.g. `~/.codex/skills`, `~/.claude/skills`,
   `~/.agents/skills`) is allowed. Never read auth, config, session or history files in an agent home directory,

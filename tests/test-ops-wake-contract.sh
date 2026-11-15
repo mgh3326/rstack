@@ -111,7 +111,8 @@ REQUIRED = [
     ("wake", "### Preservation evidence (refactors)", "preservation-template", r"\| Existing invariant \| Production entry point \| Executed evidence \|"),
     ("wake", "## BLOCKED", "no-fix-worker-while-alive", r"Do not spawn a fix worker while that attempt is alive"),
     ("wake", "## Rules", "brief-preservation-ref", r"preservation table \(`wake`\s+§READY, Preservation evidence\)"),
-    ("wake", "## Rules", "worker-round-3-consult-only", r"At round 3 without a pass, stop patching and ask a consult one grade above your seat in another family \(`ops` consult\), giving it every finding so far and asking for the root cause; nothing else happens at round 3"),
+    ("wake", "## Rules", "worker-round-3-consult-esc", r"At round 3 without a pass, stop patching; ask your design lane for a consult one grade above your seat in another family: ESC --type decision to your owner lane with the packet as an hk doc key \(every finding so far, ask for the root cause\); do not run panewire consult request and do not call any model API yourself"),
+    ("wake", "## Rules", "worker-review-not-run", r"Review: do not run mergewake review yourself; the daemon reviews the PR before merge and sends findings to your lane\."),
     ("wake", "## Rules", "worker-round-5-interim-esc", r"Until panewire hk 4262 ships, at round 5 the worker ESCs with every finding so the design session can re-spawn the PR's work pinned to the next rung"),
     ("wake", "## Rules", "worker-round-7-interim-esc", r"Until mergewake hk 4264 ships, at round 7 the worker ESCs so the design session can keep the PR held while it cuts scope or takes one SS consult"),
     ("wake", "## Rules", "worker-panewire-interim-marker", r"\*Temporary \(operator 2026-11-12, hk 4268\): ends when panewire hk 4262 ships \(hk 4262\)\.\*"),
@@ -179,7 +180,7 @@ REQUIRED = [
     ("wake", "## Escalation and notifications", "desk-gets-close-notice-only", r"the desk lane gets one one-line notice: the close hand-off \(§Authority\)"),
     ("wake", "## Escalation and notifications", "notification-no-action-info", r"A reply, acknowledgement or status that asks for nothing is sent as `--type info`; a request for action is never `info`"),
     ("wake", "## Escalation and notifications", "cross-repo-block-relation", r"Record a dependency on another repository's task when filing it with `handoffkeep tasks relate <blocker> --kind blocks --other <blocked>`, not only in a comment"),
-    ("wake", "## Escalation and notifications", "round-3-consult-only", r"At round 3 without a pass, the worker stops patching and asks a consult one grade above its seat in another family, with every finding and a question about the root cause; nothing else happens at round 3"),
+    ("wake", "## Escalation and notifications", "round-3-design-takes-consult", r"At round 3 without a pass, the worker stops patching and ESCs its design lane for a consult one grade above its seat in another family, with the packet as an hk doc key \(every finding and a question about the root cause\)\. On the worker's round-3 ESC, the design session takes the consult one grade above the worker's seat in another family \(`ops` consult\), with the packet the worker put in hk, and answers the worker; the answer is advice for the root cause and the worker then continues\. Nothing else happens at round 3"),
     ("wake", "## Escalation and notifications", "round-5-step-and-round-7-hold", r"At round 5 without a pass, the worker moves one ladder step up\. At round 7 without a pass, the PR is held and the design session cuts scope or takes one SS consult"),
     ("wake", "## Escalation and notifications", "round-panewire-interim-marker", r"\*Temporary \(operator 2026-11-12, hk 4268\): ends when panewire hk 4262 ships \(hk 4262\)\.\*"),
     ("wake", "## Escalation and notifications", "round-mergewake-interim-marker", r"\*Temporary \(operator 2026-11-12, hk 4268\): ends when mergewake hk 4264 ships \(hk 4264\)\.\*"),
@@ -361,6 +362,11 @@ REQUIRED = [
 
 # Rows that must be absent: consult resolution does not take an author family.
 FORBIDDEN = [
+    # Operator decision 314 (hk 4843): workers do not run mergewake review; the daemon reviews before merge.
+    # Operator decision 313 (hk 4843): the round-3 worker ESCs its design lane; no worker-side `ops` consult sentence.
+    ("wake", None, "worker-runs-mergewake-review", r"(?i)(?<!not )run (?:once )?`[^`]*mergewake review"),
+    ("wake", None, "skip-review-when-config-missing", r"(?i)config is missing, skip the review"),
+    ("wake", None, "worker-round-3-old-ops-consult", r"(?i)stop patching and ask(?: for)? a consult one grade above (?:your own|your|its) seat in another family \(`ops` consult\)"),
     # hk 4397 W21 (operator decision 196): hk 3917 item 1 fixed by hk 3925 (panewire v0.0.233); the omp-pin ban is removed.
     ("wake", "## The loop", "omp-pin-ban-esc-brief", r"(?i)do\s+not\s+pin\s+an\s+omp\s+rung"),
     ("wake", "## The loop", "grade-a-integrity-strong-profile", r"Grade A work on state machines, ledgers, idempotency or data integrity runs on a strong profile, not a waste-tier pick: until panewire can express this on the task, pass an explicit `-m <profile>` with `--override-reason`"),
@@ -579,6 +585,9 @@ injections = [
     ("wake-old-round-3-ladder-step-escalation", "wake", "## Escalation and notifications\n", "## Escalation and notifications\n\nOn the round-3 ESC, re-spawns the PR's work pinned to the next rung.\n"),
     ("wake-old-round-5-scope-escalation", "wake", "## Escalation and notifications\n", "## Escalation and notifications\n\nAt round 5 without a pass, the design session cuts the scope or takes one SS consult.\n"),
     ("wake-old-round-3-same-seat-rules", "wake", "## Rules\n", "## Rules\n\nThe same worker keeps patching at the same seat after round 3.\n"),
+    ("wake-worker-runs-mergewake-review-rules", "wake", "## Rules\n", "## Rules\n\nRun `mergewake review --apply` on your PR.\n"),
+    ("wake-skip-review-when-config-missing-rules", "wake", "## Rules\n", "## Rules\n\nIf the config is missing, skip the review and say so in the report.\n"),
+    ("wake-old-worker-round-3-ops-consult-rules", "wake", "## Rules\n", "## Rules\n\nAt round 3 without a pass, stop patching and ask a consult one grade above your seat in another family (`ops` consult), giving it every finding so far.\n"),
     ("wake-old-round-3-same-seat-escalation", "wake", "## Escalation and notifications\n", "## Escalation and notifications\n\nThe same worker keeps patching at the same seat after round 3.\n"),
     ("wake-old-hk-4256-rules", "wake", "## Rules\n", "## Rules\n\nUntil mergewake hk 4256 ships.\n"),
     ("wake-old-hk-4256-escalation", "wake", "## Escalation and notifications\n", "## Escalation and notifications\n\nUntil mergewake hk 4256 ships.\n"),
