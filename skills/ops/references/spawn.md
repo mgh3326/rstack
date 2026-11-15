@@ -115,9 +115,10 @@ mergewake reap 이 한다.
 
 요청이 아직 착지하지 않았으면 같은 명령을 `--wait --wait-timeout <d>` 로 다시 실행해 관찰한다 — 같은
 요청에 다시 붙는 읽기이며 재시도도 두 번째 스폰도 아니다. 종료 코드: 85 는 아직 큐에 있음, 91 은 아직
-`parked`, 84 는 `cancelled`/`given_up`(아무것도 뜨지 않음), 75 는 소유권 미확정(`deadline_exceeded`), 그
-밖은 hub 의 rc(기록이 없으면 81)다. 실패 통지는 `SPAWN_FAILED` 하나뿐이고, hub 가 이미 재시도하고
-포기했다는 뜻이므로 같은 요청을 다른 flag 로 다시 내거나 새 잡 id 를 만들지 않는다(`wake` §On spawn failure).
+`parked`, 84 는 `cancelled`/`given_up`(아무것도 뜨지 않음)이거나 착지한 뒤 잡을 잃거나 회수된 경우, 75 는
+소유권 미확정(`deadline_exceeded`), 그 밖은 hub 의 rc(기록이 없으면 81)다. 실패 통지는 `SPAWN_FAILED`
+하나이고, 요청이 착지 없이 끝났거나(`failed`·`refused`·`given_up`) 시도가 `retryable` 로 끝났다는
+뜻이므로 같은 요청을 다른 flag 로 다시 내거나 새 잡 id 를 만들지 않는다(`wake` §On spawn failure).
 
 스폰 명령이 정상 반환됐다고 해서 워커가 브리프를 실제로 받은 것은 아니다. panewire 는 idle pane 에
 `herdr agent prompt` 로 브리프를 넣고(cmd 는 `pane send-text` 후 `send-keys return`), pasted-text

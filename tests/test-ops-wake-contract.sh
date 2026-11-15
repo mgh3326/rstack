@@ -163,7 +163,7 @@ REQUIRED = [
     ("spawn", "## 4. 기동·주입·감시", "spawn-submit-no-wait", r"`--dry-run`을 빼고 `--wait` 없이 한 번 제출한다"),
     ("spawn", "## 4. 기동·주입·감시", "spawn-hub-owns-until-landed", r"그때부터 요청은 착지까지 hub 소유다 — 배치, 백오프 재시도, 시도 간 호스트·풀 제외, `parked`"),
     ("spawn", "## 4. 기동·주입·감시", "spawn-reattach-observe", r"같은 명령을 `--wait --wait-timeout <d>` 로 다시 실행해 관찰한다 — 같은 요청에 다시 붙는 읽기이며 재시도도 두 번째 스폰도 아니다"),
-    ("spawn", "## 4. 기동·주입·감시", "spawn-exit-table", r"85 는 아직 큐에 있음, 91 은 아직 `parked`, 84 는 `cancelled`/`given_up`\(아무것도 뜨지 않음\), 75 는 소유권 미확정\(`deadline_exceeded`\), 그 밖은 hub 의 rc\(기록이 없으면 81\)"),
+    ("spawn", "## 4. 기동·주입·감시", "spawn-exit-table", r"85 는 아직 큐에 있음, 91 은 아직 `parked`, 84 는 `cancelled`/`given_up`\(아무것도 뜨지 않음\)이거나 착지한 뒤 잡을 잃거나 회수된 경우, 75 는 소유권 미확정\(`deadline_exceeded`\), 그 밖은 hub 의 rc\(기록이 없으면 81\)"),
     ("ops", "## Routing table", "ops-routing-submit-no-wait", r"`panewire spawn` submits without `--wait`; `ACCEPTED` means the hub owns the request"),
     ("wake", "## The loop", "no-unlanded-blocker", r"Spawn only tickets with no unlanded blocker"),
     ("wake", "## The loop", "after-start-condition", r"`--after blockers` starts it when every task that blocks it in hk reaches `merged`"),
