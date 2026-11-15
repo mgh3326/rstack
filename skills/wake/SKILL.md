@@ -251,42 +251,29 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    settles both, while a task still `backlog` with empty `refs` leaves the brief unproven (missing
    claim below). A request that ends without landing sends exactly one `SPAWN_FAILED`.
 
-   To observe a request that has not landed, first read the owner lane's inbox for its `SPAWN_FAILED`:
-   with one, take §On spawn failure and rerun nothing. Otherwise rerun the identical step 5 command
-   with `--wait --wait-timeout <d>`: it resubmits the saved request, the hub answers the same request
-   id, and while that request is live it starts nothing — one observation, not a second spawn. The
-   bound ends the request phase first and then the job wait again, so a short bound can end in either;
-   it exits:
+   To look at a request that has neither `SPAWNED` nor a claim yet, read only: the owner lane's inbox,
+   `handoffkeep tasks show <id>`, and `panewire jobs mine --lane <owner-lane> --json`. These read hk and
+   the hub's job list through panewire's own credential, never your own HTTP call. Never rerun the step
+   5 command to observe a request: it submits again, and on an attempt that ended `retryable` the
+   resubmit resumes the attempt.
 
-   | Exit | Meaning | Do |
-   |---|---|---|
-   | `0`, `83` | landed, then the job completed or escalated (`83` escalated means `panewire escalate`; an ESC alone no longer ends the job) | Comment the request id; on `0` mergewake takes the PR (step 7); handle the ESC |
-   | `85` | the wait expired while the request was still queued, or while the landed job stayed active | If the task refs show matching `claimed_by` and `refs.job_id`, comment the request id and go to step 7. If a job record exists while the refs show no claim, take the missing-claim path below. Otherwise the request was still queued: leave it to the hub and keep waiting, because an ordinary queue wait is not a failure |
-   | `91` | the request was still `parked` at the bound; the client printed its park reason and `next_check_at` | Leave it to the hub: nothing to do, and it keeps its place and its reservation |
-   | `84`, never landed | `cancelled` or `given_up`: the request ended before it landed and nothing was spawned | §On spawn failure |
-   | `84`, landed | the job was lost or revoked after landing | Comment the request id and handle the loss; never respawn the ticket |
-   | `75` | `deadline_exceeded`: ownership is unresolved, so the node may still have started it | never launch; wait for `SPAWNED` or `SPAWN_FAILED` |
-   | any other | the hub's rc for `failed` or `refused`, and 81 when the hub recorded none | §On spawn failure; never replay |
+   A `retryable` outcome is an ended attempt, not a hand-over still in flight: the hub releases the
+   job's reservation and sends the one `SPAWN_FAILED` with `replay=yes` (`panewire@feb30fc9`
+   `docs/hub-spawn-operations.md` §Request states a client reads, §Parked, §Time limit; #372, hk 3676),
+   so take §On spawn failure. A hand-over the hub makes on its own stays inside its own queue and
+   sends no notice; an ended attempt resumes only from a replay of the saved request, and this session
+   never replays.
 
-   A `retryable` rc is an ended attempt, not a hand-over still in flight: the hub releases the job's
-   reservation and sends the one `SPAWN_FAILED` with `replay=yes`, so take §On spawn failure. A
-   hand-over the hub makes on its own stays inside the wait and produces no rc; an ended attempt
-   resumes only from a replay of the saved request, and this session never replays.
+   While the hub reports `reconciling` it keeps ownership and sends no `SPAWN_FAILED`: wait for a
+   terminal event; never launch another way or replay as a retry.
 
-   Spawn state `reconciling`: `--wait` keeps polling and emits no `SPAWN_FAILED` while ownership remains unresolved. Wait for a terminal outcome; never launch another way or replay as a retry.
-
-   **Missing claim.** `SPAWNED` proves the pane; it does not prove the brief. A landed job whose task
-   refs show no matching `claimed_by` and `refs.job_id` — checked only when the re-attach reports the
-   job active, so an ordinary brief-delivery delay does not trigger it — may be a brief that never
-   reached the worker. Landing is not in doubt; the brief is. Do not go to step 7. Never launch the
-   ticket another way, replay the request or re-inject the brief: recheck the refs, inspect the job
-   record and, where reachable, make only the read-only pane observation in `ops` spawn §4-2; comment
-   what you find, emit ESC `--type decision` to the owner lane, and wait for its answer in the inbox.
-
-   The re-attach reads the hub's own record, never your own HTTP call: panewire reads the hub
-   credential from its own config (`panewire@feb30fc9` `docs/hub-spawn-operations.md` §Request states a
-   client reads, §Parked, §Time limit; #372, hk 3676). Where the pane's host is reachable,
-   `ops` spawn §4-2 adds one read-only look at the pane.
+   **Missing claim.** `SPAWNED` proves the pane; it does not prove the brief. A landed job (`SPAWNED`,
+   or `panewire jobs mine` showing the job active) whose task refs show no matching `claimed_by` and
+   `refs.job_id` may be a brief that never reached the worker. Landing is not in doubt; the brief is.
+   Do not go to step 7. Never launch the ticket another way, replay the request or re-inject the
+   brief: recheck the refs, inspect the job record and, where reachable, make only the read-only pane
+   observation in `ops` spawn §4-2; comment what you find, emit ESC `--type decision` to the owner
+   lane, and wait for its answer in the inbox.
 7. **Close.** The design session may close once the request is accepted and its work is recorded in
    hk; the hub owns the request until it lands. Closing loses no event: `SPAWNED` and `SPAWN_FAILED`
    stay durable in the owner lane, the repo's next design session reads that lane's inbox first, and
@@ -332,8 +319,7 @@ submission the hub refuses outright exits non-zero before `ACCEPTED`; it has no 
 comment the refusal on the task and ESC the same way, never a replay.
 
 - **The design session makes no fix attempt and ESCs.** The desk files the task against the tool (`desk` §Spawn failure).
-- **Do not retry on the same task.** Rerunning the identical command with `--wait` resubmits the saved
-  request (step 6), so after this event it would resume a `retryable` attempt rather than observe:
+- **Do not retry on the same task.** Step 6's read-only checks are the only way to look at a request:
   never replay the request with changed flags and never file a new job id. The hub holds the job and
   task reservation until the request ends — except a `retryable` attempt, which releases it while the
   request stays the hub's (§The loop step 6) — so a caller-side attempt only starts what the queue did
