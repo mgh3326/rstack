@@ -120,7 +120,7 @@ jobs mine --lane <owner 레인> --json`. 셋 다 panewire 자체 자격으로 hk
 (`failed`·`refused`·`given_up`) 시도가 `retryable` 로 끝났다는 뜻이므로 같은 요청을 다른 flag 로 다시 내거나
 새 잡 id 를 만들지 않는다(`wake` §On spawn failure).
 
-`panewire spawn status <request_id>` 도 읽기 전용이다 — 제출하지 않는 GET 한 번이고, request·state·reason·`next_check_at`·`expires_at`·rc·stage·job 을 출력하며(`--json`) exit 로 상태를 읽는다: 0 landed, hub rc failed·retryable·refused, 84 cancelled·given_up, 75 deadline_exceeded, 91 parked, 85 in flight.
+`panewire spawn status <request_id>` 도 읽기 전용이다 — 제출하지 않는 GET 한 번이고, request·state·reason·`next_check_at`·`expires_at`·rc·stage·job 을 출력하며(`--json`) exit 로 상태를 읽는다: 0 succeeded·landed, failed·retryable·refused 는 hub 의 rc(기록이 없으면 81), 84 cancelled·given_up, 75 deadline_exceeded, 91 parked, 85 그 밖의 in-flight 또는 unknown 상태.
 
 스폰 명령이 정상 반환됐다고 해서 워커가 브리프를 실제로 받은 것은 아니다. panewire 는 idle pane 에
 `herdr agent prompt` 로 브리프를 넣고(cmd 는 `pane send-text` 후 `send-keys return`), pasted-text
