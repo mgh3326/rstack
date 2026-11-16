@@ -90,7 +90,7 @@ open; the lead never deploys or performs the live mutation.
 | Ask a session a question and collect the answer | [`session-questions.md`](references/session-questions.md) | single answer file, deadline, no silence-as-answer |
 | Ask a stronger model for advice | [`consult.md`](references/consult.md) | profile from `panewire resolve --role consult`, self-contained packet, pane by default |
 | Escalate a decision from a pane | §Escalate a decision (below) | ESC event `--type decision`, never an in-pane question |
-| Ask the operator to choose | [`decision-request.md`](references/decision-request.md) | `handoffkeep tasks decision-request` first, then notify with the request_id |
+| Ask the operator to choose (only what hk:doc `policy/operator-not-a-gate` keeps for them) | [`decision-request.md`](references/decision-request.md) | record first with `handoffkeep tasks decision-request`, then notify with the request_id; a reversible choice takes the recommended option and is recorded, never asked |
 | Wait for a worker, job or CI; handle an `[inbox]` wake line | [`watching.md`](references/watching.md) | push events (the event table is panewire's own docs), one bounded wait, at most 3 temporary waits; design and desk lanes are inbox-only |
 | Reap finished panes | [`reap.md`](references/reap.md) | mergewake reaps merged PRs' workers; the spawner reaps the rest with `panewire reap --lane`, preview then `--apply` |
 | Deploy a repository's change | none in this repo (decision 223) | a repo deploys through its own GitHub Actions after `deploy-ok`, ordered and recorded by its design session (else operator-desk); fleet-host installs are panewire's |

@@ -59,6 +59,8 @@
 panewire emit --kind lane.event --lane <요청자 레인> --type ready --event-id <고유id> --text '[consult-done] <1줄 요지> | hk:doc/<확인한 키>'
 ```
 
+⑦계획 단계에 운영자 확인 대기를 넣지 않는다 — 되돌릴 수 있는 선택은 권고안으로 정하고 고른 것, 이유, 되돌리는 방법을 기록한다(hk:doc `policy/operator-not-a-gate`).
+
 ## 3. 실행 — 자문 pane 스폰 (기본)
 
 ```bash

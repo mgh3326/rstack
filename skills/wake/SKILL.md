@@ -54,9 +54,13 @@ operator-desk; `ops` routing table), or decisions (ask the operator).
   온 주문, ESC, READY, finding은 desk가 접수해 처리하며, 큰 일은 `desk` §Intake에 따라 다시 디자인
   세션에 넘긴다. 진행 중인 PR의 READY와 finding은 `wake` §READY 및 §BLOCKED에 따라 해당 작성자와
   gate에 전달한다. 프로젝트에 디자인 세션이 열려 있는 동안에는 dispatch path에 들어가지 않는다.
-- **Operator only:** real orders and fund moves, new external accounts or public posts,
-  policy relaxations, lane-contract conflicts, irreversible external actions. An approval
-  covers one action in one session; it does not generalise to the next.
+- **Operator only:** the list is hk:doc `policy/operator-not-a-gate` §What stays the operator's
+  alone — real orders and moving funds, a secret value handled by hand, public posts and new
+  external accounts, an external action that cannot be undone, a production order-path cutover,
+  relaxing a policy or a conflict between lanes' contracts. An approval covers one action in one
+  session; it does not generalise to the next. Nothing else waits for the operator: a reversible
+  choice takes the recommended option, is recorded in hk with why and how to undo it, and work goes
+  on.
 - **No session reads credentials.** No session (design, seat or worker) reads, sources, copies or prints
   a token, env or credential file, even to follow a step here. `panewire`, `gh` and `handoffkeep` read
   their own config. If a step seems to need a credential you do not hold through a tool, that step is
@@ -143,8 +147,11 @@ The session is thrown away after it spawns, so whatever it did not write down is
 
 1. **Resolve facts yourself**, from code, docs and hk (`handoffkeep doc get`, `tasks show`). Finding a
    fact is never the operator's job.
-2. **Ask the operator only for decisions.** Number each question, give a recommended answer, and word it
-   so "yes" accepts that answer. A question that depends on an open one waits for the next round.
+2. **Ask the operator only what hk:doc `policy/operator-not-a-gate` keeps for them.** No plan step waits
+   for their look or confirmation: a reversible choice takes the recommended option and is recorded in hk
+   with why and how to undo it. Number each remaining question, give a recommended answer, and word it so
+   "yes" accepts that answer; ask once, then continue with what does not depend on the answer. A question
+   that depends on an open one waits for the next round.
 3. **Stop when no branch is open** and nothing is silently assumed. "Someone can figure it out later" is
    not a resolution.
 
@@ -252,7 +259,11 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    claim below). A request that ends without landing sends exactly one `SPAWN_FAILED`.
 
    To look at a request that has neither `SPAWNED` nor a claim yet, read only: the owner lane's inbox,
-   `handoffkeep tasks show <id>`, and `panewire jobs mine --lane <owner-lane> --json`. These read hk and
+   `handoffkeep tasks show <id>`, and `panewire jobs mine --lane <owner-lane> --json`. One more read-only
+   look is `panewire spawn status <request_id>`: one GET that never submits, printing request, state,
+   reason, `next_check_at`, `expires_at`, rc, stage and job (`--json` for machine output), with the exit
+   code reading the state — 0 landed, 84 cancelled or given_up, 75 deadline_exceeded, 91 parked, 85 in
+   flight, else the hub rc for failed, retryable or refused. These read hk and
    the hub's job list through panewire's own credential, never your own HTTP call. Never rerun the step
    5 command to observe a request: it submits again, and on an attempt that ended `retryable` the
    resubmit resumes the attempt.
@@ -519,6 +530,9 @@ After a bundle PR merges, the design session moves each delivered child that has
   clean-tree exit condition makes the worker delete it.
 - **A pushed branch catches up by merge, not rebase** (`git merge origin/<base>`); rebase only
   before the first push.
+- **No operator step in a plan.** No brief step makes the operator's look, play, test or confirmation a
+  step; a reversible choice takes the recommended option and the worker records it in hk with why and how
+  to undo it (hk:doc `policy/operator-not-a-gate`).
 - **Placing a guard is part of the instruction:** say what it checks, where it goes (name the
   anchors before and after), and what it must not precede — the earliest spot is usually
   ahead of the idempotent/replay path. Quote the existing comment that documents the
