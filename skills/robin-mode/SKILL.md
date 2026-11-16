@@ -20,6 +20,7 @@ Each rule is stated once, in the home below; other documents point to it. Inside
 | Desk coordination: commitments, resume order, task intake, delegation threshold, task record | `desk` (rstack) |
 | Design session: settling decisions, slicing tickets, spawning workers, landing proof | `wake` (rstack) |
 | Cross-repo policy settling, experiments, catalog records | `fleet-policy` (rstack) |
+| Whether to ask the operator, and what stays theirs alone | hk:doc `policy/operator-not-a-gate` |
 | Which profile, family and effort a role may use; where grade applies | hk `policy/model-routing`, applied by `panewire resolve` and `panewire spawn` |
 | Pool spending order, quota waits and hand-over | hk `policy/quota-stop` |
 | Backlog pass: who runs it, when, its steps and the intake rules | hk `policy/backlog-pass` |
@@ -38,6 +39,7 @@ A rule with no marker is permanent. When the condition is met, delete the rule a
 2. **Name the data shape** before writing logic: the types, the state, who reads and writes it. Use `principle-foundational-thinking` and `principle-model-the-domain`.
 3. **Write the acceptance contract** (closed list, 1:1 with the steps). Findings are judged against it by `fleet-review` §Closed contract.
 4. **Pick one playbook** (below) and say which.
+5. **Ask only what the policy keeps for the operator.** A reversible choice takes the recommended option and is recorded in hk (choice, why, how to undo it); no plan step makes the operator's look or confirmation a step (hk:doc `policy/operator-not-a-gate`).
 
 ## Playbooks
 

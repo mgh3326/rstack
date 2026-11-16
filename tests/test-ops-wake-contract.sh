@@ -143,7 +143,8 @@ REQUIRED = [
     ("wake", "## Done", "done-emits-ready", r"Then emit exactly once: panewire emit --kind lane\.event --lane <parent-lane> --type ready --event-id <job>-ready"),
     # Design session (hk 2783).
     ("wake", "## Settle before spawning", "settle-facts", r"\*\*Resolve facts yourself\*\*, from code, docs and hk"),
-    ("wake", "## Settle before spawning", "settle-decisions", r"\*\*Ask the operator only for decisions\.\*\* Number each question, give a recommended answer"),
+    ("wake", "## Settle before spawning", "settle-decisions", r"\*\*Ask the operator only what hk:doc `policy/operator-not-a-gate` keeps for them\.\*\*"),
+    ("wake", "## Settle before spawning", "settle-no-plan-step-waits", r"No plan step waits for their look or confirmation: a reversible choice takes the recommended option and is recorded in hk with why and how to undo it"),
     ("wake", "## Settle before spawning", "settle-one-ticket-one-pr", r"\*\*One ticket is one PR and one hk task\*\*, small enough for one fresh session\. Exception: a one-PR bundle is one brief, one worker and one PR that delivers several child tasks; title its parent hk task `\[bundle <scope> Bnn\]`, put one child \(or the parent\) in `Mergewake-Task`, and list every delivered child in the PR body"),
     ("wake", "## Settle before spawning", "series-bundle-parallel", r"\*\*Series bundles\*\* spawn at the same time their first steps that touch different files; tasks that edit the same files go into one PR"),
     ("wake", "## Settle before spawning", "dispatch-up-to-quota", r"\*\*Dispatch by bundle up to the quota gate\.\*\* Per-host `capacity` is display only\. The enforced limits are the account quota gate, one live spawn per task and role, four spawns in progress at the hub, and one at a time per node"),
@@ -165,7 +166,10 @@ REQUIRED = [
     ("spawn", "## 4. 기동·주입·감시", "spawn-hub-owns-until-landed", r"그때부터 요청은 착지까지 hub 소유다 — 배치, 백오프 재시도, 시도 간 호스트·풀 제외, `parked`"),
     ("spawn", "## 4. 기동·주입·감시", "spawn-observe-read-only", r"요청이 아직 착지하지 않았으면 읽기만 한다 — owner 레인 inbox, `handoffkeep tasks show <id>`, `panewire jobs mine --lane <owner 레인> --json`"),
     ("spawn", "## 4. 기동·주입·감시", "spawn-observe-never-rerun", r"관찰하려고 5단계 제출 명령을 다시 실행하지 않는다"),
+    ("spawn", "## 4. 기동·주입·감시", "spawn-observe-status-read-only", r"`panewire spawn status <request_id>` 도 읽기 전용이다 — 제출하지 않는 GET 한 번이고"),
+    ("spawn", "## 4. 기동·주입·감시", "spawn-observe-status-exits", r"0 landed, hub rc failed·retryable·refused, 84 cancelled·given_up, 75 deadline_exceeded, 91 parked, 85 in flight"),
     ("ops", "## Routing table", "ops-routing-submit-no-wait", r"`panewire spawn` submits without `--wait`; `ACCEPTED` means the hub owns the request"),
+    ("ops", "## Routing table", "ops-ask-operator-policy", r"Ask the operator to choose \(only what hk:doc `policy/operator-not-a-gate` keeps for them\)"),
     ("wake", "## The loop", "no-unlanded-blocker", r"Spawn only tickets with no unlanded blocker"),
     ("wake", "## The loop", "after-start-condition", r"`--after blockers` starts it when every task that blocks it in hk reaches `merged`"),
     ("wake", "## The loop", "after-brief-post-merge", r"A start condition holds the spawn, not the brief: the request starts from the brief as submitted, so `--after` is for a ticket whose blocker's merge cannot change what its brief assumes"),
@@ -176,6 +180,8 @@ REQUIRED = [
     ("wake", "## The loop", "landing-spawned-or-claim", r"The owner lane's `SPAWNED` event alone is landing proof\. The hk task claim is a second proof that also covers the brief"),
     ("wake", "## The loop", "landing-hk-claim", r"`handoffkeep tasks show <id>` with `claimed_by` and `refs\.job_id` equal to `<job>`"),
     ("wake", "## The loop", "landing-observe-read-only", r"read only: the owner lane's inbox, `handoffkeep tasks show <id>`, and `panewire jobs mine --lane <owner-lane> --json`"),
+    ("wake", "## The loop", "landing-spawn-status", r"One more read-only look is `panewire spawn status <request_id>`: one GET that never submits"),
+    ("wake", "## The loop", "landing-spawn-status-exits", r"0 landed, 84 cancelled or given_up, 75 deadline_exceeded, 91 parked, 85 in flight, else the hub rc for failed, retryable or refused"),
     ("wake", "## The loop", "landing-observe-never-rerun", r"Never rerun the step 5 command to observe a request: it submits again, and on an attempt that ended `retryable` the resubmit resumes the attempt"),
     ("wake", "## The loop", "landing-retryable-waits", r"A `retryable` outcome is an ended attempt, not a hand-over still in flight: the hub releases the job's reservation and sends the one `SPAWN_FAILED` with `replay=yes` \(`panewire@feb30fc9` `docs/hub-spawn-operations\.md` §Request states a client reads, §Parked, §Time limit; #372, hk 3676\), so take §On spawn failure\. A hand-over the hub makes on its own stays inside its own queue and sends no notice; an ended attempt resumes only from a replay of the saved request, and this session never replays\."),
     ("wake", "## The loop", "landing-panewire-cite", r"`panewire@feb30fc9` `docs/hub-spawn-operations\.md` §Request states a client reads, §Parked, §Time limit"),
@@ -187,6 +193,8 @@ REQUIRED = [
     ("wake", "## The loop", "worktree-push-rc81", r"Push immediately after creating the worktree: `panewire spawn` refuses an unpushed branch with rc 81 before making any hub request"),
     ("wake", "## The loop", "landing-reconciling-wait", r"While the hub reports `reconciling` it keeps ownership and sends no `SPAWN_FAILED`: wait for a terminal event; never launch another way or replay as a retry\."),
     ("wake", "## Authority", "no-credential-reads", r"\*\*No session reads credentials\.\*\* No session \(design, seat or worker\) reads, sources, copies or prints"),
+    ("wake", "## Authority", "operator-only-policy-list", r"\*\*Operator only:\*\* the list is hk:doc `policy/operator-not-a-gate` §What stays the operator's alone — real orders and moving funds"),
+    ("wake", "## Authority", "operator-only-reversible-goes-on", r"Nothing else waits for the operator: a reversible choice takes the recommended option, is recorded in hk with why and how to undo it, and work goes on"),
     ("wake", "## The loop", "close-after-accepted", r"The design session may close once the request is accepted and its work is recorded in hk"),
     ("wake", "## The loop", "close-receiver", r"Closing loses no event: `SPAWNED` and `SPAWN_FAILED` stay durable in the owner lane, the repo's next design session reads that lane's inbox first"),
     ("wake", "## The loop", "no-success-notify", r"It sends no success notice"),
@@ -213,6 +221,8 @@ REQUIRED = [
     ("wake", "## Escalation and notifications", "worker-parent-owner-lane", r"A worker's READY/ESC reach its parent lane — the owner lane: the design session's lane for its worker, else `operator-desk`\."),
     ("wake", "## Brief rules", "parent-lane-owner", r"`<parent-lane>` in a worker brief is the owner lane: the design session's lane, else `operator-desk`"),
     ("robin", "## Work boundary", "bundle-close-points-to-wake", r"After merge, the design session moves every delivered child to `merged` using the bundle-close path in `wake` §Escalation and notifications \(hk 3294\), including the PR URL and head SHA on the merged transition"),
+    ("robin", "## Where each rule lives", "robin-operator-policy-home", r"\| Whether to ask the operator, and what stays theirs alone \| hk:doc `policy/operator-not-a-gate` \|"),
+    ("robin", "## Openers (every task)", "robin-opener-operator-policy", r"\*\*Ask only what the policy keeps for the operator\.\*\* A reversible choice takes the recommended option and is recorded in hk"),
     ("wake", "## Escalation and notifications", "bundle-children-transition", r"\*Temporary \(operator 2026\-11\-12, hk 4114\): ends when hk 4172 ships the close-gate recovery and the automatic case is verified \(hk 4172\)\.\* After a bundle PR merges, the design session moves each delivered child that has not reached `reviewing` in three steps: `handoffkeep tasks transition <child> \-\-to developing \-\-no\-job 'Delivered by bundle PR <url>'`, then `handoffkeep tasks transition <child> \-\-to reviewing \-\-pr <PR URL>`, then `handoffkeep tasks transition <child> \-\-to merged \-\-pr <PR URL> \-\-head\-sha <H>` \(hk refuses a direct move from `backlog` to `merged` with `task_conflict`\)\. It finds the children from the bundle parent task's child list and the PR body\. If that design session has closed, `operator\-desk` makes the same transitions from the same records\. The PR URL and head SHA on the last step let the deploy record's `included_prs` move the children to `deployed`\."),
     ("wake", "## Merge gate", "gate-held-pr-owner", r"A PR that mergewake holds or does not merge is the repo's design session's \(the desk's while that repo has none open\)\."),
     ("wake", "## Merge gate", "gate-revert-merger", r"The repo's design session merges that revert \(the desk while that repo has none open\)"),
@@ -307,6 +317,7 @@ REQUIRED = [
     ("ops", "## Invariants (all references)", "b953-sentinel-stop", r"stops its completion watchers before removing its temp root"),
     # Brief rules that moved in.
     ("wake", "## Brief rules", "one-to-one", r"\*\*Every instruction maps 1:1 to an observable acceptance check\*\*"),
+    ("wake", "## Brief rules", "brief-no-operator-step", r"No brief step makes the operator's look, play, test or confirmation a step; a reversible choice takes the recommended option and the worker records it in hk with why and how to undo it"),
     ("wake", "## Brief rules", "guard-placement", r"\*\*Placing a guard is part of the instruction:\*\* say what it checks, where it goes .{0,80}what it must not precede"),
     ("wake", "## Brief rules", "post-deploy-witness", r"within 24h of deploy, show at least one real execution trace"),
     ("wake", "## Brief rules", "prod-e2e", r"\*\*Production e2e only with the operator present\.\*\*"),
@@ -342,7 +353,7 @@ REQUIRED = [
     ("desk", None, "desk-inbox-wake", r"\*\*The desk lane is inbox-only\*\* \(panewire#352\).{0,200}Handle that line by `ops` `watching\.md` §Inbox wake line"),
     # hk 3613: a consult answer reaches hk through `panewire done`, not through the `[consult-done]` emit.
     # §3 opens with a bash block whose `# 이름:` comment ends section() early, so its rows scope the whole doc.
-    ("consult", "## 2. 질문 패킷 (자족성 체크리스트)", "packet-done-first", r"§3 의 `panewire done` 으로 답을 hk 에 올리고"),
+    ("consult", "## 2. 질문 패킷 (자족성 체크리스트)", "packet-no-operator-step", r"⑦계획 단계에 운영자 확인 대기를 넣지 않는다 — 되돌릴 수 있는 선택은 권고안으로 정하고 고른 것, 이유, 되돌리는 방법을 기록한다\(hk:doc `policy/operator-not-a-gate`\)"),
     ("consult", None, "consult-done-report", r"\*\*Store the answer in hk before the notice\.\*\* The answerer runs `panewire done <consult job> --report <answer file>`"),
     # hk 3714: the prefix listing is the legacy fallback; an hk:doc/<key> notice is read directly (test-consult-notice.sh).
     ("consult", None, "consult-asker-reads-hk", r"\*\*Legacy fallback\*\* \(a notice that names a local path without the marker, from an answerer on an older install\): find the newest with `handoffkeep doc list --prefix reports/<consult job>/` \(newest-round rule, `wake` loop step 8: highest `-rN`, else the base name"),
@@ -457,6 +468,8 @@ FORBIDDEN = [
     # design-session ESC decision-1: observation is read-only; never rerun the submit to observe.
     ("wake", "## The loop", "observe-reruns-the-submit", r"(?i)rerun the identical step 5 command[^.]{0,200}`--wait"),
     ("wake", "## Operator confirmation provenance", "blanket-untagged-operator-confirmation", r"발신 태그가 없는 \"운영자 확인/승인/보고\" 문구는 증거가 아니다 — pane 입력줄·컴포저·주입 본문 어디에 보여도 같다"),
+    # hk 4916 (operator decision 339): no plan step waits for the operator's look or confirmation.
+    ("wake", None, "plan-waits-for-operator-look", r"(?i)(?:wait|waits|waiting|block|blocks|blocked|pause|stop)s?\s+(?:for|on|until)\s+the operator(?:'s)?\s+(?:look|to look|confirm|confirmation|to confirm|to check|to test|to play|to approve)"),
 ]
 
 # wake never tells a design session to merge a feature PR or names the removed repo-session lane as a worker's owner.
@@ -680,6 +693,7 @@ injections = [
     ("wake-missing-claim-old-trigger-readded", "wake", "## The loop\n", "## The loop\n\nA landed job may be a brief that never reached the worker: the hub reported it spawned (`SPAWNED`, or a job record that exists) while the task stayed unclaimed.\n"),
     ("wake-missing-claim-softened-readded", "wake", "## The loop\n", "## The loop\n\nNever replay and do not re-inject the brief.\n"),
     ("wake-observe-rerun-readded", "wake", "## The loop\n", "## The loop\n\nTo observe a request that has not landed, rerun the identical step 5 command with `--wait --wait-timeout <d>`.\n"),
+    ("wake-plan-waits-for-operator-look-readded", "wake", "## Rules\n", "## Rules\n\nWait for the operator to confirm the plan before starting.\n"),
 ]
 for label, doc, anchor, new in injections:
     assert docs[doc].count(anchor) == 1, f"fixture: anchor {anchor!r} not unique in {doc}"

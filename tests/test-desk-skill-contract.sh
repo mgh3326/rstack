@@ -70,6 +70,9 @@ REQUIRED = [
     ("desk", "## Decisions", "resolve-same-turn", r"An answer given in chat is resolved in hk in the same turn"),
     ("desk", "## Decisions", "reuse-request", r"Asking again reuses the same request"),
     ("desk", "## Decisions", "review-at-resume", r"Open requests are reviewed at resume"),
+    ("desk", "## Decisions", "decisions-no-operator-step", r"No plan step makes the operator's look or confirmation a step \(hk:doc `policy/operator-not-a-gate`\)"),
+    ("desk", "## Decisions", "decisions-ask-once-then-continue", r"The desk asks only what that policy keeps for the operator — numbered, with a recommendation, once — then continues with what does not depend on the answer"),
+    ("decision", None, "decision-request-reversible-not-asked", r"되돌릴 수 있는 선택은 운영자에게 묻지 않는다\(hk:doc `policy/operator-not-a-gate`\)"),
     ("desk", "## Facts", "facts-same-turn", r"a fix applied, a workaround, a respawn under a new task — it comments the fact on every affected task in the same turn"),
     ("desk", "## Facts", "respawn-names-id", r"For a respawn, name the new task id on the old task"),
     ("desk", "## Facts", "respawn-same-task-default", r"keeps a respawn on the same task; this covers one that already exists under a new task"),
@@ -113,6 +116,10 @@ FORBIDDEN = [
     ("roles", None, "builder-family", r"--builder-family", "`--builder-family openai`\n"),
     ("roles", None, "role-counsel", r"--role counsel", "`--role counsel`\n"),
     ("roles", None, "explorer-resolve-role", r"panewire resolve --role [^\n`]*explorer", "`panewire resolve --role explorer`\n"),
+    # hk 4916 (operator decision 339): no plan step waits for the operator's look or confirmation.
+    ("desk", "## Decisions", "plan-waits-for-operator-look",
+     r"(?i)(?:wait|waits|waiting|block|blocks|blocked|pause|stop)s?\s+(?:for|on|until)\s+the operator(?:'s)?\s+(?:look|to look|confirm|confirmation|to confirm|to check|to test|to play|to approve)",
+     "Wait for the operator to confirm the plan before starting.\n"),
 ]
 
 

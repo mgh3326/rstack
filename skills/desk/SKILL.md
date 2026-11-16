@@ -149,6 +149,11 @@ with a new task minted per attempt.
 
 Follow hk:doc `policy/operator-facing-korean`: operator-facing text is Korean; identifiers, code and commands stay as they are; English-only text gets a stored Korean translation.
 
+No plan step makes the operator's look or confirmation a step (hk:doc `policy/operator-not-a-gate`): a
+reversible choice takes the recommended option, is recorded in hk with why and how to undo it, and work
+goes on. The desk asks only what that policy keeps for the operator — numbered, with a recommendation,
+once — then continues with what does not depend on the answer.
+
 The loop is `ops` decision-request §데스크 결정 루프. At the desk it comes down to three rules:
 
 - **An answer given in chat is resolved in hk in the same turn**, before you act on it.
