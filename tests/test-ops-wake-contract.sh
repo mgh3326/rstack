@@ -167,7 +167,7 @@ REQUIRED = [
     ("spawn", "## 4. 기동·주입·감시", "spawn-observe-read-only", r"요청이 아직 착지하지 않았으면 읽기만 한다 — owner 레인 inbox, `handoffkeep tasks show <id>`, `panewire jobs mine --lane <owner 레인> --json`"),
     ("spawn", "## 4. 기동·주입·감시", "spawn-observe-never-rerun", r"관찰하려고 5단계 제출 명령을 다시 실행하지 않는다"),
     ("spawn", "## 4. 기동·주입·감시", "spawn-observe-status-read-only", r"`panewire spawn status <request_id>` 도 읽기 전용이다 — 제출하지 않는 GET 한 번이고"),
-    ("spawn", "## 4. 기동·주입·감시", "spawn-observe-status-exits", r"0 landed, hub rc failed·retryable·refused, 84 cancelled·given_up, 75 deadline_exceeded, 91 parked, 85 in flight"),
+    ("spawn", "## 4. 기동·주입·감시", "spawn-observe-status-exits", r"0 succeeded·landed, failed·retryable·refused 는 hub 의 rc\(기록이 없으면 81\), 84 cancelled·given_up, 75 deadline_exceeded, 91 parked, 85 그 밖의 in-flight 또는 unknown 상태"),
     ("ops", "## Routing table", "ops-routing-submit-no-wait", r"`panewire spawn` submits without `--wait`; `ACCEPTED` means the hub owns the request"),
     ("ops", "## Routing table", "ops-ask-operator-policy", r"Ask the operator to choose \(only what hk:doc `policy/operator-not-a-gate` keeps for them\)"),
     ("wake", "## The loop", "no-unlanded-blocker", r"Spawn only tickets with no unlanded blocker"),
@@ -181,7 +181,7 @@ REQUIRED = [
     ("wake", "## The loop", "landing-hk-claim", r"`handoffkeep tasks show <id>` with `claimed_by` and `refs\.job_id` equal to `<job>`"),
     ("wake", "## The loop", "landing-observe-read-only", r"read only: the owner lane's inbox, `handoffkeep tasks show <id>`, and `panewire jobs mine --lane <owner-lane> --json`"),
     ("wake", "## The loop", "landing-spawn-status", r"One more read-only look is `panewire spawn status <request_id>`: one GET that never submits"),
-    ("wake", "## The loop", "landing-spawn-status-exits", r"0 landed, 84 cancelled or given_up, 75 deadline_exceeded, 91 parked, 85 in flight, else the hub rc for failed, retryable or refused"),
+    ("wake", "## The loop", "landing-spawn-status-exits", r"0 succeeded or landed, the hub's rc \(81 when it recorded none\) for failed, retryable or refused, 84 cancelled or given_up, 75 deadline_exceeded, 91 parked, 85 any other in-flight or unknown state"),
     ("wake", "## The loop", "landing-observe-never-rerun", r"Never rerun the step 5 command to observe a request: it submits again, and on an attempt that ended `retryable` the resubmit resumes the attempt"),
     ("wake", "## The loop", "landing-retryable-waits", r"A `retryable` outcome is an ended attempt, not a hand-over still in flight: the hub releases the job's reservation and sends the one `SPAWN_FAILED` with `replay=yes` \(`panewire@feb30fc9` `docs/hub-spawn-operations\.md` §Request states a client reads, §Parked, §Time limit; #372, hk 3676\), so take §On spawn failure\. A hand-over the hub makes on its own stays inside its own queue and sends no notice; an ended attempt resumes only from a replay of the saved request, and this session never replays\."),
     ("wake", "## The loop", "landing-panewire-cite", r"`panewire@feb30fc9` `docs/hub-spawn-operations\.md` §Request states a client reads, §Parked, §Time limit"),
@@ -353,6 +353,7 @@ REQUIRED = [
     ("desk", None, "desk-inbox-wake", r"\*\*The desk lane is inbox-only\*\* \(panewire#352\).{0,200}Handle that line by `ops` `watching\.md` §Inbox wake line"),
     # hk 3613: a consult answer reaches hk through `panewire done`, not through the `[consult-done]` emit.
     # §3 opens with a bash block whose `# 이름:` comment ends section() early, so its rows scope the whole doc.
+    ("consult", "## 2. 질문 패킷 (자족성 체크리스트)", "packet-done-first", r"§3 의 `panewire done` 으로 답을 hk 에 올리고"),
     ("consult", "## 2. 질문 패킷 (자족성 체크리스트)", "packet-no-operator-step", r"⑦계획 단계에 운영자 확인 대기를 넣지 않는다 — 되돌릴 수 있는 선택은 권고안으로 정하고 고른 것, 이유, 되돌리는 방법을 기록한다\(hk:doc `policy/operator-not-a-gate`\)"),
     ("consult", None, "consult-done-report", r"\*\*Store the answer in hk before the notice\.\*\* The answerer runs `panewire done <consult job> --report <answer file>`"),
     # hk 3714: the prefix listing is the legacy fallback; an hk:doc/<key> notice is read directly (test-consult-notice.sh).
