@@ -262,8 +262,9 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
    `handoffkeep tasks show <id>`, and `panewire jobs mine --lane <owner-lane> --json`. One more read-only
    look is `panewire spawn status <request_id>`: one GET that never submits, printing request, state,
    reason, `next_check_at`, `expires_at`, rc, stage and job (`--json` for machine output), with the exit
-   code reading the state — 0 landed, 84 cancelled or given_up, 75 deadline_exceeded, 91 parked, 85 in
-   flight, else the hub rc for failed, retryable or refused. These read hk and
+   code reading the state — 0 succeeded or landed, the hub's rc (81 when it recorded none) for failed,
+   retryable or refused, 84 cancelled or given_up, 75 deadline_exceeded, 91 parked, 85 any other
+   in-flight or unknown state. These read hk and
    the hub's job list through panewire's own credential, never your own HTTP call. Never rerun the step
    5 command to observe a request: it submits again, and on an attempt that ended `retryable` the
    resubmit resumes the attempt.
