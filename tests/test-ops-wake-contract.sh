@@ -113,6 +113,7 @@ REQUIRED = [
     ("wake", "## Rules", "brief-preservation-ref", r"preservation table \(`wake`\s+§READY, Preservation evidence\)"),
     ("wake", "## Rules", "worker-round-3-consult-esc", r"At round 3 without a pass, stop patching; ask your design lane for a consult one grade above your seat in another family: ESC --type decision to your owner lane with the packet as an hk doc key \(every finding so far, ask for the root cause\); do not run panewire consult request and do not call any model API yourself"),
     ("wake", "## Rules", "worker-review-not-run", r"Review: do not run mergewake review yourself; the daemon reviews the PR before merge and sends findings to your lane\."),
+    ("wake", "## Rules", "fix-reply-names-test-on-prior-head", r"A `Fixed in <sha>` reply names a test that fails on the previous reviewed head and passes on the new one, and claims only what that test shows; where no test can be written \(a document line, a build file\) the reply says so in one clause"),
     ("wake", "## Rules", "worker-round-5-interim-esc", r"Until panewire hk 4262 ships, at round 5 the worker ESCs with every finding so the design session can re-spawn the PR's work pinned to the next rung"),
     ("wake", "## Rules", "worker-round-7-interim-esc", r"Until mergewake hk 4264 ships, at round 7 the worker ESCs so the design session can keep the PR held while it cuts scope or takes one SS consult"),
     ("wake", "## Rules", "worker-panewire-interim-marker", r"\*Temporary \(operator 2026-11-12, hk 4268\): ends when panewire hk 4262 ships \(hk 4262\)\.\*"),

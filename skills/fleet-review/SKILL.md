@@ -60,7 +60,7 @@ Severity decides blocking. Disposition is what you do about it.
 | medium, low | no | **fix** (cheap and inside the contract), **dismiss** (one-line reason), or **defer** (follow-up hk task id) |
 
 - **fix** — a plausible correctness, security, privacy, data-loss, auth, idempotency, race or
-  shipped-behavior defect inside the contract. Fix it, reply with the commit SHA.
+  shipped-behavior defect inside the contract. Fix it, reply with the commit SHA: a `Fixed in <sha>` reply names a test that fails on the previous reviewed head and passes on the new one, and claims only what that test shows; where no test can be written (a document line, a build file) the reply says so in one clause.
 - **dismiss** — the code or context proves no change is needed, or it matches a skip pattern
   below. Reply with the reason. A dismissed finding stays dismissed unless a later review
   re-raises it with new evidence on changed lines.

@@ -646,7 +646,7 @@ When the Acceptance list is met and checked, stop and report. Do not add feature
   Mergewake-Tier: <Tn from the same marker>
   Mergewake-Experiment: <id>/<arm>  (only when the spawn preamble assigns an arm; otherwise omit the line)
 - Review: do not run mergewake review yourself; the daemon reviews the PR before merge and sends findings to your lane.
-- Findings: handle every finding by `fleet-review` §Triage rubric, then push. Do not start a later round
+- Findings: handle every finding by `fleet-review` §Triage rubric, then push. A `Fixed in <sha>` reply names a test that fails on the previous reviewed head and passes on the new one, and claims only what that test shows; where no test can be written (a document line, a build file) the reply says so in one clause. Do not start a later round
   yourself; mergewake runs it on your fix delta (`fleet-review` §Rounds).
 - **Review non-convergence at round 3 (worker side):** At round 3 without a pass, stop patching; ask your design lane for a consult one grade above your seat in another family: ESC --type decision to your owner lane with the packet as an hk doc key (every finding so far, ask for the root cause); do not run panewire consult request and do not call any model API yourself. Nothing else happens at round 3. At round 5 without a pass, the worker moves one ladder step up. At round 7 without a pass, the PR is held and the design session cuts scope or takes one SS consult. The same worker does not keep patching at the same seat after round 5.
 *Temporary (operator 2026-11-12, hk 4268): ends when panewire hk 4262 ships (hk 4262).*
