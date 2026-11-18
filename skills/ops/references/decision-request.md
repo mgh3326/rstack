@@ -14,8 +14,13 @@ pane 메시지는 그 알림이다. 콘솔(큐 drawer · Decisions)은 이 기�
       --default-action "<무응답 시 동작 — 없으면 '자동 적용 없음'>" [--default-option B] \
       [--default-trigger "<발동 조건>"] [--due <RFC3339+오프셋>] [--doc <결과·근거 문서 key>] [--block] [--human-only]
 
-- Any `decision-request` about merge, deploy, spend (money, paid quota, purchases), tokens/credentials/external access, host/security settings, or policy/gate/cap exceptions MUST carry `--human-only`; assistant judgement must never answer these (hk refuses `human_only` on that path). If unsure, use `--human-only`.
+태스크가 없는 질문은 요청 전에 먼저 질문하는 레인의 프로젝트에 `kind=decide` 태스크를 만든다(제목 = 질문). 요청은 그 태스크에 건다.
+
+- A `decision-request` on the operator-only list of hk:doc `policy/operator-not-a-gate` §What stays the operator's alone (decision 339) MUST carry `--human-only`; assistant judgement must never answer these (hk refuses `human_only` on that path). Merge, deploy and settings questions are not on that list: they may be answered from dots with the operator's quoted words. If unsure, use `--human-only`.
 - ChatGPT(dots) 채널은 operator-only 요청에 답할 수 없다: hk 가 그 경로의 human_only 요청을 거부한다(`RefuseOperatorOnly`). 운영자 확인이 필요한 시도는 열린 채로 남는다(`DecisionResultPendingConfirmation`).
+- `human_only` 요청은 콘솔에서 답한다. 세션의 `decision-resolve` 는 그 요청에 시도만 기록하고(`pending_confirmation`), 요청은 검증된 답을 기다린다. 검증 경로는 콘솔과 운영자 bearer 클라이언트다.
+  *Temporary (operator 2026-11-18, hk 5131): ends when handoffkeep hk 5132 ships (hk 5132).*
+  hk 5132 가 배포되기 전까지 dots 는 이 요청에 답하지 못한다. 배포 뒤에는 운영자의 원문과 정확한 request id 가 있을 때 dots 답도 받는다.
 
 - **기록 먼저, 알림에 request_id.** 출력의 `request_id`(`dr-<task>-<rev>`)를 붙여 알린다
   (출력 `notify` 줄). 명령이 실패하면(`NOT recorded`) 기록되지 않은 것이다 — 그때는
