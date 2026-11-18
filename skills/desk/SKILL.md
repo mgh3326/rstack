@@ -135,7 +135,9 @@ On one `SPAWN_FAILED` — the request ended without landing (`failed`, `refused`
 3. **A cause that is not in the tool gets no tool task and no trigger** (a bad brief, a login screen
    the desk cannot fix): leave the blocked task a `next:` line naming the fix, and take it to the
    operator through `ops` decision-request (`desk` §Decisions) with the request id, reason and evidence
-   paths. The design session does not: it makes no fix attempt and ESCs to the desk (`wake` §On spawn failure).
+   paths. A design session does not bring a tool fault to the desk while the tool's design lane has a session:
+   it files the task in the tool's project and orders that lane (operator decision 421, `wake` §On spawn failure).
+   The desk takes a design session's tool fault only when the tool's lane has no session (decision 113).
 
 **Never replay the request** — not with another flag, not under a new job id — and never launch it by
 another route. The hub holds the job and task reservation until the request ends — except a

@@ -339,7 +339,11 @@ parked request and unresolved ownership are the hub's to work through, not signa
 submission the hub refuses outright exits non-zero before `ACCEPTED`; it has no request to wait on, so
 comment the refusal on the task and ESC the same way, never a replay.
 
-- **The design session makes no fix attempt and ESCs.** The desk files the task against the tool (`desk` §Spawn failure).
+- **The design session makes no fix attempt.** A tool fault goes to the tool's design lane when that lane has a
+  session open (operator decision 421): file an hk task in the tool's project with the evidence and send that lane
+  an order (`lane.event --type order`) — spawn failures and stuck spawns to `panewire-design`; lost reviews,
+  exhausted review retries and review holds to `mergewake-design`. Only when the tool's lane has no session open
+  does the fault go to the desk, which files the task against the tool (`desk` §Spawn failure; decision 113).
 - **Do not retry on the same task.** Step 6's read-only checks are the only way to look at a request:
   never replay the request with changed flags and never file a new job id. The hub holds the job and
   task reservation until the request ends — except a `retryable` attempt, which releases it while the
@@ -493,7 +497,8 @@ Until panewire hk 4262 ships, at round 5 the worker ESCs with every finding and 
 *Temporary (operator 2026-11-12, hk 4268): ends when mergewake hk 4264 ships (hk 4264).*
 Until mergewake hk 4264 ships, at round 7 the worker ESCs and the design session keeps the PR held while it cuts scope or takes one SS consult. After mergewake hk 4264 ships, mergewake holds the PR and sends the design lane one event at round 7. The same worker does not keep patching at the same seat after round 5. When no ladder step is left, the PR goes to a lead (`lead` §When to use, Exception — a non-converging PR).
 - From a design session, the desk lane gets one one-line notice: the close hand-off (§Authority).
-  ESC decisions, spawn failures and merge holds stay with the session. There is no success notify: mergewake already
+  ESC decisions, spawn failures and merge holds stay with the session; a tool fault goes to the tool's design lane
+  while it has a session (§On spawn failure). There is no success notify: mergewake already
   notifies the owner lane.
 - **Never ask a question in a pane** — no confirmation prompt ("proceed?") and no interactive
   chooser (AskUserQuestion or any picker). Nobody but the operator sees a pane, and it blocks
