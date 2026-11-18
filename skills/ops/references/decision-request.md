@@ -15,7 +15,7 @@ pane 메시지는 그 알림이다. 콘솔(큐 drawer · Decisions)은 이 기�
       [--default-trigger "<발동 조건>"] [--due <RFC3339+오프셋>] [--doc <결과·근거 문서 key>] [--block] [--human-only]
 
 - Any `decision-request` about merge, deploy, spend (money, paid quota, purchases), tokens/credentials/external access, host/security settings, or policy/gate/cap exceptions MUST carry `--human-only`; assistant judgement must never answer these (hk refuses `human_only` on that path). If unsure, use `--human-only`.
-- GPT Dots may answer a `human_only` request only as `operator_decided`, with the operator's verbatim quote and exact `request_id`; GPT Dots' own judgement never closes it.
+- ChatGPT(dots) 채널은 operator-only 요청에 답할 수 없다: hk 가 그 경로의 human_only 요청을 거부한다(`RefuseOperatorOnly`). 운영자 확인이 필요한 시도는 열린 채로 남는다(`DecisionResultPendingConfirmation`).
 
 - **기록 먼저, 알림에 request_id.** 출력의 `request_id`(`dr-<task>-<rev>`)를 붙여 알린다
   (출력 `notify` 줄). 명령이 실패하면(`NOT recorded`) 기록되지 않은 것이다 — 그때는
@@ -38,7 +38,7 @@ pane 메시지는 그 알림이다. 콘솔(큐 drawer · Decisions)은 이 기�
   않고 자동 적용 타이머도 없다. 철회는 `--kind withdrawn --text <이유>`.
 - 종료(merged·dropped)된 태스크에 열린 요청이 남으면 콘솔에 "미정리 요청"으로 뜬다 —
   `decision-resolve`로 정리한다.
-- 콘솔의 답변 버튼은 #580 소관이다. 그 전까지 운영자는 pane 으로 답하고 요청한 레인이 기록한다.
+- 답이 오는 곳은 pane, 콘솔, dots 중 하나다: pane 으로 받은 답은 같은 턴에 운영자의 말 그대로 hk 에서 닫고 나서 움직인다. 콘솔·dots 로 들어온 답은 inbox 알림이 아니라 hk 기록을 확인하고 그 기록대로 움직인다.
 
 ## 데스크 결정 루프
 

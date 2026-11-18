@@ -47,6 +47,14 @@ This session is not for repo code (the owning design session), deploys (the owni
 - A finding names exact source URLs and its read date. A decision names its findings and experiments.
 - Store records in hk docs. Close with a mechanical check of the decision doc against the transcript.
 
+Every question that stays the operator's under hk:doc `policy/operator-not-a-gate` is also one
+`handoffkeep tasks decision-request` on its task — options, the recommended option, a grounds document
+and the default action — recorded in the same turn it is asked in the pane, so the record stands by
+itself for dots and the console; the full command lives in `ops` decision-request.md. The pane question
+is still asked in the same turn and nothing waits on the record. A pane answer closes the request in
+the same turn with the operator's words before acting. An answer arriving through hk is acted on from
+the hk record, never from the notice text.
+
 ## Backlog pass
 
 This session runs the backlog pass for the fleet-tool repositories and the small projects, in one pass, by hk:doc `policy/backlog-pass`. The trigger is named there: a lane's open list passes 40 tasks, a week has passed since the last pass, or the operator asks. The steps are in that doc; this skill does not restate them.
