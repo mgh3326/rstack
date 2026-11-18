@@ -75,9 +75,11 @@ REQUIRED = [
     ("wake", "## Settle before spawning", "blocks-edge-command",
      r"`handoffkeep tasks relate <blocker-id> --kind blocks --other <blocked-id>`"),
     ("wake", "## On spawn failure", "design-no-fix-attempt",
-     r"The design session makes no fix attempt and ESCs\.\*\* The desk files the task against the tool \(`desk` §Spawn failure\)"),
+     r"The design session makes no fix attempt\.\*\* A tool fault goes to the tool's design lane when that lane has a session open \(operator decision 421\)"),
+    ("wake", "## On spawn failure", "tool-fault-desk-only-without-session",
+     r"Only when the tool's lane has no session open does the fault go to the desk, which files the task against the tool \(`desk` §Spawn failure; decision 113\)"),
     ("desk", "## Spawn failure", "design-does-not",
-     r"The design session does not: it makes no fix attempt and ESCs to the desk \(`wake` §On spawn failure\)"),
+     r"A design session does not bring a tool fault to the desk while the tool's design lane has a session: it files the task in the tool's project and orders that lane \(operator decision 421, `wake` §On spawn failure\)"),
 ]
 
 # (doc, row name, pattern on the flattened doc, text a mutant appends)
