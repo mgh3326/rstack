@@ -608,7 +608,7 @@ A large project's own design session runs the same pass for its own project, by 
 
 On a backlog wake from hk, the open design session judges its lane's backlog by itself: it reads the kept tickets from hk, judges each one, and pulls or leaves it with the reason in an hk comment. A task the operator set going goes first. Only reversible work is pulled; what hk:doc `policy/operator-not-a-gate` leaves to the operator is still asked. Never pull merely because a slot is free: below its parallel target means a spawn still fits the dispatch limits of §Settle before spawning ("Dispatch by bundle up to the quota gate") and the same-concept rule of §The loop step 5 — no new number. No self-polling: hk checks periodically and the hub wakes the lane; hk starts nothing.
 *Temporary (operator 2026-11-18, hk 5205): ends when handoffkeep hk 5201 ships (hk 5201).*
-Until handoffkeep hk 5201 is live, the same judgement runs at the moments the session already acts: a merge notice, an operator message and the backlog-count wake. The record that stops hk's notice is named by handoffkeep hk 5201.
+Until handoffkeep hk 5201 is live, the same judgement runs at the moments the session already acts: a merge notice, an operator message and the backlog-count wake. The notice stops with `handoffkeep lanes look <lane> --notice <event_id> [--note <text>]` (MCP lane_look): the notice text carries its event_id, and a look matching the current findings silences the lane until its state changes; the version is named under hk 5201.
 
 ## Worker brief
 

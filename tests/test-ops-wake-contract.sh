@@ -419,7 +419,7 @@ REQUIRED = [
     ("wake", "## Backlog wake", "backlog-wake-no-self-poll", r"No self-polling: hk checks periodically and the hub wakes the lane; hk starts nothing"),
     ("wake", "## Backlog wake", "backlog-wake-interim-marker", r"\*Temporary \(operator 2026-11-18, hk 5205\): ends when handoffkeep hk 5201 ships \(hk 5201\)\.\*"),
     ("wake", "## Backlog wake", "backlog-wake-interim-moments", r"Until handoffkeep hk 5201 is live, the same judgement runs at the moments the session already acts: a merge notice, an operator message and the backlog-count wake"),
-    ("wake", "## Backlog wake", "backlog-wake-stop-record", r"The record that stops hk's notice is named by handoffkeep hk 5201"),
+    ("wake", "## Backlog wake", "backlog-wake-stop-record", r"The notice stops with `handoffkeep lanes look <lane> --notice <event_id>"),
 ]
 
 # Rows that must be absent: consult resolution does not take an author family.
