@@ -59,13 +59,21 @@ def check(text: str) -> None:
     assert re.search(r"assistant judgement must never answer these.{0,100}hk refuses `human_only`", sec), "human_only assistant refusal reason missing"
     assert re.search(r"If unsure.{0,40}`--human-only`", sec), "human_only default-when-unsure rule missing"
     assert re.search(r"`human_only` 요청은 콘솔에서 답한다", sec), "human_only console-answer rule missing"
-    assert "pending_confirmation" in sec, "decision-resolve pending_confirmation fact missing"
+    assert "태스크가 없는 질문은 요청 전에 먼저 질문하는 레인의 프로젝트에 `kind=decide` 태스크를 만든다" not in sec, "old hand-made kind=decide rule still present"
+    assert "시도만 기록" not in sec, "removed session-resolve attempt-only claim still present"
+    # hk 5206 (operator decisions 400, 417): a human-only pane answer closes with the session-channel
+    # command; a no-task question uses decisions ask --new-task; the asking session closes the decide
+    # task after its request until hk does it under hk 5201.
+    assert re.search(r"decisions ask --new-task", sec), "no-task decisions ask --new-task rule missing"
+    assert re.search(r"decisions resolve request <dr-id> --channel session --quote", sec), "human-only session-channel close missing"
+    assert re.search(r"human-only 가 아닌 요청은 `tasks decision-resolve` 로 닫아도 된다", sec), "non-human-only decision-resolve rule missing"
+    sub = flat(section(text, "### human-only pane 답변 닫기"))
+    assert "--responder operator" not in sub, "human-only close must not use --responder operator"
+    assert re.search(r"요청이 닫히면 물은 세션이 같은 턴에 `handoffkeep tasks transition <id> --to completed` 로 그 kind=decide 태스크를 닫고 요청을 근거로 남긴다", sub), "decide-task close-after-resolve missing"
     assert re.search(
-        r"\*Temporary \(operator 2026-11-18, hk 5131\): ends when handoffkeep hk 5132 ships \(hk 5132\)\.\*",
-        sec,
-    ), "hk 5132 temporary marker missing"
-    # hk 5131 (2a): a question with no task gets a kind=decide task in the asking lane's project first.
-    assert re.search(r"태스크가 없는 질문은 요청 전에 먼저 질문하는 레인의 프로젝트에 `kind=decide` 태스크를 만든다", sec), "no-task question kind=decide rule missing"
+        r"\*Temporary \(operator 2026-11-18, hk 5206\): ends when handoffkeep hk 5201 ships \(hk 5201\)\.\*",
+        sub,
+    ), "hk 5201 temporary marker missing"
     assert re.search(r"dots.{0,60}operator-only 요청에 답할 수 없다", sec), "dots operator-only refusal missing"
     assert "RefuseOperatorOnly" in sec, "hk refusal reason missing"
     assert "DecisionResultPendingConfirmation" in sec, "pending-confirmation fact missing"
@@ -97,9 +105,14 @@ mutants = [
     ("human-only-old-merge-deploy-list-readded", doc_text.replace(HEADING, HEADING + "\n- Any `decision-request` about merge, deploy, spend (money, paid quota, purchases), tokens/credentials/external access, host/security settings, or policy/gate/cap exceptions MUST carry `--human-only`.", 1)),
     ("merge-deploy-as-human-only-readded", doc_text.replace("Merge, deploy and settings questions are not on that list", "Merge, deploy and settings questions are on that list", 1)),
     ("human-only-console-answer-removed", doc_text.replace("`human_only` 요청은 콘솔에서 답한다", "`human_only` 요청도 dots 에서 답한다", 1)),
-    ("pending-confirmation-fact-removed", doc_text.replace("(`pending_confirmation`)", "", 1)),
-    ("hk-5132-temporary-marker-removed", doc_text.replace("*Temporary (operator 2026-11-18, hk 5131): ends when handoffkeep hk 5132 ships (hk 5132).*", "", 1)),
-    ("no-task-kind-decide-removed", doc_text.replace("태스크가 없는 질문은 요청 전에 먼저 질문하는 레인의 프로젝트에 `kind=decide` 태스크를 만든다", "태스크가 없는 질문은 그냥 묻는다", 1)),
+    ("old-hand-made-kind-decide-readded", doc_text.replace(HEADING, HEADING + "\n- 태스크가 없는 질문은 요청 전에 먼저 질문하는 레인의 프로젝트에 `kind=decide` 태스크를 만든다.", 1)),
+    ("no-task-ask-new-task-removed", doc_text.replace("`handoffkeep decisions ask --new-task", "`handoffkeep tasks add", 1)),
+    ("human-only-session-channel-removed", doc_text.replace(" --channel session --quote '<운영자 원문>'", "", 1)),
+    ("non-human-only-resolve-removed", doc_text.replace("human-only 가 아닌 요청은 `tasks decision-resolve` 로 닫아도 된다", "human-only 가 아닌 요청도 세션 채널로 닫는다", 1)),
+    ("decide-task-close-removed", doc_text.replace("요청이 닫히면 물은 세션이 같은 턴에 `handoffkeep tasks transition <id> --to completed` 로 그 kind=decide 태스크를 닫고 요청을 근거로 남긴다", "요청이 닫히면 hk 가 kind=decide 태스크를 닫는다", 1)),
+    ("hk-5201-temporary-marker-removed", doc_text.replace("*Temporary (operator 2026-11-18, hk 5206): ends when handoffkeep hk 5201 ships (hk 5201).*", "", 1)),
+    ("human-only-responder-operator-injected", doc_text.replace("### human-only pane 답변 닫기\n", "### human-only pane 답변 닫기\n- human-only pane 답변은 `--responder operator` 로 닫는다.\n", 1)),
+    ("removed-attempt-claim-injected", doc_text.replace(HEADING, HEADING + "\n- 세션의 `decision-resolve` 는 그 요청에 시도만 기록하고(`pending_confirmation`), 요청은 검증된 답을 기다린다.", 1)),
     ("record-first-removed", doc_text.replace("기록 먼저, 알림에 request_id", "알림")),
     ("failed-record-claim", doc_text.replace("통지하지 않는다", "통지한다")),
     ("default-merged-into-recommendation", doc_text.replace("권고와 무응답 동작은 별개다", "권고가 곧 기본값이다")),
