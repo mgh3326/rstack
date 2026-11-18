@@ -25,7 +25,10 @@ mergewake reap 이 한다.
 - **스폰 = handoffkeep tasks 기록 의무**: panewire spawn 은 숫자 task binding 없이는 거부한다. 자기
   task 는 `--task <id>`, 아니면 부모 잡을 상속한다 — `--parent-job <부모잡>`, 아무것도 안 주면 pane
   의 `ARBITER_JOB`(스폰된 pane 에 실린다). 잡 상속은 `--report` 가 필수이고 task 를 다시 claim 하지
-  않는다. 둘 다 없으면 `HK_TASK_ID` 를 `--task` 처럼 쓴다. claim·`refs.job_id` 바인딩은 브리프 제출
+  않는다. 후속 작업자(successor)는 푸시된 브랜치에서 이어간다: 브리프는 브랜치와 마지막 푸시 커밋을 지정하고 호스트를 적지 않으며, git 에 없는 것(잡 디렉토리의 보고서 초안, 증거 폴더, Unity Library, 실행 토큰)은 재생성하거나 가져옴(rebuilt or fetched)으로 기재한다; 마지막 푸시 이후의 작업은 다시 수행한다.
+  *Temporary (operator 2026-11-18, hk 5114): ends when panewire hk 5114 ships (hk 5114).*
+  panewire hk 5114 배포 전까지, 부모 호스트에만 worktree 가 있는 후속 작업자는 `--override-reason 'worktree on parent host until panewire hk 5114'` 로 해당 호스트를 지정한다.
+  둘 다 없으면 `HK_TASK_ID` 를 `--task` 처럼 쓴다. claim·`refs.job_id` 바인딩은 브리프 제출
   확인 뒤 panewire 가 `tasks claim --by <라벨> --job-id <잡>` 한 번으로 쓴다 — 호출자가 따로
   `tasks claim`·`tasks next` 를 치지 않는다. task 가 다른 잡에 묶였거나 `merged`·`dropped`·`hold`·`needs_decision` 이면
   rc 2. handoffkeep 이 안 닿으면 rc 70 이고 `--task-hk-bypass` 는 그 가용성 장애만 뚫는다(읽힌 거절은

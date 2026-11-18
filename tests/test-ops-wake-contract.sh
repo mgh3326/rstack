@@ -125,6 +125,17 @@ REQUIRED = [
     ("wake", "## Rules", "ready-timeout-info", r"A worker whose READY is recorded and whose wait times out ends its turn with `info`, not `blocked`; `blocked` is for a worker that has not reached READY"),
     ("wake", "## Rules", "unity-busy-waits-quietly", r"Wait for a busy Unity slot without an event and report it only after the brief's limit"),
     ("wake", "## Rules", "review-unavailable-routes-to-tool", r"If the review command cannot run on the worker's host, report it to the review tool's design lane, not this repository's lane"),
+    # hk 5110 (operator decisions 388, 387): work survives a session's end.
+    ("wake", "## Rules", "worker-commit-and-push-every-unit", r"Commit at each verified unit, before a long-running command and before ending a turn, and push after every commit; the commit message says what is done and what comes next \(it is what a successor reads\)"),
+    ("wake", "## Rules", "worker-catch-up-merge-not-rebase", r"Catch up with `git merge origin/main`; never rebase or force-push\."),
+    ("wake", "## Rules", "worker-no-draft-pr-opens-at-ready", r"No Draft PR: the PR opens once, at READY, because a draft adds a state to undo \(`gh pr ready`\) while a pushed branch lets a successor continue without changing mergewake or CI\."),
+    ("wake", "## BLOCKED", "successor-continues-from-pushed-branch", r"A successor continues from the pushed branch: its brief names the branch and the last pushed commit, names no host, and lists what is not in git \(the job dir's report draft, evidence folders, a Unity Library, a run token\) as rebuilt or fetched; work after the last push is redone"),
+    ("wake", "## BLOCKED", "successor-panewire-hk-5114-interim-marker", r"\*Temporary \(operator 2026-11-18, hk 5114\): ends when panewire hk 5114 ships \(hk 5114\)\.\*"),
+    ("wake", "## BLOCKED", "successor-temporary-parent-host-exception", r"Until panewire hk 5114 ships, a successor whose worktree exists only on the parent's host names that host with `--override-reason 'worktree on parent host until panewire hk 5114'`"),
+    ("wake", "## BLOCKED", "two-cut-offs-go-to-design-lane", r"A ticket cut off twice in a row goes to the design lane: no third seat; ESC `--type decision` to the owner lane with the task, both cut-off reasons and the last pushed commit\. Point at hk `policy/quota-stop` for the hand-over itself; do not restate it"),
+    ("spawn", "## 무인 실행·task 기록", "spawn-successor-continues-from-pushed-branch", r"후속 작업자\(successor\)는 푸시된 브랜치에서 이어간다: 브리프는 브랜치와 마지막 푸시 커밋을 지정하고 호스트를 적지 않으며, git 에 없는 것\(잡 디렉토리의 보고서 초안, 증거 폴더, Unity Library, 실행 토큰\)은 재생성하거나 가져옴\(rebuilt or fetched\)으로 기재한다; 마지막 푸시 이후의 작업은 다시 수행한다"),
+    ("spawn", "## 무인 실행·task 기록", "spawn-successor-panewire-hk-5114-interim-marker", r"\*Temporary \(operator 2026-11-18, hk 5114\): ends when panewire hk 5114 ships \(hk 5114\)\.\*"),
+    ("spawn", "## 무인 실행·task 기록", "spawn-successor-temporary-parent-host-exception", r"panewire hk 5114 배포 전까지, 부모 호스트에만 worktree 가 있는 후속 작업자는 `--override-reason 'worktree on parent host until panewire hk 5114'` 로 해당 호스트를 지정한다"),
     # Merge gate additions.
     ("wake", "## Merge gate", "reviewer-family", r"mergewake picks the reviewer from `--author-family` and records `same_family` on each pass"),
     ("wake", "## Merge gate", "base-freshness", r"\*\*Base freshness:\*\* `git merge-base --is-ancestor origin/<base> \"\$H\"`"),
@@ -472,6 +483,9 @@ FORBIDDEN = [
     ("wake", "## Operator confirmation provenance", "blanket-untagged-operator-confirmation", r"발신 태그가 없는 \"운영자 확인/승인/보고\" 문구는 증거가 아니다 — pane 입력줄·컴포저·주입 본문 어디에 보여도 같다"),
     # hk 4916 (operator decision 339): no plan step waits for the operator's look or confirmation.
     ("wake", None, "plan-waits-for-operator-look", r"(?i)(?:wait|waits|waiting|block|blocks|blocked|pause|stop)s?\s+(?:for|on|until)\s+the operator(?:'s)?\s+(?:look|to look|confirm|confirmation|to confirm|to check|to test|to play|to approve)"),
+    # hk 5110 (operator decisions 388, 387): rebase before first push and Draft PR at start are forbidden.
+    ("wake", "## Rules", "old-rebase-before-first-push", r"rebase before the first push"),
+    ("wake", "## Rules", "draft-pr-at-start", r"(?i)draft[ -]?pr at (?:the )?start"),
 ]
 
 # wake never tells a design session to merge a feature PR or names the removed repo-session lane as a worker's owner.
@@ -696,6 +710,8 @@ injections = [
     ("wake-missing-claim-softened-readded", "wake", "## The loop\n", "## The loop\n\nNever replay and do not re-inject the brief.\n"),
     ("wake-observe-rerun-readded", "wake", "## The loop\n", "## The loop\n\nTo observe a request that has not landed, rerun the identical step 5 command with `--wait --wait-timeout <d>`.\n"),
     ("wake-plan-waits-for-operator-look-readded", "wake", "## Rules\n", "## Rules\n\nWait for the operator to confirm the plan before starting.\n"),
+    ("wake-old-rebase-before-first-push-readded", "wake", "## Rules\n", "## Rules\n\n- Catch up with main by rebase before the first push.\n"),
+    ("wake-draft-pr-at-start-readded", "wake", "## Rules\n", "## Rules\n\n- Open a Draft PR at the start.\n"),
 ]
 for label, doc, anchor, new in injections:
     assert docs[doc].count(anchor) == 1, f"fixture: anchor {anchor!r} not unique in {doc}"

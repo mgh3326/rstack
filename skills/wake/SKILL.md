@@ -435,7 +435,11 @@ Do not spawn a fix worker while that attempt is alive. A fix worker is spawned o
 gone (exited, reaped or lost). **The spawner is the repo's design session, else the desk, and it uses a
 fresh hk task** (`<title> — fix PR #<n>`, with `--expected`), because panewire refuses a `--task` bound
 to another job. It runs the loop from step 3 on the same branch with a new job id.
+A successor continues from the pushed branch: its brief names the branch and the last pushed commit, names no host, and lists what is not in git (the job dir's report draft, evidence folders, a Unity Library, a run token) as rebuilt or fetched; work after the last push is redone.
+*Temporary (operator 2026-11-18, hk 5114): ends when panewire hk 5114 ships (hk 5114).*
+Until panewire hk 5114 ships, a successor whose worktree exists only on the parent's host names that host with `--override-reason 'worktree on parent host until panewire hk 5114'`.
 Never revive a terminal record or respawn a vanished pane blindly.
+A ticket cut off twice in a row goes to the design lane: no third seat; ESC `--type decision` to the owner lane with the task, both cut-off reasons and the last pushed commit. Point at hk `policy/quota-stop` for the hand-over itself; do not restate it.
 If the fix needs a decision, escalate instead.
 
 ## Harvest — the `[wake]` event
@@ -529,8 +533,7 @@ After a bundle PR merges, the design session moves each delivered child that has
 - **Report outside the worktree:** `~/work/herdr-inbox/jobs/<job>/report.md`, and say in the
   brief that the path does not affect `git status` and must not be deleted — otherwise a
   clean-tree exit condition makes the worker delete it.
-- **A pushed branch catches up by merge, not rebase** (`git merge origin/<base>`); rebase only
-  before the first push.
+- **A pushed branch catches up by merge, not rebase** (`git merge origin/<base>`); never rebase or force-push.
 - **No operator step in a plan.** No brief step makes the operator's look, play, test or confirmation a
   step; a reversible choice takes the recommended option and the worker records it in hk with why and how
   to undo it (hk:doc `policy/operator-not-a-gate`).
@@ -631,8 +634,7 @@ When the Acceptance list is met and checked, stop and report. Do not add feature
 ## Rules
 - Follow hk:doc `policy/operator-facing-korean`: operator-facing text is Korean; identifiers, code and commands stay as they are; English-only text gets a stored Korean translation.
 - Small PR. No direct merge. Run only the tests for what you changed; full suites belong to CI.
-- Catch up with main by rebase before the first push. A pushed branch catches up with
-  `git merge origin/main`; never rebase or force-push it.
+- Commit at each verified unit, before a long-running command and before ending a turn, and push after every commit; the commit message says what is done and what comes next (it is what a successor reads). Catch up with `git merge origin/main`; never rebase or force-push. No Draft PR: the PR opens once, at READY, because a draft adds a state to undo (`gh pr ready`) while a pushed branch lets a successor continue without changing mergewake or CI.
 - The PR body (required) ends with these trailers, each on its own line, exactly once;
   repeating them in commits is optional. mergewake reads the PR body first and then only the
   head commit (mergewake `prTask`, `internal/pipeline/deliver.go`), so a merge commit on the
