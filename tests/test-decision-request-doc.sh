@@ -45,13 +45,27 @@ def check(text: str) -> None:
         assert next_line < len(cli_lines), "decision-request CLI continuation is incomplete"
         cli_block.append(cli_lines[next_line])
     assert "--human-only" in flat("\n".join(cli_block)), "decision-request CLI line must carry --human-only"
+    # hk 5131 (operator decision 396 grounds, decision 339 list): --human-only is the operator-only list
+    # of hk:doc policy/operator-not-a-gate, not every merge or deploy question.
     assert re.search(
-        r"merge.*deploy.*spend.*money.*paid quota.*purchases.*tokens?.*credentials?.*external access.*host.*security.*policy.*gate.*cap.*exceptions?.*MUST carry `--human-only`",
+        r"operator-only list of hk:doc `policy/operator-not-a-gate` §What stays the operator's alone \(decision 339\) MUST carry `--human-only`",
         sec,
-        re.IGNORECASE,
-    ), "human_only category rule missing"
+    ), "human_only scope rule (decision 339 operator-only list) missing"
+    assert "Any `decision-request` about merge, deploy" not in sec, "old merge/deploy human_only list still present"
+    assert re.search(
+        r"Merge, deploy and settings questions are not on that list: they may be answered from dots with the operator's quoted words",
+        sec,
+    ), "merge/deploy/settings not-human_only rule missing"
     assert re.search(r"assistant judgement must never answer these.{0,100}hk refuses `human_only`", sec), "human_only assistant refusal reason missing"
     assert re.search(r"If unsure.{0,40}`--human-only`", sec), "human_only default-when-unsure rule missing"
+    assert re.search(r"`human_only` 요청은 콘솔에서 답한다", sec), "human_only console-answer rule missing"
+    assert "pending_confirmation" in sec, "decision-resolve pending_confirmation fact missing"
+    assert re.search(
+        r"\*Temporary \(operator 2026-11-18, hk 5131\): ends when handoffkeep hk 5132 ships \(hk 5132\)\.\*",
+        sec,
+    ), "hk 5132 temporary marker missing"
+    # hk 5131 (2a): a question with no task gets a kind=decide task in the asking lane's project first.
+    assert re.search(r"태스크가 없는 질문은 요청 전에 먼저 질문하는 레인의 프로젝트에 `kind=decide` 태스크를 만든다", sec), "no-task question kind=decide rule missing"
     assert re.search(r"dots.{0,60}operator-only 요청에 답할 수 없다", sec), "dots operator-only refusal missing"
     assert "RefuseOperatorOnly" in sec, "hk refusal reason missing"
     assert "DecisionResultPendingConfirmation" in sec, "pending-confirmation fact missing"
@@ -79,7 +93,13 @@ print("PASS decision-request.md contract")
 mutants = [
     ("cli-line-removed", doc_text.replace("handoffkeep tasks decision-request", "handoffkeep tasks transition")),
     ("human-only-cli-flag-removed", doc_text.replace("[--block] [--human-only]", "[--block]", 1)),
-    ("human-only-rule-removed", re.sub(r"(?m)^- Any `decision-request` about merge,.*\n", "", doc_text, count=1)),
+    ("human-only-rule-removed", re.sub(r"(?m)^- A `decision-request` on the operator-only list.*\n", "", doc_text, count=1)),
+    ("human-only-old-merge-deploy-list-readded", doc_text.replace(HEADING, HEADING + "\n- Any `decision-request` about merge, deploy, spend (money, paid quota, purchases), tokens/credentials/external access, host/security settings, or policy/gate/cap exceptions MUST carry `--human-only`.", 1)),
+    ("merge-deploy-as-human-only-readded", doc_text.replace("Merge, deploy and settings questions are not on that list", "Merge, deploy and settings questions are on that list", 1)),
+    ("human-only-console-answer-removed", doc_text.replace("`human_only` 요청은 콘솔에서 답한다", "`human_only` 요청도 dots 에서 답한다", 1)),
+    ("pending-confirmation-fact-removed", doc_text.replace("(`pending_confirmation`)", "", 1)),
+    ("hk-5132-temporary-marker-removed", doc_text.replace("*Temporary (operator 2026-11-18, hk 5131): ends when handoffkeep hk 5132 ships (hk 5132).*", "", 1)),
+    ("no-task-kind-decide-removed", doc_text.replace("태스크가 없는 질문은 요청 전에 먼저 질문하는 레인의 프로젝트에 `kind=decide` 태스크를 만든다", "태스크가 없는 질문은 그냥 묻는다", 1)),
     ("record-first-removed", doc_text.replace("기록 먼저, 알림에 request_id", "알림")),
     ("failed-record-claim", doc_text.replace("통지하지 않는다", "통지한다")),
     ("default-merged-into-recommendation", doc_text.replace("권고와 무응답 동작은 별개다", "권고가 곧 기본값이다")),

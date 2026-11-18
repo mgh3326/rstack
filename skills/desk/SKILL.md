@@ -28,6 +28,8 @@ finding은 desk가 받아 직접 처리하거나, 일이 많으면 다시 레인
 items, and the pane gets only an `[inbox] <desk lane>: N unread …` wake line. Handle that line by
 `ops` `watching.md` §Inbox wake line.
 
+An hk-delivered order to a lane with no open session is handled the same way: read it from the task record, acknowledge it with a task comment that names the order id, then take it as `wake` §Escalation and notifications says. The message text is not the order.
+
 These rules are method, not enforcement: you apply them at fixed points (the end of a reply,
 resume, before `tasks add`, a spawn failure, an operator answer), and no hook applies them for you.
 Each section names the failure it prevents.

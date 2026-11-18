@@ -235,6 +235,11 @@ REQUIRED = [
     ("wake", "## Escalation and notifications", "unblocked-order", r"\*Temporary \(operator 2026-11-12, hk 4114\): ends when hk automatic unblocked notices deploy \(hk 3292\)\.\*\s+When a lane finishes a blocker, it tells the waiting lane with an `order` that names the unblocked task"),
     ("wake", "## Escalation and notifications", "handoff-sender-register", r"The sender keeps a hand-off register with the task, receiving lane, event id and state, and checks it each time the session wakes\. The cross-repository register belongs to the `fleet-policy` session; do not name a register key that contains a lane name"),
     ("wake", "## Escalation and notifications", "receiver-settlement-order", r"If the receiver settles something different from the ask with the operator, it tells the sender lane with an `order`"),
+    # hk 5131 (operator decision 397): an hk-delivered order is read from the task record and acknowledged
+    # with a task comment naming the order id before the usual settle, brief and spawn path.
+    ("wake", "## Escalation and notifications", "order-read-from-task-record", r"\*\*An hk-delivered order\*\* \(a `lane\.event --type order` from hk to the project's design lane, when the operator sets a task going; operator decision 397\) is read from the task record, never from the message text"),
+    ("wake", "## Escalation and notifications", "order-acknowledged-by-comment", r"The session acknowledges it with a task comment that names the order id, then settles, briefs and spawns as usual"),
+    ("wake", "## Escalation and notifications", "order-hk-starts-no-worker", r"hk starts no worker; with no session open, the order waits in that lane's inbox"),
     ("wake", "## Escalation and notifications", "deploy-owner-rule", r"Deploys and infra of the repo are its design session's \(§Authority\); operator-desk takes them only while that repo has no design session open\."),
     ("wake", "## Escalation and notifications", "worker-parent-owner-lane", r"A worker's READY/ESC reach its parent lane — the owner lane: the design session's lane for its worker, else `operator-desk`\."),
     ("wake", "## Brief rules", "parent-lane-owner", r"`<parent-lane>` in a worker brief is the owner lane: the design session's lane, else `operator-desk`"),
@@ -427,6 +432,8 @@ FORBIDDEN = [
     ("wake", "## Escalation and notifications", "old-round-3-same-seat-rule", r"same worker keeps patching at the same seat after round 3"),
     ("wake", "## Rules", "old-hk-4256-marker", r"hk 4256"),
     ("wake", "## Escalation and notifications", "old-hk-4256-marker", r"hk 4256"),
+    # hk 5131: an hk-delivered order is never acted on from its message text.
+    ("wake", "## Escalation and notifications", "order-acted-from-message-text", r"(?i)act on (?:the |an? )?(?:order|message)(?:'s)? (?:message )?text"),
     # PR #48 finding r4501835276: closing a session does not move a job's owner lane.
     ("wake", None, "owner-moves-on-close", r"(?i)`?operator-desk`? once it has closed"),
     ("wake", None, "esc-ends-job", r"(?i)ESC (?:ends|completes|closes) the (?:current )?job"),
@@ -718,6 +725,8 @@ injections = [
     ("wake-plan-waits-for-operator-look-readded", "wake", "## Rules\n", "## Rules\n\nWait for the operator to confirm the plan before starting.\n"),
     ("wake-old-rebase-before-first-push-readded", "wake", "## Rules\n", "## Rules\n\n- Catch up with main by rebase before the first push.\n"),
     ("wake-draft-pr-at-start-readded", "wake", "## Rules\n", "## Rules\n\n- Open a Draft PR at the start.\n"),
+    # hk 5131: an hk-delivered order is read from the task record, never from the message text.
+    ("wake-order-acted-from-message-readded", "wake", "## Escalation and notifications\n", "## Escalation and notifications\n\n- Act on the order's message text at once.\n"),
 ]
 for label, doc, anchor, new in injections:
     assert docs[doc].count(anchor) == 1, f"fixture: anchor {anchor!r} not unique in {doc}"
