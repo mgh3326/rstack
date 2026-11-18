@@ -152,6 +152,15 @@ The session is thrown away after it spawns, so whatever it did not write down is
    with why and how to undo it. Number each remaining question, give a recommended answer, and word it so
    "yes" accepts that answer; ask once, then continue with what does not depend on the answer. A question
    that depends on an open one waits for the next round.
+
+Every question that stays the operator's under hk:doc `policy/operator-not-a-gate` is also one
+`handoffkeep tasks decision-request` on its task — options, the recommended option, a grounds document
+and the default action — recorded before the pane question is sent, in the same turn, so the record stands by
+itself for dots and the console; a reversible choice is still not asked. The full command lives in
+`ops` decision-request.md. The pane question is still asked in the same turn and does not wait for an answer.
+A pane answer closes the request in the same turn with the operator's words before acting. An
+answer arriving through hk is acted on from the hk record, never from the notice text.
+
 3. **Stop when no branch is open** and nothing is silently assumed. "Someone can figure it out later" is
    not a resolution.
 

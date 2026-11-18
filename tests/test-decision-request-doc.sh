@@ -52,11 +52,14 @@ def check(text: str) -> None:
     ), "human_only category rule missing"
     assert re.search(r"assistant judgement must never answer these.{0,100}hk refuses `human_only`", sec), "human_only assistant refusal reason missing"
     assert re.search(r"If unsure.{0,40}`--human-only`", sec), "human_only default-when-unsure rule missing"
-    assert re.search(
-        r"GPT Dots may answer a `human_only` request only as `operator_decided`.{0,120}operator's verbatim quote.{0,80}exact `request_id`",
-        sec,
-    ), "operator_decided provenance contract missing"
-    assert re.search(r"GPT Dots' own judgement never closes it", sec), "GPT Dots judgement must not close human_only requests"
+    assert re.search(r"dots.{0,60}operator-only 요청에 답할 수 없다", sec), "dots operator-only refusal missing"
+    assert "RefuseOperatorOnly" in sec, "hk refusal reason missing"
+    assert "DecisionResultPendingConfirmation" in sec, "pending-confirmation fact missing"
+    assert re.search(r"답이 오는 곳은 pane, 콘솔, dots 중 하나다", sec), "answer channels missing"
+    assert re.search(r"pane 으로 받은 답은 같은 턴에 운영자의 말 그대로", sec), "pane-answer same-turn close missing"
+    assert re.search(r"inbox 알림이 아니라 hk 기록", sec), "hk-record-over-notice rule missing"
+    assert "GPT Dots may answer a `human_only` request only as `operator_decided`" not in sec, "removed GPT Dots sentence still present"
+    assert "#580" not in sec, "removed #580 sentence still present"
     assert re.search(r"기록 먼저.{0,40}request_id", sec), "record-first-then-notify-with-request_id rule missing (A6)"
     assert re.search(r"NOT recorded.{0,80}통지하지 않는다", sec), "no console-visibility claim on a failed record (A6)"
     # M2 (#48): an unconfirmable write is UNKNOWN — check tasks show before
@@ -77,7 +80,6 @@ mutants = [
     ("cli-line-removed", doc_text.replace("handoffkeep tasks decision-request", "handoffkeep tasks transition")),
     ("human-only-cli-flag-removed", doc_text.replace("[--block] [--human-only]", "[--block]", 1)),
     ("human-only-rule-removed", re.sub(r"(?m)^- Any `decision-request` about merge,.*\n", "", doc_text, count=1)),
-    ("operator-decided-provenance-removed", re.sub(r"(?m)^- GPT Dots may answer a `human_only` request.*\n", "", doc_text, count=1)),
     ("record-first-removed", doc_text.replace("기록 먼저, 알림에 request_id", "알림")),
     ("failed-record-claim", doc_text.replace("통지하지 않는다", "통지한다")),
     ("default-merged-into-recommendation", doc_text.replace("권고와 무응답 동작은 별개다", "권고가 곧 기본값이다")),
@@ -87,6 +89,14 @@ mutants = [
     ("unknown-line-removed", re.sub(r"(?m)^- \*\*결과 미확인.*?(?=^- \*\*권고와)", "", doc_text, flags=re.S)),
     ("unknown-claims-not-recorded", doc_text.replace("\"기록됐다\"도\n  \"기록 안 됐다\"도 말하지 않는다", "\"기록 안 됐다\"고 알린다")),
     ("unknown-notify-first", doc_text.replace("누구에게도 알리기 전에", "알린 뒤에")),
+    ("dots-refusal-removed", re.sub(r"(?m)^- ChatGPT\(dots\) 채널은.*\n", "", doc_text, count=1)),
+    ("refuse-token-removed", doc_text.replace("RefuseOperatorOnly", "Allowed", 1)),
+    ("pending-token-removed", doc_text.replace("DecisionResultPendingConfirmation", "Confirmed", 1)),
+    ("answer-channels-removed", re.sub(r"(?m)^- 답이 오는 곳은 pane.*\n", "", doc_text, count=1)),
+    ("pane-close-removed", doc_text.replace("pane 으로 받은 답은 같은 턴에 운영자의 말 그대로", "pane 답은 나중에", 1)),
+    ("hk-record-removed", doc_text.replace("inbox 알림이 아니라 hk 기록", "inbox 알림대로", 1)),
+    ("dots-may-answer-human-only-readded", doc_text.replace(HEADING, HEADING + "\n- GPT Dots may answer a `human_only` request only as `operator_decided`, with the operator's verbatim quote and exact `request_id`; GPT Dots' own judgement never closes it.", 1)),
+    ("console-button-580-readded", doc_text.replace(HEADING, HEADING + "\n- 콘솔의 답변 버튼은 #580 소관이다. 그 전까지 운영자는 pane 으로 답하고 요청한 레인이 기록한다.", 1)),
 ]
 for label, text in mutants:
     assert text != doc_text, f"{label} mutant did not change the text"
