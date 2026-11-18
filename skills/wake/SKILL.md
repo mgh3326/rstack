@@ -437,7 +437,7 @@ fresh hk task** (`<title> — fix PR #<n>`, with `--expected`), because panewire
 to another job. It runs the loop from step 3 on the same branch with a new job id.
 A successor continues from the pushed branch: its brief names the branch and the last pushed commit, names no host, and lists what is not in git (the job dir's report draft, evidence folders, a Unity Library, a run token) as rebuilt or fetched; work after the last push is redone.
 *Temporary (operator 2026-11-18, hk 5114): ends when panewire hk 5114 ships (hk 5114).*
-Until panewire hk 5114 ships, a successor whose worktree exists only on the parent's host names that host with `--host <parent-host> --override-reason 'worktree on parent host until panewire hk 5114'`.
+Until panewire hk 5114 ships, for a successor whose worktree exists only on the parent's host, the spawn command passes `--host <parent-host> --override-reason 'worktree on parent host until panewire hk 5114'` (the brief still names no host; this overrides the spawn-hosts scope for this case only).
 Never revive a terminal record or respawn a vanished pane blindly.
 A ticket cut off twice in a row goes to the design lane: no third seat; ESC `--type decision` to the owner lane with the task, both cut-off reasons and the last pushed commit. Point at hk `policy/quota-stop` for the hand-over itself; do not restate it.
 If the fix needs a decision, escalate instead.
