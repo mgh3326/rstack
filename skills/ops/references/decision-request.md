@@ -14,13 +14,11 @@ pane 메시지는 그 알림이다. 콘솔(큐 drawer · Decisions)은 이 기�
       --default-action "<무응답 시 동작 — 없으면 '자동 적용 없음'>" [--default-option B] \
       [--default-trigger "<발동 조건>"] [--due <RFC3339+오프셋>] [--doc <결과·근거 문서 key>] [--block] [--human-only]
 
-태스크가 없는 질문은 요청 전에 먼저 질문하는 레인의 프로젝트에 `kind=decide` 태스크를 만든다(제목 = 질문). 요청은 그 태스크에 건다.
+태스크가 없는 질문은 `handoffkeep decisions ask --new-task --project <프로젝트> --lane <레인> --question '<질문>'` 으로 kind=decide 태스크와 요청을 한 번에 만든다.
 
 - A `decision-request` on the operator-only list of hk:doc `policy/operator-not-a-gate` §What stays the operator's alone (decision 339) MUST carry `--human-only`; assistant judgement must never answer these (hk refuses `human_only` on that path). Merge, deploy and settings questions are not on that list: they may be answered from dots with the operator's quoted words. If unsure, use `--human-only`.
 - ChatGPT(dots) 채널은 operator-only 요청에 답할 수 없다: hk 가 그 경로의 human_only 요청을 거부한다(`RefuseOperatorOnly`). 운영자 확인이 필요한 시도는 열린 채로 남는다(`DecisionResultPendingConfirmation`).
-- `human_only` 요청은 콘솔에서 답한다. 세션의 `decision-resolve` 는 그 요청에 시도만 기록하고(`pending_confirmation`), 요청은 검증된 답을 기다린다. 검증 경로는 콘솔과 운영자 bearer 클라이언트다.
-  *Temporary (operator 2026-11-18, hk 5131): ends when handoffkeep hk 5132 ships (hk 5132).*
-  hk 5132 가 배포되기 전까지 dots 는 이 요청에 답하지 못한다. 배포 뒤에는 운영자의 원문과 정확한 request id 가 있을 때 dots 답도 받는다.
+- `human_only` 요청은 콘솔에서 답한다. pane 으로 받은 human-only 답은 아래 세션 채널 닫기로 닫는다; human-only 가 아닌 요청은 `tasks decision-resolve` 로 닫아도 된다.
 
 - **기록 먼저, 알림에 request_id.** 출력의 `request_id`(`dr-<task>-<rev>`)를 붙여 알린다
   (출력 `notify` 줄). 명령이 실패하면(`NOT recorded`) 기록되지 않은 것이다 — 그때는
@@ -37,13 +35,19 @@ pane 메시지는 그 알림이다. 콘솔(큐 drawer · Decisions)은 이 기�
   요청에 붙지 않는다.
 - 작업을 멈추는 요청이면 `--block`(같은 기록에서 그 태스크가 `awaiting_decision` 으로 표시된다). 멈추지 않는 요청은 태스크
   상태를 그대로 둔다 — 열린 요청은 어떤 상태의 태스크에서도 콘솔에 뜬다.
-- 답이 오면 `handoffkeep tasks decision-resolve <task-id> --request <request_id> --kind answered
+- human-only 가 아닌 요청의 답이 오면 `handoffkeep tasks decision-resolve <task-id> --request <request_id> --kind answered
   --option A --responder operator`로 닫는다. 기본값을 적용했으면 `--kind default_applied
   --receipt <적용 증거>` — **기한 경과는 적용이 아니다.** 영수증 없이는 "적용됨"으로 기록되지
   않고 자동 적용 타이머도 없다. 철회는 `--kind withdrawn --text <이유>`.
 - 종료(merged·dropped)된 태스크에 열린 요청이 남으면 콘솔에 "미정리 요청"으로 뜬다 —
   `decision-resolve`로 정리한다.
 - 답이 오는 곳은 pane, 콘솔, dots 중 하나다: pane 으로 받은 답은 같은 턴에 운영자의 말 그대로 hk 에서 닫고 나서 움직인다. 콘솔·dots 로 들어온 답은 inbox 알림이 아니라 hk 기록을 확인하고 그 기록대로 움직인다.
+
+### human-only pane 답변 닫기
+
+pane 으로 받은 human-only 답은 세션 채널로 닫는다: `handoffkeep decisions resolve request <dr-id> --channel session --quote '<운영자 원문>' --option <X>`. 요청이 닫히면 물은 세션이 같은 턴에 그 kind=decide 태스크를 completed 로 닫고 요청을 근거로 남긴다.
+*Temporary (operator 2026-11-18, hk 5206): ends when handoffkeep hk 5201 ships (hk 5201).*
+handoffkeep hk 5201 이 배포되기 전까지는 hk 가 대신 닫지 않으므로 물은 세션이 닫는다.
 
 ## 데스크 결정 루프
 
@@ -56,8 +60,8 @@ pane 메시지는 그 알림이다. 콘솔(큐 drawer · Decisions)은 이 기�
    태스크를 따로 만들지 않는다.
 2. **다시 물을 때는 같은 요청을 쓴다.** 같은 명령을 재실행하면 `duplicate` 가 돌아온다. 새 요청을 만들지
    않는다.
-3. **채팅으로 받은 답은 같은 턴에 hk 에서 닫는다.** 그 답대로 움직이기 전에 닫는다. `--text` 에 운영자의
-   말을 그대로 옮긴다:
+3. **채팅으로 받은 답은 같은 턴에 hk 에서 닫는다.** 그 답대로 움직이기 전에 닫는다. human-only pane 답변은 `### human-only pane 답변 닫기`의 세션 채널 명령으로 닫고, 나머지는 `--text` 에 운영자의
+   말을 그대로 옮긴 아래 명령으로 닫는다:
 
        handoffkeep tasks decision-resolve <task-id> --request <request_id> --kind answered \
          --option <X> --responder operator --text '<운영자 원문>'

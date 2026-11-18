@@ -410,6 +410,16 @@ REQUIRED = [
     ("wake", "## Brief rules", "brief-name-same-concept-prs", r"\*\*Name open PRs and tasks on the same concept\.\*\* Same concept means the same table, state machine, authority or contract, not only the same files"),
     ("wake", "## Brief rules", "brief-same-concept-state-or-none", r"State what to assume about each \(e\.g\. \"assume PR <n> is merged: <what exists and decides>\"\); if there are none, write \"none\""),
     ("wake", None, "worker-brief-same-concept-line", r"Open PRs and tasks on the same concept: <PR or task — what to assume about it, e\.g\. \"assume PR <n> is merged: <what exists and decides>\"; or \"none\">"),
+    # hk 5205 (operator decision 418): on a backlog wake the open design session judges and pulls its lane's kept tickets.
+    ("wake", "## Backlog wake", "backlog-wake-judge-pull-or-leave", r"reads the kept tickets from hk, judges each one, and pulls or leaves it with the reason in an hk comment"),
+    ("wake", "## Backlog wake", "backlog-wake-order-first", r"A task the operator set going goes first"),
+    ("wake", "## Backlog wake", "backlog-wake-reversible-only", r"Only reversible work is pulled; what hk:doc `policy/operator-not-a-gate` leaves to the operator is still asked"),
+    ("wake", "## Backlog wake", "backlog-wake-no-free-slot", r"Never pull merely because a slot is free"),
+    ("wake", "## Backlog wake", "backlog-wake-parallel-target", r"below its parallel target means a spawn still fits the dispatch limits .{0,200}no new number"),
+    ("wake", "## Backlog wake", "backlog-wake-no-self-poll", r"No self-polling: hk checks periodically and the hub wakes the lane; hk starts nothing"),
+    ("wake", "## Backlog wake", "backlog-wake-interim-marker", r"\*Temporary \(operator 2026-11-18, hk 5205\): ends when handoffkeep hk 5201 ships \(hk 5201\)\.\*"),
+    ("wake", "## Backlog wake", "backlog-wake-interim-moments", r"Until handoffkeep hk 5201 is live, the same judgement runs at the moments the session already acts: a merge notice, an operator message and the backlog-count wake"),
+    ("wake", "## Backlog wake", "backlog-wake-stop-record", r"The record that stops hk's notice is named by handoffkeep hk 5201"),
 ]
 
 # Rows that must be absent: consult resolution does not take an author family.
@@ -499,6 +509,9 @@ FORBIDDEN = [
     # hk 5110 (operator decisions 388, 387): rebase before first push and Draft PR at start are forbidden.
     ("wake", "## Rules", "old-rebase-before-first-push", r"rebase before the first push"),
     ("wake", "## Rules", "draft-pr-at-start", r"(?i)draft[ -]?pr at (?:the )?start"),
+    # hk 5205 (operator decision 418): never a pull because a slot is free, never self-polling.
+    ("wake", "## Backlog wake", "backlog-free-slot-pull", r"(?i)pull (?:another|the next|a) ticket because a slot is free"),
+    ("wake", "## Backlog wake", "backlog-self-poll-timer", r"(?i)poll the backlog (?:on a timer|periodically)"),
 ]
 
 # wake never tells a design session to merge a feature PR or names the removed repo-session lane as a worker's owner.
@@ -725,6 +738,9 @@ injections = [
     ("wake-plan-waits-for-operator-look-readded", "wake", "## Rules\n", "## Rules\n\nWait for the operator to confirm the plan before starting.\n"),
     ("wake-old-rebase-before-first-push-readded", "wake", "## Rules\n", "## Rules\n\n- Catch up with main by rebase before the first push.\n"),
     ("wake-draft-pr-at-start-readded", "wake", "## Rules\n", "## Rules\n\n- Open a Draft PR at the start.\n"),
+    # hk 5205 (operator decision 418): never a pull because a slot is free, never self-polling.
+    ("wake-backlog-free-slot-pull-readded", "wake", "## Backlog wake\n", "## Backlog wake\n\n- Pull another ticket because a slot is free.\n"),
+    ("wake-backlog-self-poll-readded", "wake", "## Backlog wake\n", "## Backlog wake\n\n- Poll the backlog on a timer to find work.\n"),
     # hk 5131: an hk-delivered order is read from the task record, never from the message text.
     ("wake-order-acted-from-message-readded", "wake", "## Escalation and notifications\n", "## Escalation and notifications\n\n- Act on the order's message text at once.\n"),
 ]
