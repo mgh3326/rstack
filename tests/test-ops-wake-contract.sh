@@ -130,12 +130,12 @@ REQUIRED = [
     ("wake", "## Rules", "worker-catch-up-merge-not-rebase", r"Catch up with `git merge origin/main`; never rebase or force-push\."),
     ("wake", "## Rules", "worker-no-draft-pr-opens-at-ready", r"No Draft PR: the PR opens once, at READY, because a draft adds a state to undo \(`gh pr ready`\) while a pushed branch lets a successor continue without changing mergewake or CI\."),
     ("wake", "## BLOCKED", "successor-continues-from-pushed-branch", r"A successor continues from the pushed branch: its brief names the branch and the last pushed commit, names no host, and lists what is not in git \(the job dir's report draft, evidence folders, a Unity Library, a run token\) as rebuilt or fetched; work after the last push is redone"),
-    ("wake", "## BLOCKED", "successor-panewire-hk-5114-interim-marker", r"\*Temporary \(operator 2026-11-18, hk 5114\): ends when panewire hk 5114 ships \(hk 5114\)\.\*"),
-    ("wake", "## BLOCKED", "successor-temporary-parent-host-exception", r"Until panewire hk 5114 ships, for a successor whose worktree exists only on the parent's host, the spawn command passes `--host <parent-host> --override-reason 'worktree on parent host until panewire hk 5114'` \(the brief still names no host"),
+    ("wake", "## BLOCKED", "successor-spec-spawn", r"The successor is a spec spawn: instead of `-c`, pass `--checkout-origin <repo URL> --checkout-ref refs/heads/<branch> --checkout-commit <last pushed sha> --parent-job <parent job> --host auto`"),
+    ("wake", "## BLOCKED", "successor-spec-spawn-refusals", r"A refusal `successor_stale` \(the branch head moved past that sha\) or `branch_in_use` \(another worktree holds the branch\) is fixed as it says, never worked around with another launch path"),
     ("wake", "## BLOCKED", "two-cut-offs-go-to-design-lane", r"A ticket cut off twice in a row goes to the design lane: no third seat; ESC `--type decision` to the owner lane with the task, both cut-off reasons and the last pushed commit\. Point at hk `policy/quota-stop` for the hand-over itself; do not restate it"),
     ("spawn", "## 무인 실행·task 기록", "spawn-successor-continues-from-pushed-branch", r"후속 작업자\(successor\)는 푸시된 브랜치에서 이어간다: 브리프는 브랜치와 마지막 푸시 커밋을 지정하고 호스트를 적지 않으며, git 에 없는 것\(잡 디렉토리의 보고서 초안, 증거 폴더, Unity Library, 실행 토큰\)은 재생성하거나 가져옴\(rebuilt or fetched\)으로 기재한다; 마지막 푸시 이후의 작업은 다시 수행한다"),
-    ("spawn", "## 무인 실행·task 기록", "spawn-successor-panewire-hk-5114-interim-marker", r"\*Temporary \(operator 2026-11-18, hk 5114\): ends when panewire hk 5114 ships \(hk 5114\)\.\*"),
-    ("spawn", "## 무인 실행·task 기록", "spawn-successor-temporary-parent-host-exception", r"panewire hk 5114 배포 전까지, 부모 호스트에만 worktree 가 있는 후속 작업자는 스폰 명령에 `--host <parent-host> --override-reason 'worktree on parent host until panewire hk 5114'` 를 넘긴다\(브리프에는 여전히 호스트를 적지 않"),
+    ("spawn", "## 무인 실행·task 기록", "spawn-successor-spec-spawn", r"후속 작업자는 spec spawn 으로 띄운다: `-c` 대신 `--checkout-origin <repo URL> --checkout-ref refs/heads/<branch> --checkout-commit <마지막 푸시 sha> --parent-job <부모잡> --host auto`"),
+    ("spawn", "## 무인 실행·task 기록", "spawn-successor-spec-spawn-refusals", r"`successor_stale`.{0,80}`branch_in_use` 로 거절된다 — 둘 다 다른 경로로 띄우지 말고"),
     # Merge gate additions.
     ("wake", "## Merge gate", "reviewer-family", r"mergewake picks the reviewer from `--author-family` and records `same_family` on each pass"),
     ("wake", "## Merge gate", "base-freshness", r"\*\*Base freshness:\*\* `git merge-base --is-ancestor origin/<base> \"\$H\"`"),
@@ -417,8 +417,6 @@ REQUIRED = [
     ("wake", "## Backlog wake", "backlog-wake-no-free-slot", r"Never pull merely because a slot is free"),
     ("wake", "## Backlog wake", "backlog-wake-parallel-target", r"below its parallel target means a spawn still fits the dispatch limits .{0,200}no new number"),
     ("wake", "## Backlog wake", "backlog-wake-no-self-poll", r"No self-polling: hk checks periodically and the hub wakes the lane; hk starts nothing"),
-    ("wake", "## Backlog wake", "backlog-wake-interim-marker", r"\*Temporary \(operator 2026-11-18, hk 5205\): ends when handoffkeep hk 5201 ships \(hk 5201\)\.\*"),
-    ("wake", "## Backlog wake", "backlog-wake-interim-moments", r"Until handoffkeep hk 5201 is live, the same judgement runs at the moments the session already acts: a merge notice, an operator message and the backlog-count wake"),
     ("wake", "## Backlog wake", "backlog-wake-stop-record", r"The notice stops with `handoffkeep lanes look <lane> --notice <event_id>"),
 ]
 

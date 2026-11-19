@@ -45,9 +45,7 @@ pane 메시지는 그 알림이다. 콘솔(큐 drawer · Decisions)은 이 기�
 
 ### human-only pane 답변 닫기
 
-pane 으로 받은 human-only 답은 세션 채널로 닫는다: `handoffkeep decisions resolve request <dr-id> --channel session --quote '<운영자 원문>' --option <X>`. 요청이 닫히면 물은 세션이 같은 턴에 `handoffkeep tasks transition <id> --to completed` 로 그 kind=decide 태스크를 닫고 요청을 근거로 남긴다.
-*Temporary (operator 2026-11-18, hk 5206): ends when handoffkeep hk 5201 ships (hk 5201).*
-handoffkeep hk 5201 이 배포되기 전까지는 hk 가 대신 닫지 않으므로 물은 세션이 닫는다.
+pane 으로 받은 human-only 답은 세션 채널로 닫는다: `handoffkeep decisions resolve request <dr-id> --channel session --quote '<운영자 원문>' --option <X>`. 요청이 닫히면 질문만 싣던 kind=decide 태스크는 hk 가 그 답과 함께 닫는다(handoffkeep hk 5201) — 물은 세션이 따로 `tasks transition` 하지 않는다.
 
 ## 데스크 결정 루프
 

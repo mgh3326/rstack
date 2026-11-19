@@ -449,8 +449,7 @@ gone (exited, reaped or lost). **The spawner is the repo's design session, else 
 fresh hk task** (`<title> — fix PR #<n>`, with `--expected`), because panewire refuses a `--task` bound
 to another job. It runs the loop from step 3 on the same branch with a new job id.
 A successor continues from the pushed branch: its brief names the branch and the last pushed commit, names no host, and lists what is not in git (the job dir's report draft, evidence folders, a Unity Library, a run token) as rebuilt or fetched; work after the last push is redone.
-*Temporary (operator 2026-11-18, hk 5114): ends when panewire hk 5114 ships (hk 5114).*
-Until panewire hk 5114 ships, for a successor whose worktree exists only on the parent's host, the spawn command passes `--host <parent-host> --override-reason 'worktree on parent host until panewire hk 5114'` (the brief still names no host; this overrides the spawn-hosts scope for this case only).
+The successor is a spec spawn: instead of `-c`, pass `--checkout-origin <repo URL> --checkout-ref refs/heads/<branch> --checkout-commit <last pushed sha> --parent-job <parent job> --host auto`; the node prepares that branch as a local branch with its upstream, so the successor continues on any host (panewire hk 5118, v0.0.540+). A refusal `successor_stale` (the branch head moved past that sha) or `branch_in_use` (another worktree holds the branch) is fixed as it says, never worked around with another launch path.
 Never revive a terminal record or respawn a vanished pane blindly.
 A ticket cut off twice in a row goes to the design lane: no third seat; ESC `--type decision` to the owner lane with the task, both cut-off reasons and the last pushed commit. Point at hk `policy/quota-stop` for the hand-over itself; do not restate it.
 If the fix needs a decision, escalate instead.
@@ -612,8 +611,7 @@ A large project's own design session runs the same pass for its own project, by 
 ## Backlog wake
 
 On a backlog wake from hk, the open design session judges its lane's backlog by itself: it reads the kept tickets from hk, judges each one, and pulls or leaves it with the reason in an hk comment. A task the operator set going goes first. Only reversible work is pulled; what hk:doc `policy/operator-not-a-gate` leaves to the operator is still asked. Never pull merely because a slot is free: below its parallel target means a spawn still fits the dispatch limits of §Settle before spawning ("Dispatch by bundle up to the quota gate") and the same-concept rule of §The loop step 5 — no new number. No self-polling: hk checks periodically and the hub wakes the lane; hk starts nothing.
-*Temporary (operator 2026-11-18, hk 5205): ends when handoffkeep hk 5201 ships (hk 5201).*
-Until handoffkeep hk 5201 is live, the same judgement runs at the moments the session already acts: a merge notice, an operator message and the backlog-count wake. The notice stops with `handoffkeep lanes look <lane> --notice <event_id> [--note <text>]` (MCP lane_look): the notice text carries its event_id, and a look matching the current findings silences the lane until its state changes; the version is named under hk 5201.
+The notice stops with `handoffkeep lanes look <lane> --notice <event_id> [--note <text>]` (MCP lane_look): the notice text carries its event_id, and a look matching the current findings silences the lane until its state changes (handoffkeep hk 5201).
 
 ## Worker brief
 
