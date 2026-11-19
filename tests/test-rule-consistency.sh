@@ -49,6 +49,10 @@ MARKER = re.compile(
 
 # (doc, section heading or None, row name, pattern on the flattened scope)
 REQUIRED = [
+    ("fleet", "## Triage rubric", "defer-after-clean-head",
+     r"once a head of the PR has no critical or high finding in any pass, push nothing more for medium or low findings in that PR\. Answer each open medium finding in its thread with `Disposition: defer <id>`, file the PR's one follow-up task"),
+    ("wake", None, "defer-after-clean-head",
+     r"once a head of the PR has no critical or high finding in any pass, push nothing more for medium or low findings in that PR\. Answer each open medium finding in its thread with `Disposition: defer <id>`, file the PR's one follow-up task"),
     ("robin", "## Fleet adapter for vendored pstack", "merge-exception",
      r"no session merges, except a lead under `lead` §Ledger"),
     ("ops", "## Who does what", "merge-exception",

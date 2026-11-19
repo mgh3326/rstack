@@ -57,8 +57,9 @@ Severity decides blocking. Disposition is what you do about it.
 | Severity | Blocks? | Allowed dispositions |
 |---|---|---|
 | critical, high | yes | **fix**; or **dismiss** only with evidence (a command and its output, or the exact code line that disproves it) — on a lead's own PR, the lead judges and records the evidence in its ledger; on every other PR, the repo's design session judges, or operator-desk while that repo has none open |
-| medium, low | no | **fix** (cheap and inside the contract), **dismiss** (one-line reason), or **defer** (follow-up hk task id) |
+| medium, low | no | **fix** (cheap and inside the contract, only while a critical or high finding is open), **dismiss** (one-line reason), or **defer** (follow-up hk task id) |
 
+- **After a head with no critical or high finding (operator decision 449):** once a head of the PR has no critical or high finding in any pass, push nothing more for medium or low findings in that PR. Answer each open medium finding in its thread with `Disposition: defer <id>`, file the PR's one follow-up task (same project and lane, kind fix, titled `PR #<n> follow-ups: ...`, every deferred finding with path:line), and leave the head as it is so the PR merges. While a critical or high finding is open, fix medium and low findings in the same push as the blocking fix. A failed required check is still fixed in the PR; critical and high findings are never deferred.
 - **fix** — a plausible correctness, security, privacy, data-loss, auth, idempotency, race or
   shipped-behavior defect inside the contract. Fix it, reply with the commit SHA: a `Fixed in <sha>` reply names a test that fails on the previous reviewed head and passes on the new one, and claims only what that test shows; where no test can be written (a document line, a build file) the reply says so in one clause.
 - **dismiss** — the code or context proves no change is needed, or it matches a skip pattern
@@ -71,6 +72,7 @@ Severity decides blocking. Disposition is what you do about it.
   worker sends one `info` to the design session naming the task. Ask the design session only for a
   missing fact or a design choice. The same worker files a follow-up task for a fix that missed the
   merge; do not open a second PR or ESC it to the design session (operator decision 150).
+  The design session later spawns that follow-up task as one worker for all its findings, not one worker per finding.
 - A resolved finding is resolved. Never push a commit only to unblock a gate, quiet a bot or
   add a test for a dismissed finding. Never churn code to satisfy a reviewer's taste.
 - **Never skip, whatever the pattern file says:** security, privacy, auth, permission
@@ -109,7 +111,7 @@ Review is not capped at one pass. The whole diff is reviewed once. **Review roun
 checks only the open findings, the fix delta and its impact paths**, with the prior findings and
 their dispositions in the reviewer's context and an instruction not to reopen them. Every lens
 the PR needs (for example correctness and state-risk on `blocking[].paths`) runs in the same
-round; lenses and transport retries are not extra rounds. **A round count never waives an open
+round; lenses and transport retries are not extra rounds. A head with no critical or high finding ends the rounds for medium and low findings: they are deferred (§Triage rubric, operator decision 449). **A round count never waives an open
 critical/high.** A third round is a signal to re-diagnose the cause or re-scope the PR (the repo's
 design session, else operator-desk, decides), not an approval line. A change-caused defect found with new evidence is not dismissed
 only because it lies outside the delta.
