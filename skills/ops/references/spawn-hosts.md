@@ -12,7 +12,7 @@
   `[placement] load_threshold` 이상인 호스트는 다른 후보가 없을 때만 쓴다.
 - 선택된 호스트의 spawn-time quota gate 가 최종 승인이다 — 거절되면 다음 후보로 간다. 모든 결정은
   잡의 `job.placement` 이벤트에 남고 `--dry-run` 이 그 기록을 보인다.
-- `--host local|<이름>` 은 강제 override 다 — `--override-reason` 필수, 장애 대응·진단(및 panewire hk 5114 배포 전 부모 호스트 worktree 후속 스폰 예외)에만 쓴다.
+- `--host local|<이름>` 은 강제 override 다 — `--override-reason` 필수, 장애 대응·진단에만 쓴다.
   강제 원격은 실패해도 로컬로 폴백하지 않는다.
 - `[local] spawn = false` 는 이 호스트의 로컬 스폰을 닫는다(명시 `--host local` 포함 rc 80) — 켜고
   끄는 것은 operator 의 운영 단계다. 안전 boolean 은 bare TOML boolean 만 받는다: 따옴표 값·중복

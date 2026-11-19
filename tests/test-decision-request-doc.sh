@@ -63,17 +63,14 @@ def check(text: str) -> None:
     assert "시도만 기록" not in sec, "removed session-resolve attempt-only claim still present"
     # hk 5206 (operator decisions 400, 417): a human-only pane answer closes with the session-channel
     # command; a no-task question uses decisions ask --new-task; the asking session closes the decide
-    # task after its request until hk does it under hk 5201.
+    # task: since hk 5201 shipped, hk closes it with the answer.
     assert re.search(r"decisions ask --new-task", sec), "no-task decisions ask --new-task rule missing"
     assert re.search(r"decisions resolve request <dr-id> --channel session --quote", sec), "human-only session-channel close missing"
     assert re.search(r"human-only 가 아닌 요청은 `tasks decision-resolve` 로 닫아도 된다", sec), "non-human-only decision-resolve rule missing"
     sub = flat(section(text, "### human-only pane 답변 닫기"))
     assert "--responder operator" not in sub, "human-only close must not use --responder operator"
-    assert re.search(r"요청이 닫히면 물은 세션이 같은 턴에 `handoffkeep tasks transition <id> --to completed` 로 그 kind=decide 태스크를 닫고 요청을 근거로 남긴다", sub), "decide-task close-after-resolve missing"
-    assert re.search(
-        r"\*Temporary \(operator 2026-11-18, hk 5206\): ends when handoffkeep hk 5201 ships \(hk 5201\)\.\*",
-        sub,
-    ), "hk 5201 temporary marker missing"
+    assert re.search(r"요청이 닫히면 질문만 싣던 kind=decide 태스크는 hk 가 그 답과 함께 닫는다\(handoffkeep hk 5201\)", sub), "hk closes the decide task with the answer missing"
+    assert "hk 5201 이 배포되기 전까지" not in sub, "expired hk 5201 temporary line still present"
     assert re.search(r"dots.{0,60}operator-only 요청에 답할 수 없다", sec), "dots operator-only refusal missing"
     assert "RefuseOperatorOnly" in sec, "hk refusal reason missing"
     assert "DecisionResultPendingConfirmation" in sec, "pending-confirmation fact missing"
@@ -109,8 +106,8 @@ mutants = [
     ("no-task-ask-new-task-removed", doc_text.replace("`handoffkeep decisions ask --new-task", "`handoffkeep tasks add", 1)),
     ("human-only-session-channel-removed", doc_text.replace(" --channel session --quote '<운영자 원문>'", "", 1)),
     ("non-human-only-resolve-removed", doc_text.replace("human-only 가 아닌 요청은 `tasks decision-resolve` 로 닫아도 된다", "human-only 가 아닌 요청도 세션 채널로 닫는다", 1)),
-    ("decide-task-close-removed", doc_text.replace("요청이 닫히면 물은 세션이 같은 턴에 `handoffkeep tasks transition <id> --to completed` 로 그 kind=decide 태스크를 닫고 요청을 근거로 남긴다", "요청이 닫히면 hk 가 kind=decide 태스크를 닫는다", 1)),
-    ("hk-5201-temporary-marker-removed", doc_text.replace("*Temporary (operator 2026-11-18, hk 5206): ends when handoffkeep hk 5201 ships (hk 5201).*", "", 1)),
+    ("decide-task-close-removed", doc_text.replace("요청이 닫히면 질문만 싣던 kind=decide 태스크는 hk 가 그 답과 함께 닫는다(handoffkeep hk 5201)", "요청이 닫히면 물은 세션이 kind=decide 태스크를 닫는다", 1)),
+    ("hk-5201-temporary-line-readded", doc_text.replace("### human-only pane 답변 닫기\n", "### human-only pane 답변 닫기\nhandoffkeep hk 5201 이 배포되기 전까지는 hk 가 대신 닫지 않으므로 물은 세션이 닫는다.\n", 1)),
     ("human-only-responder-operator-injected", doc_text.replace("### human-only pane 답변 닫기\n", "### human-only pane 답변 닫기\n- human-only pane 답변은 `--responder operator` 로 닫는다.\n", 1)),
     ("removed-attempt-claim-injected", doc_text.replace(HEADING, HEADING + "\n- 세션의 `decision-resolve` 는 그 요청에 시도만 기록하고(`pending_confirmation`), 요청은 검증된 답을 기다린다.", 1)),
     ("record-first-removed", doc_text.replace("기록 먼저, 알림에 request_id", "알림")),
