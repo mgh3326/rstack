@@ -49,6 +49,10 @@ MARKER = re.compile(
 
 # (doc, section heading or None, row name, pattern on the flattened scope)
 REQUIRED = [
+    ("fleet", "## Triage rubric", "never-skip-not-deferred",
+     r"A finding on the `fleet-review` never-skip list is never deferred, whatever its severity: fix it or escalate it under that rule\."),
+    ("wake", None, "never-skip-not-deferred",
+     r"A finding on the `fleet-review` never-skip list is never deferred, whatever its severity: fix it or escalate it under that rule\."),
     ("fleet", "## Triage rubric", "defer-after-clean-head",
      r"once a head of the PR has no critical or high finding in any pass, push nothing more for medium or low findings in that PR\. Answer each open medium finding in its thread with `Disposition: defer <id>`, file the PR's one follow-up task"),
     ("wake", None, "defer-after-clean-head",
