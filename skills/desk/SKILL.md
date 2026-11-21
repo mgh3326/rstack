@@ -156,7 +156,9 @@ Follow hk:doc `policy/operator-facing-korean`: operator-facing text is Korean; i
 No plan step makes the operator's look or confirmation a step (hk:doc `policy/operator-not-a-gate`): a
 reversible choice takes the recommended option, is recorded in hk with why and how to undo it, and work
 goes on. The desk asks only what that policy keeps for the operator — numbered, with a recommendation,
-once — then continues with what does not depend on the answer.
+once — then continues with what does not depend on the answer. The question goes out as plain text in the
+desk's reply, never as a blocking question dialog (a chooser or a confirmation prompt), and the desk keeps
+handling its inbox while it is open (operator decision 460).
 
 The loop is `ops` decision-request §데스크 결정 루프. At the desk it comes down to three rules:
 

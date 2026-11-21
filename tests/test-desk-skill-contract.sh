@@ -72,6 +72,8 @@ REQUIRED = [
     ("desk", "## Decisions", "resolve-same-turn", r"An answer given in chat is resolved in hk in the same turn"),
     ("desk", "## Decisions", "reuse-request", r"Asking again reuses the same request"),
     ("desk", "## Decisions", "review-at-resume", r"Open requests are reviewed at resume"),
+    # hk 5869 (operator decision 460): ask in reply text, never a blocking dialog; keep handling the inbox.
+    ("desk", "## Decisions", "decisions-no-question-dialog", r"The question goes out as plain text in the desk's reply, never as a blocking question dialog \(a chooser or a confirmation prompt\), and the desk keeps handling its inbox while it is open"),
     ("desk", "## Decisions", "decisions-no-operator-step", r"No plan step makes the operator's look or confirmation a step \(hk:doc `policy/operator-not-a-gate`\)"),
     ("desk", "## Decisions", "decisions-ask-once-then-continue", r"The desk asks only what that policy keeps for the operator — numbered, with a recommendation, once — then continues with what does not depend on the answer"),
     ("decision", None, "decision-request-reversible-not-asked", r"되돌릴 수 있는 선택은 운영자에게 묻지 않는다\(hk:doc `policy/operator-not-a-gate`\)"),
