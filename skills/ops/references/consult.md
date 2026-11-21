@@ -16,7 +16,8 @@
   (근거: 2026-09-14 실사고 — 6건 전량 드롭, 부분 배달 0).
 - **세션 이름 지정 시**: `panewire find <이름>`으로 상존·화면 확인 → 있으면 **`relay.md`의 질의
   절차**로 질의. 없으면 아래 경로로.
-- **자문은 질문자 task grade 보다 한 단계 위, 다른 계열에 묻는다.** task 가 없는 세션은 S+ 에 묻는다.
+- **자문은 질문자 task grade 보다 한 단계 위에 묻고, 다른 계열을 우선한다.** task 가 없는 세션은 S+ 에 묻는다.
+  다른 계열은 우선이지 필수가 아니다(operator decision 467): resolve 가 같은 계열을 주면 그대로 쓰고 자문 기록에 계열을 적는다.
   **디자인 세션은 SS 에, 세션과 다른 계열의 SS 좌석에 묻는다** — 방향을 한 번에 잡아야 하기 때문이다
   (operator decision 124, 2026-11-12); task 가 없는 다른 세션은 S+ 에 머문다. 어느 좌석이 SS 인지는
   hk:doc `policy/model-families` §Consult 가 정한다 — 이 문서는 모델명을 적지 않는다. S+ 급 질문자의
@@ -37,8 +38,8 @@
   `panewire resolve --role consult` 의 마지막 줄 `profile=<이름> effort=<rung>` 을 스폰의
   `-m`·`--effort` 로 쓴다. resolve 가 거부하면 다른 프로필을 직접 고르지 말고 부모 레인에 결정을
   올린다(`ops` §Escalate a decision). 질문자는 계열도 직접 확인한다: resolve 출력의 `chosen seat=<seat> model=<provider>/<model> pool=<pool> ...`
-  줄(마지막 줄 앞에 찍힌다)에서 `model=` 의 `<provider>` 접두가 고른 프로필의 계열이다(예: `model=openai/gpt-6.1-sol` → `openai`). 질문자와 같은 계열이면 다른 프로필을 직접 고르지 말고 부모 레인에
-  결정을 올린다(`ops` §Escalate a decision). panewire 는 이 계열 규칙을 아직 강제하지 않는다.
+  줄(마지막 줄 앞에 찍힌다)에서 `model=` 의 `<provider>` 접두가 고른 프로필의 계열이다(예: `model=openai/gpt-6.1-sol` → `openai`). 질문자와 같은 계열이어도 그 프로필을
+  그대로 쓰고 자문 기록에 계열을 적는다(operator decision 467). 다른 프로필을 직접 고르지 않는다.
 - 운영자 명시 전용 프로필은 gate 가 거부 사유로 필요한 인자를 알려준다: `consult_only` →
   `--operator-request hk:doc/<승인-문서-키>`(또는 `hk:task/<정수>`), `--purpose` 를 요구하면 그
   값을 준다(`operator_request_not_applicable` 이면 요청 참조를 빼고 `--purpose` 를 쓴다). 필요·근거는
