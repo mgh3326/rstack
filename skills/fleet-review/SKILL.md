@@ -1,6 +1,6 @@
 ---
 name: fleet-review
-description: How a worker or the repo's design session, else operator-desk, triages mergewake review findings so a PR converges — what is in scope (the closed contract plus regressions the change introduces), the fix/dismiss/defer rubric, the per-repo learned skip-pattern file (.mergewake/triage-patterns.md), review rounds after fixes, reviewer independence (same-family passes are reference-only), and "a verdict covers a patch" (patch-id) evidence reuse. Use when you receive review findings, when you write or read a verdict, and when you decide whether a review pass counts or must be repeated. Triggers - "review finding", "mergewake review", "triage", "patch-id", "base_stale", "dismiss or fix", "same family", "review round".
+description: How a worker or the repo's design session, else operator-desk, triages mergewake review findings so a PR converges — what is in scope (the closed contract plus regressions the change introduces), the fix/dismiss/defer rubric, the per-repo learned skip-pattern file (.mergewake/triage-patterns.md), review rounds after fixes, reviewer independence (a same-family pass counts; another family is never required), and "a verdict covers a patch" (patch-id) evidence reuse. Use when you receive review findings, when you write or read a verdict, and when you decide whether a review pass counts or must be repeated. Triggers - "review finding", "mergewake review", "triage", "patch-id", "base_stale", "dismiss or fix", "same family", "review round".
 ---
 
 # fleet-review — scope, triage, rounds, independence
@@ -143,8 +143,8 @@ Until mergewake hk 4264 ships, at round 7 without a pass the worker ESCs; the de
 Wherever independent review is required — the `wake` merge gate requires it for every PR — a pass counts
 toward the gate whether or not its reviewer's family matches the author's (operator decision 215). A material
 author family is each family whose code the PR carries (commits, subagent or delegate output), not the family of
-whoever started the review. Routing prefers a reviewer from a family other than every material author family
-(hk `policy/model-routing` rule 3). Every pass records `same_family`, so the PRs merged on a same-family pass
+whoever started the review. Another family is not required for any pass, not even one of two (operator decision 462); in routing,
+family is at most a tie-break after quota room (hk `policy/model-routing`). Every pass records `same_family`, so the PRs merged on a same-family pass
 can be listed later. A fallback path (pane → headless) keeps the same evidence; if no reviewer runs, the result
 is `REVIEW_UNAVAILABLE`, not a pass. Which reviewer is routed is hk `policy/model-routing`.
 
