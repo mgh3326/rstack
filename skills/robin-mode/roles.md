@@ -41,7 +41,7 @@ panewire resolve --role <reviewer|judge> --author-family <author family>
 ```
 
 - Pass the printed profile's model and effort on the subagent call (Claude Code `Agent` `model`/`effort`; Codex `spawn_agent` `model`/`reasoning_effort`).
-- A lead has no routing role: the operator opens the lead session; its subagents resolve as implementer or verifier, and its cross-family reviewer resolves as reviewer using the author-family option.
+- A lead has no routing role: the operator opens the lead session; its subagents resolve as implementer or verifier, and its independent reviewer resolves as reviewer using the author-family option.
 - If `resolve` refuses (`role_exhausted_wait`, `role_exhausted_escalate`, or no policy and no cache for `consult`/`verifier` or a lead's implementer/searcher subagent), do **not** pick a substitute model or family for the subagent. What to do depends on the role:
   - `consult`, `verifier`: do not start that work on any other model. Wait on `role_exhausted_wait`; escalate to the parent lane on `role_exhausted_escalate` or a missing policy.
   - For a lead's implementer or searcher subagent, wait on `role_exhausted_wait` or escalate to the parent lane on `role_exhausted_escalate` or a missing policy; a lead never writes product code because a subagent resolution refused.

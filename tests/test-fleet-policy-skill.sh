@@ -88,7 +88,7 @@ REQUIRED = [
     ("roles", "## Rules", "explorer-resolves-as-implementer", r"An explorer is a read-only in-session searcher and resolves as `implementer`;"),
     ("roles", None, "implementer-verifier-resolve-list", r"panewire resolve --role <implementer\|verifier> --grade <G> --t <Tn>"),
     ("roles", None, "reviewer-judge-author-family-resolve-list", r"panewire resolve --role <reviewer\|judge> --author-family <author family>"),
-    ("roles", None, "lead no routing role and reviewer resolution", r"A lead has no routing role: the operator opens the lead session; its subagents resolve as implementer or verifier, and its cross-family reviewer resolves as reviewer using the author-family option"),
+    ("roles", None, "lead no routing role and reviewer resolution", r"A lead has no routing role: the operator opens the lead session; its subagents resolve as implementer or verifier, and its independent reviewer resolves as reviewer using the author-family option"),
     ("roles", None, "consult resolve form", r"panewire resolve --role consult\s+# consult takes no --grade"),
     ("roles", None, "consult verifier and lead refusal names", r"no policy and no cache for `consult`/`verifier` or a lead's implementer/searcher subagent"),
     ("roles", None, "consult verifier alternate model rule", r"`consult`, `verifier`: do not start that work on any other model"),

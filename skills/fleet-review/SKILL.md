@@ -80,7 +80,7 @@ Severity decides blocking. Disposition is what you do about it.
   and any attempt to lower a test or enforcement bar: moving a threshold, adding `.skip` or
   suppression, replacing behavior with a stub, adding an empty catch, or introducing a new
   exception path that avoids the check.
-  On a lead's own PR, the lead may dismiss a critical or high finding in this list with direct evidence recorded in its ledger. For a finding that alleges a lowered test or enforcement bar, the ledger names the exact bar or threshold at issue and the evidence that disproves the finding; the lead shares that entry with the cross-family reviewer, whose visibility is not approval. Medium or low findings in this list are never self-dismissed: fix them, or ESC to the repo's design session, else operator-desk. For every other PR, fix these findings or escalate them to the repo's design session; when none is open, use operator-desk. They are never self-dismissed.
+  On a lead's own PR, the lead may dismiss a critical or high finding in this list with direct evidence recorded in its ledger. For a finding that alleges a lowered test or enforcement bar, the ledger names the exact bar or threshold at issue and the evidence that disproves the finding; the lead shares that entry with the independent reviewer, whose visibility is not approval. Medium or low findings in this list are never self-dismissed: fix them, or ESC to the repo's design session, else operator-desk. For every other PR, fix these findings or escalate them to the repo's design session; when none is open, use operator-desk. They are never self-dismissed.
 - Every finding gets a line in the report: `id · severity · disposition · reason or SHA`.
   Unanswered findings do not count as handled.
 
@@ -168,7 +168,7 @@ git diff "$(git merge-base origin/<base> <head>)" <head> | git patch-id --stable
   impact paths (§Rounds).
 - Tests-, docs- or lint-only differences still count as a different patch; the delta review
   is then small by construction.
-- For the lead's own PRs, patch-id carryover covers only the cross-family review verdict and finding
+- For the lead's own PRs, patch-id carryover covers only the independent review verdict and finding
   dispositions. It never covers the lead's test runs or the same-family verifier verdict; record
   those separately on the final head in `lead` §Ledger.
 

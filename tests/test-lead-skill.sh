@@ -65,6 +65,8 @@ REQUIRED = [
     ("lead", "## Authority", "operator-only-policy-list", L("Everything else the operator reserves stays reserved (hk:doc `policy/operator-not-a-gate` §What stays the operator's alone): real orders and moving funds, a secret value handled by hand, public posts and new external accounts, an external action that cannot be undone, a production order-path cutover, relaxing a policy or a conflict between lanes' contracts. A reversible choice is not a wait: it takes the recommended option, is recorded with why and how to undo it, and work goes on. An approval covers one action.")),
     # Subagents.
     ("lead", "## Subagents", "in-session-only", r"\*\*Implementer and verifier are in-session subagents only\.\*\* Claude uses opus, sonnet or haiku; codex uses sol, terra or luna"),
+    # hk 5895 (operator decision 462): the lead's independent review counts whatever its reviewer's family.
+    ("lead", "## Subagents", "independent-review-any-family", r"\*\*The independent review is the mergewake review, whatever its reviewer's family:\*\* a same-family pass counts and another family is never required"),
     ("lead", "## Subagents", "verifier-distinct-same-family", r"\*\*The verifier is a different subagent from the implementer\*\*, started with a fresh context, and of the same family as the lead for now\. Record that as `same_family`"),
     ("lead", "## Subagents", "spawned-workers-later", r"\*\*Spawned workers used as subagents \(quota through panewire\) are a later experiment\. They are not allowed yet\.\*\*"),
     ("lead", "## Subagents", "model-choice-home", r"\*\*Model choice follows `robin-mode` `roles\.md` §Models and effort for in-session subagents\*\*"),
@@ -84,23 +86,23 @@ REQUIRED = [
     ("lead", "## Subagents", "suites-check-workflow", L("Check the list with `git -C ~/work/<repo> show origin/main:.github/workflows/ci-any-ref.yml`")),
     ("lead", "## Subagents", "ledger-run-waited", L("A run the ledger needs is §Ledger item (a) and is waited on before the merge; ordinary post-merge CI is not (§After the merge)")),
     # Subagents: review order, verifier, round cap, re-review scope.
-    ("lead", "## Subagents", "cheap-review-first", L("**Review order: cheap cross-family review first.** Round 1 reviews the full PR; a later round reviews the open findings, the fix delta and its impact paths, and carries the earlier dispositions forward (`fleet-review` §Rounds). Remote tests may run beside it")),
-    ("lead", "## Subagents", "verifier-only-on-passed-head", L("**The heavy same-family verifier starts only on a head the cross-family review passed.** Never start a verifier on a head that may still change (rstack#55: 6 rounds and 5 discarded verifiers, against 1-2 rounds and 0 in the 2026-11-09 trial)")),
+    ("lead", "## Subagents", "cheap-review-first", L("**Review order: cheap independent review first.** Round 1 reviews the full PR; a later round reviews the open findings, the fix delta and its impact paths, and carries the earlier dispositions forward (`fleet-review` §Rounds). Remote tests may run beside it")),
+    ("lead", "## Subagents", "verifier-only-on-passed-head", L("**The heavy same-family verifier starts only on a head the independent review passed.** Never start a verifier on a head that may still change (rstack#55: 6 rounds and 5 discarded verifiers, against 1-2 rounds and 0 in the 2026-11-09 trial)")),
     ("lead", "## Subagents", "verifier-checks-remote-log", L("It runs the closed acceptance list: it satisfies each test command by checking the remote log for the revision its acceptance entry names (host, sha, exact command and result) — the pushed test-only or pre-fix sha for a baseline red entry, `$H` with that mutant's diff applied for a mutant entry, `$H` for green — and runs every other check itself; the verdict and the ledger are recorded on `$H`; it runs no package `go test` on the lead's host beyond the single test above.")),
     ("lead", "## Subagents", "round-cap-non-blocking", L("**Round cap is 2 for non-blocking findings.** After round 2 the remaining non-blocking findings become follow-up tasks; P0/P1 and critical/high are never deferred (§Ledger)")),
-    ("lead", "## Subagents", "blocking-fix-past-cap", L("A blocking fix gets a further cross-family review of that fix only; if a third blocking round is needed, send the STUCK line (§Store) and re-scope or split the unit. The cap never counts as approval")),
+    ("lead", "## Subagents", "blocking-fix-past-cap", L("A blocking fix gets a further independent review of that fix only; if a third blocking round is needed, send the STUCK line (§Store) and re-scope or split the unit. The cap never counts as approval")),
     ("lead", "## Subagents", "p3-only-skips-rereview", L("**Only P3 wording in prose that states no rule skips re-review** (typos, comments, examples, phrasing)")),
-    ("lead", "## Subagents", "rule-change-rereviewed", L("Any change to code, tests, a contract, a policy or a rule's text, a SKILL.md included, gets a cross-family review of that change")),
-    ("lead", "## Subagents", "carryover-record", L("The cross-family verdict carries to a new head only when the interdiff is P3-only prose; the ledger records `carryover=<old head>`")),
+    ("lead", "## Subagents", "rule-change-rereviewed", L("Any change to code, tests, a contract, a policy or a rule's text, a SKILL.md included, gets a independent review of that change")),
+    ("lead", "## Subagents", "carryover-record", L("The independent-review verdict carries to a new head only when the interdiff is P3-only prose; the ledger records `carryover=<old head>`")),
     ("lead", "## Subagents", "final-head-all-three", L("Ledger items (a) to (c) are still all recorded on the final head: the tests rerun and the same-family verifier runs there (operator 2026-11-09)")),
     # Fleet review rules for lead-owned PRs.
     ("fleet", "## Triage rubric", "lead-dismissal-judge", r"on a lead's own PR, the lead judges and records the evidence in its ledger; on every other PR, the repo's design session judges, or operator-desk while that repo has none open"),
     ("fleet", "## Triage rubric", "lead-may-dismiss-never-skip-critical-high", r"On a lead's own PR, the lead may dismiss a critical or high finding in this list with direct evidence recorded in its ledger"),
-    ("fleet", "## Triage rubric", "lead-dismissal-bar-evidence-visible", r"For a finding that alleges a lowered test or enforcement bar, the ledger names the exact bar or threshold at issue and the evidence that disproves the finding; the lead shares that entry with the cross-family reviewer, whose visibility is not approval"),
+    ("fleet", "## Triage rubric", "lead-dismissal-bar-evidence-visible", r"For a finding that alleges a lowered test or enforcement bar, the ledger names the exact bar or threshold at issue and the evidence that disproves the finding; the lead shares that entry with the independent reviewer, whose visibility is not approval"),
     ("fleet", "## Triage rubric", "never-skip-medium-low-never-dismiss", r"Medium or low findings in this list are never self-dismissed: fix them, or ESC to the repo's design session, else operator-desk"),
     ("fleet", "## Triage rubric", "fix-reply-names-test-on-prior-head", r"a `Fixed in <sha>` reply names a test that fails on the previous reviewed head and passes on the new one, and claims only what that test shows; where no test can be written \(a document line, a build file\) the reply says so in one clause"),
     ("fleet", "## Triage rubric", "other-pr-never-dismiss", r"For every other PR, fix these findings or escalate them to the repo's design session; when none is open, use operator-desk\. They are never self-dismissed"),
-    ("fleet", "## A verdict covers a patch, not a SHA", "lead-patch-id-limit", r"For the lead's own PRs, patch-id carryover covers only the cross-family review verdict and finding dispositions\. It never covers the lead's test runs or the same-family verifier verdict; record those separately on the final head in `lead` §Ledger"),
+    ("fleet", "## A verdict covers a patch, not a SHA", "lead-patch-id-limit", r"For the lead's own PRs, patch-id carryover covers only the independent review verdict and finding dispositions\. It never covers the lead's test runs or the same-family verifier verdict; record those separately on the final head in `lead` §Ledger"),
     # Store.
     ("lead", "## Store", "hk-replaces-store", r"hk replaces the orchestrate store"),
     ("lead", "## Store", "unit-is-task", r"\*\*A unit is an hk task\*\*, one PR each"),
@@ -115,8 +117,8 @@ REQUIRED = [
     ("lead", "## Bug and incident loop", "root-cause-before-fix", r"3\. \*\*Find the root cause before writing the fix\.\*\*"),
     ("lead", "## Bug and incident loop", "fix-then-verify", r"4\. \*\*Fix, then verify\.\*\*"),
     # Ledger.
-    ("lead", "## Ledger", "same-head-all-three", r"Before any direct merge, record the three ledger results and the cross-family review as separate entries on the same head SHA `\$H`"),
-    ("lead", "## Ledger", "cross-family-review-separate", r"Cross-family review: record its verdict and disposition of every finding separately from the same-family verifier"),
+    ("lead", "## Ledger", "same-head-all-three", r"Before any direct merge, record the three ledger results and the independent review as separate entries on the same head SHA `\$H`"),
+    ("lead", "## Ledger", "cross-family-review-separate", r"Independent review: record its verdict and disposition of every finding separately from the same-family verifier"),
     ("lead", "## Ledger", "lead-dismisses-critical-high", r"the lead dismisses it with evidence recorded in its ledger"),
     ("lead", "## Ledger", "ledger-tests", r"\(a\) the tests for the changed packages pass on `\$H`"),
     ("lead", "## Ledger", "ledger-regression", r"\(b\) a regression test that is red on the pre-fix code and green on `\$H`"),
@@ -164,7 +166,7 @@ REQUIRED = [
     ("lead", "## Briefs to subagents", "worker-brief-fields", r"Write each one to the `wake` §Worker brief fields"),
     ("lead", "## Briefs to subagents", "standing-orders-verbatim", r"\*\*Standing orders go in verbatim\*\* at every spawn and every resume"),
     ("lead", "## Briefs to subagents", "closed-acceptance", r"\*\*The acceptance list is closed\.\*\*"),
-    ("lead", "## Briefs to subagents", "design-attack-before-brief", r"\*\*Design attack before the brief\.\*\* For a unit that deletes code, removes a fallback or changes a contract, give the cross-family reviewer the scope and code areas \(no diff\) before writing the brief"),
+    ("lead", "## Briefs to subagents", "design-attack-before-brief", r"\*\*Design attack before the brief\.\*\* For a unit that deletes code, removes a fallback or changes a contract, give the independent reviewer the scope and code areas \(no diff\) before writing the brief"),
     ("lead", "## Briefs to subagents", "design-attack-list-becomes-red-tests", r"Ask it to list every way the change could read a wrong or stale result, delete what is still needed, or break a caller\. Its list becomes the brief's red tests; if it breaks the unit's premise, re-plan before implementing \(hk 3652, where \"fallback audit = 0\" did not prove the fallback unused; hk 3640\)"),
     ("lead", "## Briefs to subagents", "dropped-machinery", r"Dropped from `orchestrate\.md`: the `orch` CLI, the `~/\.claude/orchestrate/` store, babysit, swarm, arena and the sub-coordinator layer"),
     # Provenance.
@@ -186,6 +188,8 @@ FORBIDDEN = {
     "second-test-rule": re.compile(r"\*\*Implementers and verifiers run no `go test` on the lead's host except one single test\.\*\*"),
     "preamble-forbids-no-go-test": re.compile(r"(?i)preamble forbids[^.\n]{0,120}run no `go test` at all"),
     "host-gated-test-rule": re.compile(r"(?i)on a host the spawn preamble (?:allows|forbids)"),
+    # hk 5895 (operator decision 462): the lead no longer requires a cross-family review.
+    "cross-family-review-required": re.compile(r"(?i)cross-family review"),
     "writes-no-product-code": re.compile(r"(?i)\b(?:writes no product code(?: itself)?|never the code)\b"),
     # hk 4916 (operator decision 339): no plan step waits for the operator's look or confirmation.
     "plan-waits-for-operator-look": re.compile(r"(?i)(?:wait|waits|waiting|block|blocks|blocked|pause|stop)s?\s+(?:for|on|until)\s+the operator(?:'s)?\s+(?:look|to look|confirm|confirmation|to confirm|to check|to test|to play|to approve)"),
@@ -237,6 +241,7 @@ for name, injected in [
     ("second-test-rule-injected", "- **Implementers and verifiers run no `go test` on the lead's host except one single test.**\n"),
     ("preamble-forbids-no-go-test-injected", "- On a host the spawn preamble forbids, implementers and verifiers run no `go test` at all.\n"),
     ("host-gated-test-rule-injected", "- On a host the spawn preamble allows, implementers run `go test` locally.\n"),
+    ("cross-family-review-required-injected", "- Before a direct merge the lead records a cross-family review.\n"),
     ("writes-no-product-code-injected", "- The lead writes no product code itself.\n"),
     ("plan-waits-for-operator-look-injected", "- Wait for the operator to confirm before merging.\n"),
 ]:
@@ -272,7 +277,7 @@ SUBSTITUTED = [
     ("verifier-log-fields", " (host, sha, exact command and result)", ""),
     ("verifier-no-tests", "It runs the closed acceptance list:", "It runs no tests:"),
     ("cap-all-findings", "Round cap is 2 for non-blocking findings.", "Round cap is 2."),
-    ("blocking-fix-no-review", "A blocking fix gets a further cross-family review of that fix only", "A blocking fix after round 2 gets no further review"),
+    ("blocking-fix-no-review", "A blocking fix gets a further independent review of that fix only", "A blocking fix after round 2 gets no further review"),
     ("third-round-no-stuck", "send the STUCK line (§Store) and re-scope or split the unit", "run another round"),
     ("cap-as-approval", "The cap never counts as approval", "The cap counts as approval"),
     ("p3-scope-widened", "P3 wording in prose that states no rule", "P3 wording or a doc"),
