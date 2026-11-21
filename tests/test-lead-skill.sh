@@ -106,7 +106,7 @@ REQUIRED = [
     ("lead", "## Store", "unit-is-task", r"\*\*A unit is an hk task\*\*, one PR each"),
     ("lead", "## Store", "standing-orders-docs", r"\*\*Standing orders are hk decision docs\.\*\*"),
     ("lead", "## Store", "ledger-in-comments", r"\*\*The ledger lives in task comments\*\*, and in hk reviews once hk 3037 ships"),
-    ("lead", "## Store", "lead-decision-request-policy", L("park a decision you cannot default as a decision request (`ops` decision-request), never as a question in a pane, and ask only what hk:doc `policy/operator-not-a-gate` keeps for the operator.")),
+    ("lead", "## Store", "lead-decision-request-policy", L("park a decision you cannot default as a decision request (`ops` decision-request), never as a question in a pane or a blocking question dialog, and ask only what hk:doc `policy/operator-not-a-gate` keeps for the operator.")),
     ("lead", "## Store", "stuck-event-receiver", r"A step with no progress for over 30 minutes, or the same failure twice, gets one blocked event to the repo's design session, else operator-desk"),
     ("lead", "## Store", "no-orchestrate-dir", r"There is no `~/\.claude/orchestrate/` directory"),
     # Bug and incident loop.

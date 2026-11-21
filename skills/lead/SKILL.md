@@ -53,7 +53,7 @@ hk replaces the orchestrate store. There is no `~/.claude/orchestrate/` director
 - **Standing orders are hk decision docs.** Paste the relevant doc keys and their text verbatim into every subagent brief; never restate them from memory.
 - **The ledger lives in task comments**, and in hk reviews once hk 3037 ships.
 - State is read from hk, `gh` and git, not from the chat: after a restart, re-read the open tasks, their ledgers and the open PRs, and reattach by PR and branch.
-- Report to the operator in the operator's channel; park a decision you cannot default as a decision request (`ops` decision-request), never as a question in a pane, and ask only what hk:doc `policy/operator-not-a-gate` keeps for the operator.
+- Report to the operator in the operator's channel; park a decision you cannot default as a decision request (`ops` decision-request), never as a question in a pane or a blocking question dialog, and ask only what hk:doc `policy/operator-not-a-gate` keeps for the operator.
 - **A step with no progress for over 30 minutes, or the same failure twice, gets one blocked event to the repo's design session, else operator-desk.** The repo's design session uses `<repo>-design` (default per `decision/2026-11-10/lead-direct-merge`); when no design session is open, use `operator-desk`. Run exactly one command for the applicable receiver:
   ```sh
   # The repo's design session is open.

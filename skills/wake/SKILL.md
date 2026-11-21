@@ -155,9 +155,12 @@ The session is thrown away after it spawns, so whatever it did not write down is
 
 Every question that stays the operator's under hk:doc `policy/operator-not-a-gate` is also one
 `handoffkeep tasks decision-request` on its task — options, the recommended option, a grounds document
-and the default action — recorded before the pane question is sent, in the same turn, so the record stands by
+and the default action — recorded before the question is sent, in the same turn, so the record stands by
 itself for dots and the console; a reversible choice is still not asked. The full command lives in
-`ops` decision-request.md. The pane question is still asked in the same turn and does not wait for an answer.
+`ops` decision-request.md. The question is still asked in the same turn, as plain text in the session's reply, and does not wait for an answer.
+It is never a blocking question dialog (AskUserQuestion, a picker or a confirmation prompt): a dialog stops
+the whole lane until the operator answers, its inbox, its workers' ESCs and mergewake's notices included
+(operator decision 460). While the question is open the session keeps handling its inbox.
 A pane answer closes the request in the same turn with the operator's words before acting. An
 answer arriving through hk is acted on from the hk record, never from the notice text.
 
