@@ -12,6 +12,9 @@
   `[placement] load_threshold` 이상인 호스트는 다른 후보가 없을 때만 쓴다.
 - 선택된 호스트의 spawn-time quota gate 가 최종 승인이다 — 거절되면 다음 후보로 간다. 모든 결정은
   잡의 `job.placement` 이벤트에 남고 `--dry-run` 이 그 기록을 보인다.
+- worker·리뷰 세션은 hk `policy/design-sessions` §배치가 이름 붙인 호스트에만 둔다(운영자 결정 463).
+  서비스가 도는 호스트는 worker·리뷰 세션을 받지 않는다. 배포 좌석·서비스·스케줄 잡은 이 규칙 밖이다.
+  `--host <이름>` override 도 이 목록 밖의 호스트로 내지 않는다.
 - `--host local|<이름>` 은 강제 override 다 — `--override-reason` 필수, 장애 대응·진단에만 쓴다.
   강제 원격은 실패해도 로컬로 폴백하지 않는다.
 - `[local] spawn = false` 는 이 호스트의 로컬 스폰을 닫는다(명시 `--host local` 포함 rc 80) — 켜고

@@ -38,6 +38,7 @@ PATHS = {
     "desk": root / "skills/desk/SKILL.md",
     "fleet": root / "skills/fleet-review/SKILL.md",
     "watching": REFS / "watching.md",
+    "hosts": REFS / "spawn-hosts.md",
 }
 docs = {name: path.read_text(encoding="utf-8") for name, path in PATHS.items()}
 # Every skill file outside third_party, for the scans below.
@@ -49,6 +50,16 @@ MARKER = re.compile(
 
 # (doc, section heading or None, row name, pattern on the flattened scope)
 REQUIRED = [
+    # hk 5895 (operator decision 462): a same-family pass counts and another family is never required.
+    ("fleet", None, "same-family-counts-description",
+     r"reviewer independence \(a same-family pass counts; another family is never required\)"),
+    ("fleet", "## Independence", "another-family-not-required",
+     r"Another family is not required for any pass, not even one of two \(operator decision 462\); in routing, family is at most a tie-break after quota room"),
+    # hk 5895 (operator decision 463): worker and review sessions only on the hosts the policy names.
+    ("hosts", "## 배치 — `--host auto`", "worker-review-hosts-policy",
+     r"worker·리뷰 세션은 hk `policy/design-sessions` §배치가 이름 붙인 호스트에만 둔다\(운영자 결정 463\)\. 서비스가 도는 호스트는 worker·리뷰 세션을 받지 않는다"),
+    ("hosts", "## 배치 — `--host auto`", "worker-review-hosts-override",
+     r"`--host <이름>` override 도 이 목록 밖의 호스트로 내지 않는다"),
     ("fleet", "## Triage rubric", "never-skip-not-deferred",
      r"A finding on the `fleet-review` never-skip list is never deferred, whatever its severity: fix it or escalate it under that rule\."),
     ("wake", None, "never-skip-not-deferred",
@@ -102,6 +113,8 @@ FORBIDDEN = [
     # decision 215: the suspended independence rule and its relief stay gone.
     ("fleet", "suspended-independence-rule", r"reference evidence only and does not satisfy the gate", "\nA same-family pass is reference evidence only and does not satisfy the gate.\n"),
     ("fleet", "independence-relief-marker", r"Temporary \(operator 2026-11-04, hk 2856\)", "\n*Temporary (operator 2026-11-04, hk 2856): ends when hk 2857 lands and restores the rule (hk 2857).*\n"),
+    # hk 5895 (operator decision 462): the reference-only wording stays gone.
+    ("fleet", "same-family-reference-only", r"(?i)same-family passes are reference-only", "\nreviewer independence (same-family passes are reference-only)\n"),
     ("fleet", "independence-relief-wording", r"While this relief stands", "\nWhile this relief stands, a same-family pass counts.\n"),
     # decision 223 / hk 2788 and hk 3294: the temporary rules whose end tasks are closed.
     ("wake", "cutover-marker-removed", r"Temporary \(operator-desk 2026-11-03, hk 2788\)", "\n*Temporary (operator-desk 2026-11-03, hk 2788): ends when the hk 2788 slice 5 cutover ships (hk 2788).*\n"),

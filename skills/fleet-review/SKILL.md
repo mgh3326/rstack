@@ -1,6 +1,6 @@
 ---
 name: fleet-review
-description: How a worker or the repo's design session, else operator-desk, triages mergewake review findings so a PR converges — what is in scope (the closed contract plus regressions the change introduces), the fix/dismiss/defer rubric, the per-repo learned skip-pattern file (.mergewake/triage-patterns.md), review rounds after fixes, reviewer independence (same-family passes are reference-only), and "a verdict covers a patch" (patch-id) evidence reuse. Use when you receive review findings, when you write or read a verdict, and when you decide whether a review pass counts or must be repeated. Triggers - "review finding", "mergewake review", "triage", "patch-id", "base_stale", "dismiss or fix", "same family", "review round".
+description: How a worker or the repo's design session, else operator-desk, triages mergewake review findings so a PR converges — what is in scope (the closed contract plus regressions the change introduces), the fix/dismiss/defer rubric, the per-repo learned skip-pattern file (.mergewake/triage-patterns.md), review rounds after fixes, reviewer independence (a same-family pass counts; another family is never required), and "a verdict covers a patch" (patch-id) evidence reuse. Use when you receive review findings, when you write or read a verdict, and when you decide whether a review pass counts or must be repeated. Triggers - "review finding", "mergewake review", "triage", "patch-id", "base_stale", "dismiss or fix", "same family", "review round".
 ---
 
 # fleet-review — scope, triage, rounds, independence
@@ -80,7 +80,7 @@ Severity decides blocking. Disposition is what you do about it.
   and any attempt to lower a test or enforcement bar: moving a threshold, adding `.skip` or
   suppression, replacing behavior with a stub, adding an empty catch, or introducing a new
   exception path that avoids the check.
-  On a lead's own PR, the lead may dismiss a critical or high finding in this list with direct evidence recorded in its ledger. For a finding that alleges a lowered test or enforcement bar, the ledger names the exact bar or threshold at issue and the evidence that disproves the finding; the lead shares that entry with the cross-family reviewer, whose visibility is not approval. Medium or low findings in this list are never self-dismissed: fix them, or ESC to the repo's design session, else operator-desk. For every other PR, fix these findings or escalate them to the repo's design session; when none is open, use operator-desk. They are never self-dismissed.
+  On a lead's own PR, the lead may dismiss a critical or high finding in this list with direct evidence recorded in its ledger. For a finding that alleges a lowered test or enforcement bar, the ledger names the exact bar or threshold at issue and the evidence that disproves the finding; the lead shares that entry with the independent reviewer, whose visibility is not approval. Medium or low findings in this list are never self-dismissed: fix them, or ESC to the repo's design session, else operator-desk. For every other PR, fix these findings or escalate them to the repo's design session; when none is open, use operator-desk. They are never self-dismissed.
 - Every finding gets a line in the report: `id · severity · disposition · reason or SHA`.
   Unanswered findings do not count as handled.
 
@@ -143,8 +143,8 @@ Until mergewake hk 4264 ships, at round 7 without a pass the worker ESCs; the de
 Wherever independent review is required — the `wake` merge gate requires it for every PR — a pass counts
 toward the gate whether or not its reviewer's family matches the author's (operator decision 215). A material
 author family is each family whose code the PR carries (commits, subagent or delegate output), not the family of
-whoever started the review. Routing prefers a reviewer from a family other than every material author family
-(hk `policy/model-routing` rule 3). Every pass records `same_family`, so the PRs merged on a same-family pass
+whoever started the review. Another family is not required for any pass, not even one of two (operator decision 462); in routing,
+family is at most a tie-break after quota room (hk `policy/model-routing`). Every pass records `same_family`, so the PRs merged on a same-family pass
 can be listed later. A fallback path (pane → headless) keeps the same evidence; if no reviewer runs, the result
 is `REVIEW_UNAVAILABLE`, not a pass. Which reviewer is routed is hk `policy/model-routing`.
 
@@ -168,7 +168,7 @@ git diff "$(git merge-base origin/<base> <head>)" <head> | git patch-id --stable
   impact paths (§Rounds).
 - Tests-, docs- or lint-only differences still count as a different patch; the delta review
   is then small by construction.
-- For the lead's own PRs, patch-id carryover covers only the cross-family review verdict and finding
+- For the lead's own PRs, patch-id carryover covers only the independent review verdict and finding
   dispositions. It never covers the lead's test runs or the same-family verifier verdict; record
   those separately on the final head in `lead` §Ledger.
 
