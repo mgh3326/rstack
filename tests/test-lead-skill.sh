@@ -66,7 +66,7 @@ REQUIRED = [
     # Subagents.
     ("lead", "## Subagents", "in-session-only", r"\*\*Implementer and verifier are in-session subagents only\.\*\* Claude uses opus, sonnet or haiku; codex uses sol, terra or luna"),
     # hk 5895 (operator decision 462): the lead's independent review counts whatever its reviewer's family.
-    ("lead", "## Subagents", "independent-review-any-family", r"\*\*The independent review is the mergewake review, whatever its reviewer's family:\*\* a same-family pass counts and another family is never required"),
+    ("lead", "## Subagents", "independent-review-any-family", r"\*\*The independent review is the mergewake review, whatever its reviewer's family:\*\* a same-family pass counts; another family is preferred, never required, and the ledger records the reviewer's family"),
     ("lead", "## Subagents", "verifier-distinct-same-family", r"\*\*The verifier is a different subagent from the implementer\*\*, started with a fresh context, and of the same family as the lead for now\. Record that as `same_family`"),
     ("lead", "## Subagents", "spawned-workers-later", r"\*\*Spawned workers used as subagents \(quota through panewire\) are a later experiment\. They are not allowed yet\.\*\*"),
     ("lead", "## Subagents", "model-choice-home", r"\*\*Model choice follows `robin-mode` `roles\.md` §Models and effort for in-session subagents\*\*"),
@@ -92,7 +92,7 @@ REQUIRED = [
     ("lead", "## Subagents", "round-cap-non-blocking", L("**Round cap is 2 for non-blocking findings.** After round 2 the remaining non-blocking findings become follow-up tasks; P0/P1 and critical/high are never deferred (§Ledger)")),
     ("lead", "## Subagents", "blocking-fix-past-cap", L("A blocking fix gets a further independent review of that fix only; if a third blocking round is needed, send the STUCK line (§Store) and re-scope or split the unit. The cap never counts as approval")),
     ("lead", "## Subagents", "p3-only-skips-rereview", L("**Only P3 wording in prose that states no rule skips re-review** (typos, comments, examples, phrasing)")),
-    ("lead", "## Subagents", "rule-change-rereviewed", L("Any change to code, tests, a contract, a policy or a rule's text, a SKILL.md included, gets a independent review of that change")),
+    ("lead", "## Subagents", "rule-change-rereviewed", L("Any change to code, tests, a contract, a policy or a rule's text, a SKILL.md included, gets an independent review of that change")),
     ("lead", "## Subagents", "carryover-record", L("The independent-review verdict carries to a new head only when the interdiff is P3-only prose; the ledger records `carryover=<old head>`")),
     ("lead", "## Subagents", "final-head-all-three", L("Ledger items (a) to (c) are still all recorded on the final head: the tests rerun and the same-family verifier runs there (operator 2026-11-09)")),
     # Fleet review rules for lead-owned PRs.

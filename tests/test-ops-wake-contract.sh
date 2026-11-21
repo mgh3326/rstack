@@ -366,8 +366,6 @@ REQUIRED = [
     # consult §1 (hk 2898): resolve does not check the questioner's family.
     ("consult", "## 1. 자문처 결정", "consult-resolve-command", r"`panewire resolve --role consult`"),
     ("consult", "## 1. 자문처 결정", "consult-family-check", r"질문자는 계열도 직접 확인한다"),
-    ("consult", "## 1. 자문처 결정", "consult-family-escalates", r"같은 계열이면 다른 프로필을 직접 고르지 말고 부모 레인에 결정을 올린다"),
-    ("consult", "## 1. 자문처 결정", "consult-family-not-enforced", r"panewire 는 이 계열 규칙을 아직 강제하지 않는다"),
     # hk 3613 (panewire#352): design and desk lanes are inbox-only; the pane gets one `[inbox]` wake line.
     ("watching", "## Inbox wake line — design and desk lanes", "inbox-only-no-bodies", r"\*\*These lanes no longer receive bodies\.\*\*"),
     ("watching", "## Inbox wake line — design and desk lanes", "inbox-ignore-misses-esc", r"A session that ignores the wake line misses its ESCs and findings\."),
@@ -403,7 +401,10 @@ REQUIRED = [
     ("consult", "## 1. 자문처 결정", "consult-ss-pin-purpose", r"그 좌석이 openai 계열이면 `--purpose architect` 를 추가한다\."),
     ("wake", "## Settle before spawning", "blocks-read-by-quota-stop", r"\*Takes effect with hk 3891:\* quota-stop reads this relation"),
     ("wake", "## Settle before spawning", "handover-now-label", r"it blocks another task, it is a reviewer or verifier job, or it carries the label `handover-now`; otherwise it waits for the reset \(a limit under 10 minutes always waits\)\. A missing edge means the task waits"),
-    ("consult", "## 1. 자문처 결정", "consult-one-grade-up", r"\*\*자문은 질문자 task grade 보다 한 단계 위, 다른 계열에 묻는다\.\*\* task 가 없는 세션은 S\+ 에 묻는다"),
+    # hk 5895 (operator decision 467): another family is preferred, not required, for a consult.
+    ("consult", "## 1. 자문처 결정", "consult-family-preferred", r"다른 계열은 우선이지 필수가 아니다\(operator decision 467\): resolve 가 같은 계열을 주면 그대로 쓰고 자문 기록에 계열을 적는다"),
+    ("consult", "## 1. 자문처 결정", "consult-same-family-kept", r"질문자와 같은 계열이어도 그 프로필을 그대로 쓰고 자문 기록에 계열을 적는다\(operator decision 467\)"),
+    ("consult", "## 1. 자문처 결정", "consult-one-grade-up", r"\*\*자문은 질문자 task grade 보다 한 단계 위에 묻고, 다른 계열을 우선한다\.\*\* task 가 없는 세션은 S\+ 에 묻는다"),
     ("wake", "## Brief rules", "brief-settles-design-choices", r"A brief settles every design choice before spawn\.\*\* \"Your choice; say which in the PR\" is allowed only for a choice that cannot change correctness \(naming, file layout\)"),
     ("wake", "## Brief rules", "brief-correctness-choices-settled", r"A state transition, a binding or authority rule, an idempotency key or a data invariant is decided in §Settle before spawning"),
     ("wake", "## Operator confirmation provenance", "provenance-verdict-doc-guard", r"문서 가드: rstack 레포에서 `VERDICT_DOC=<보고서 경로> bash tests/test-untagged-operator-evidence\.sh` 가 RED 면 그 보고서는 쓰지 않는다"),

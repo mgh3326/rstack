@@ -55,6 +55,9 @@ REQUIRED = [
      r"reviewer independence \(a same-family pass counts; another family is never required\)"),
     ("fleet", "## Independence", "another-family-not-required",
      r"Another family is not required for any pass, not even one of two \(operator decision 462\); in routing, family is at most a tie-break after quota room"),
+    # hk 5895 (operator decision 467): "in another family" in a consult rule is a preference.
+    ("fleet", "## Independence", "consult-family-preference",
+     r"\"In another family\" in a consult rule here, in `wake` and in `ops` consult is a preference, not a requirement: a same-family consult counts and its family is recorded \(operator decision 467\)"),
     # hk 5895 (operator decision 463): worker and review sessions only on the hosts the policy names.
     ("hosts", "## 배치 — `--host auto`", "worker-review-hosts-policy",
      r"worker·리뷰 세션은 hk `policy/design-sessions` §배치가 이름 붙인 호스트에만 둔다\(운영자 결정 463\)\. 서비스가 도는 호스트는 worker·리뷰 세션을 받지 않는다"),
@@ -113,6 +116,8 @@ FORBIDDEN = [
     # decision 215: the suspended independence rule and its relief stay gone.
     ("fleet", "suspended-independence-rule", r"reference evidence only and does not satisfy the gate", "\nA same-family pass is reference evidence only and does not satisfy the gate.\n"),
     ("fleet", "independence-relief-marker", r"Temporary \(operator 2026-11-04, hk 2856\)", "\n*Temporary (operator 2026-11-04, hk 2856): ends when hk 2857 lands and restores the rule (hk 2857).*\n"),
+    # hk 5895 (operator decision 467): a same-family consult is no longer escalated.
+    ("consult", "consult-same-family-escalates", r"질문자와 같은 계열이면 다른 프로필을 직접 고르지 말고 부모 레인에", "\n질문자와 같은 계열이면 다른 프로필을 직접 고르지 말고 부모 레인에 결정을 올린다.\n"),
     # hk 5895 (operator decision 462): the reference-only wording stays gone.
     ("fleet", "same-family-reference-only", r"(?i)same-family passes are reference-only", "\nreviewer independence (same-family passes are reference-only)\n"),
     ("fleet", "independence-relief-wording", r"While this relief stands", "\nWhile this relief stands, a same-family pass counts.\n"),

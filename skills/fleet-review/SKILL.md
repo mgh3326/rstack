@@ -144,7 +144,7 @@ Wherever independent review is required — the `wake` merge gate requires it fo
 toward the gate whether or not its reviewer's family matches the author's (operator decision 215). A material
 author family is each family whose code the PR carries (commits, subagent or delegate output), not the family of
 whoever started the review. Another family is not required for any pass, not even one of two (operator decision 462); in routing,
-family is at most a tie-break after quota room (hk `policy/model-routing`). Every pass records `same_family`, so the PRs merged on a same-family pass
+family is at most a tie-break after quota room (hk `policy/model-routing`). "In another family" in a consult rule here, in `wake` and in `ops` consult is a preference, not a requirement: a same-family consult counts and its family is recorded (operator decision 467). Every pass records `same_family`, so the PRs merged on a same-family pass
 can be listed later. A fallback path (pane → headless) keeps the same evidence; if no reviewer runs, the result
 is `REVIEW_UNAVAILABLE`, not a pass. Which reviewer is routed is hk `policy/model-routing`.
 
