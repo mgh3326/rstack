@@ -191,7 +191,8 @@ for the ticket fields. Changed here: the tracker is hk, and evidence is pinned t
 ## The loop
 
 1. **Task.** Decide and record on the hk task: grade, tier, urgency (hk priority 1–2 =
-   urgent), capability tags (`unity`, `xcode`, `gpu`, `linux`; none = any host). Put the
+   urgent), capability tags (`unity`, `xcode`, `gpu`, `linux`; none = any host). First check
+   the work has no task yet: `handoffkeep tasks search <words...> --project <project>`. Put the
    marker in the title — panewire refuses without it, and refuses a `--t` that differs from it.
    An implementation task owns one PR, except that a one-PR bundle may deliver several child tasks in that PR (`robin-mode` §Work boundary).
    ```sh
