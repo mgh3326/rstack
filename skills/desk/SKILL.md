@@ -92,10 +92,14 @@ written down was repeated.
 Search open and recent tasks first:
 
 ```sh
-for s in triage backlog unstarted researching developing reviewing merged deployed completed dropped duplicate icebox; do
-  handoffkeep tasks export --state "$s" --limit 5000
-done | jq -r '.tasks[] | select(.title | test("<keyword>"; "i")) | "\(.id) \(.state) \(.updated_at[:10]) \(.title)"'
+handoffkeep tasks search <words...> [--project P] [--open]
 ```
+
+It matches titles, Korean title translations, translated bodies and comment bodies across every
+state, ranked by relevance. `--limit` accepts 1..50 (default 20); no match exits 0 with an empty
+`tasks` list; `--open` keeps only unfinished tasks and cannot be combined with `--state`. When a
+full `--limit` of rows comes back, narrow with `--project` or more words before you claim the work
+is absent.
 
 - A match covers the work: comment on it (§Commitments). Do not create a task.
 - A similar subject that is really different: create it, and name the other task and why it differs in

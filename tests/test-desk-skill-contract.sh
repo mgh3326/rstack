@@ -60,6 +60,7 @@ REQUIRED = [
     ("desk", "## Resume", "resume-export-completeness", r"`tasks export` returns an envelope; check its `complete` and `truncated` fields before treating the rows as exhaustive"),
     ("desk", "## Resume", "hk-is-truth", r"Local agent memory is not the source of truth; hk is \(hk 2781\)"),
     ("desk", "## Before `tasks add`", "search-first", r"Search open and recent tasks first"),
+    ("desk", "## Before `tasks add`", "search-command", r"handoffkeep tasks search <words\.\.\.> \[--project P\] \[--open\]"),
     ("desk", "## Before `tasks add`", "retry-same-task", r"A retry is a new attempt on the same task, never a new task"),
     ("desk", "## Delegation threshold", "threshold", r"Investigation that would keep the desk off its queue for more than about ten minutes, or that needs reading across several files or logs, goes to a background subagent \(or a worker when it needs another host\), with the result written to an hk doc"),
     ("desk", "## Delegation threshold", "known-target-lookups", r"Short lookups whose target is known stay with the desk"),
